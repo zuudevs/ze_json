@@ -1,0 +1,31 @@
+if(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "wasm32" OR ${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "wasm64")
+    add_executable(${LIBRARY_OUTPUT_NAME}
+        ${CMAKE_CURRENT_SOURCE_DIR}/core.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/scanner.c
+    )
+
+	target_include_directories(${LIBRARY_OUTPUT_NAME}
+		PRIVATE
+			${CMAKE_SOURCE_DIR}/include
+	)
+
+    target_link_options(${LIBRARY_OUTPUT_NAME} 
+		PRIVATE
+			-nostdlib
+			"LINKER:--no-entry"
+    )
+
+	set_target_properties(${LIBRARY_OUTPUT_NAME} 
+		PROPERTIES
+        	SUFFIX ".wasm"
+    )
+elseif(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "X86" OR ${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "x64")
+	add_library(${LIBRARY_OUTPUT_NAME}
+        ${CMAKE_CURRENT_SOURCE_DIR}/scanner.cpp
+	)
+
+	target_include_directories(${LIBRARY_OUTPUT_NAME}
+		PRIVATE
+			${CMAKE_SOURCE_DIR}/include
+	)
+endif()

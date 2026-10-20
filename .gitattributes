@@ -1,0 +1,65 @@
+* text=auto eol=lf
+
+*.c           text
+*.cc          text
+*.cpp         text
+*.cxx         text
+*.h           text
+*.hh          text
+*.hpp         text
+*.hxx         text
+*.inl         text
+*.ipp         text
+
+*.cmake       text
+CMakeLists.txt text
+
+*.md          text
+*.txt         text
+*.rst         text
+*.dox         text
+
+*.ps1         text eol=crlf
+*.sh          text eol=lf
+*.bat         text eol=crlf
+
+*.json        text
+*.yaml        text
+*.yml         text
+*.toml        text
+*.ini         text
+*.cfg         text
+*.clang-format text
+*.clang-tidy  text
+*.editorconfig text
+*.gitignore   text
+*.gitattributes text
+
+*.png         binary
+*.jpg         binary
+*.jpeg        binary
+*.gif         binary
+*.bmp         binary
+*.svg         text
+*.ico         binary
+*.webp        binary
+
+*.zip         binary
+*.7z          binary
+*.rar         binary
+*.tar         binary
+*.gz          binary
+
+*.lib         binary
+*.a           binary
+*.dll         binary
+*.so          binary
+*.dylib       binary
+*.exe         binary
+
+*.csv         text
+*.tsv         text
+
+docs/** linguist-documentation
+example/** linguist-documentation=false
+tests/** linguist-generated=false

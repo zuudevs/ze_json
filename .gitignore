@@ -1,0 +1,46 @@
+# Build output directories
+/build/
+/bin/
+/lib/
+.cache/
+
+# CMake generated files & caches
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+
+# Python Generated files & caches
+__pycache__/
+
+# vcpkg
+/vcpkg_installed/
+vcpkg.log
+
+# IDE & Editor files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosv
+*.sln.docstates
+
+# Coverage & Profiling
+*.profraw
+*.profdata
+*.gcov
+*.gcda
+*.gcno
+/coverage/
+
+# OS & Temporary files
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+*~

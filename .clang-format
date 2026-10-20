@@ -1,0 +1,21 @@
+---
+Language: Cpp
+BasedOnStyle: LLVM
+Standard: c++23
+BreakAfterOpenBracketFunction: true
+AlignArrayOfStructures: Left
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveBitFields: Consecutive
+AlignConsecutiveMacros: Consecutive
+BreakBeforeTemplateCloser: true
+AlwaysBreakAfterReturnType: All
+BreakBeforeBraces: Attach
+IndentWidth: 4
+DerivePointerAlignment: false
+PointerAlignment: Left
+BreakAfterAttributes: Leave
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
+  AlignCaseColons: true
