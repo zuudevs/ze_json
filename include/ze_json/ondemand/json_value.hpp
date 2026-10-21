@@ -22,13 +22,15 @@ class JsonValue {
         return type == 0 ? JsonType::Number : static_cast<JsonType>(type);
     }
 
-	[[nodiscard]] constexpr double get_double() NOEXCEPT {
+    [[nodiscard]] constexpr double
+    get_double() NOEXCEPT {
         const char* p = iter_.src() + iter_.peek_position();
         iter_.advance();
         return utils::parse_double(p);
     }
 
-    [[nodiscard]] constexpr types::int64_t get_int() NOEXCEPT {
+    [[nodiscard]] constexpr types::int64_t
+    get_int() NOEXCEPT {
         const char* p = iter_.src() + iter_.peek_position();
         iter_.advance();
         return utils::parse_int(p);

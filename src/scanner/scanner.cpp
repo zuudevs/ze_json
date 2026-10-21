@@ -1,4 +1,5 @@
 #include <ze_json/scanner/scanner.hpp>
+#include <ze_json/utils/utf8_validator.hpp>
 
 namespace zuu::scanner {
 
@@ -12,6 +13,10 @@ scanner8(
 
     if (!dst || dst_size <= 1) [[unlikely]] {
         return types::Unexpected{core::JsonErrc::InsufficientBuffer};
+    }
+
+    if (!utils::Utf8Validator(src, src_size)) [[unlikely]] {
+        return types::Unexpected{core::JsonErrc::InvalidUtf8};
     }
 
     auto ptr              = src;
@@ -81,6 +86,10 @@ scanner64(
 
     if (!dst || dst_size <= 1) [[unlikely]] {
         return types::Unexpected{core::JsonErrc::InsufficientBuffer};
+    }
+
+    if (!utils::Utf8Validator(src, src_size)) [[unlikely]] {
+        return types::Unexpected{core::JsonErrc::InvalidUtf8};
     }
 
     auto ptr              = src;
@@ -169,6 +178,10 @@ scanner32(
 
     if (!dst || dst_size <= 1) [[unlikely]] {
         return types::Unexpected{core::JsonErrc::InsufficientBuffer};
+    }
+
+    if (!utils::Utf8Validator(src, src_size)) [[unlikely]] {
+        return types::Unexpected{core::JsonErrc::InvalidUtf8};
     }
 
     auto ptr              = src;

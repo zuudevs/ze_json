@@ -11,8 +11,9 @@ class JsonField {
     JsonValue value_;
 
   public:
-    constexpr JsonField(types::StringView k, JsonValue v) NOEXCEPT
-        : key_(k), value_(v) {}
+    constexpr JsonField(types::StringView k, JsonValue v) NOEXCEPT : key_(k),
+                                                                     value_(v) {
+    }
     constexpr types::StringView
     key() const NOEXCEPT {
         return key_;

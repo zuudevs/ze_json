@@ -4,7 +4,10 @@
 
 namespace zuu::lookups {
 
-struct FloatTable { types::uint64_t high; types::uint64_t low; };
+struct FloatTable {
+    types::uint64_t high;
+    types::uint64_t low;
+};
 
 inline constexpr FloatTable kPowerOfFive128[] = {
     {0x8000000000000000ULL, 0x0000000000000000ULL}, // 5^0
@@ -319,7 +322,7 @@ inline constexpr FloatTable kPowerOfFive128[] = {
 };
 
 inline constexpr FloatTable kPowerOfFive128Inverse[] = {
-    {0x0ULL, 0x0ULL}, // Padding index 0
+    {0x0ULL,                0x0ULL               }, // Padding index 0
     {0xccccccccccccccccULL, 0xcccccccccccccccdULL}, // 5^-1
     {0xa3d70a3d70a3d70aULL, 0x3d70a3d70a3d70a4ULL}, // 5^-2
     {0x83126e978d4fdf3bULL, 0x645a1cac083126eaULL}, // 5^-3

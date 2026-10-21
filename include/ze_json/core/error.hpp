@@ -10,7 +10,8 @@ enum class JsonErrc : types::uint8_t {
     InvalidJson,
     UnexpectedQuote,
     InvalidQuote,
-    InsufficientBuffer
+    InsufficientBuffer,
+    InvalidUtf8,
 };
 
 } // namespace zuu::core

@@ -4,7 +4,7 @@ namespace zuu::ondemand {
 
 JsonValue
 Document::get_root() NOEXCEPT {
-	return JsonValue(iter_);
+    return JsonValue(iter_);
 }
 
 } // namespace zuu::ondemand

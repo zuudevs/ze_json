@@ -19,8 +19,10 @@ class JsonIterator {
   public:
     constexpr JsonIterator(
         const char* src, const types::uint64_t* tape,
-        types::size_t tape_len) NOEXCEPT
-        : src_(src), tape_(tape), tape_len_(tape_len), current_idx_(0) {}
+        types::size_t tape_len) NOEXCEPT : src_(src),
+                                           tape_(tape),
+                                           tape_len_(tape_len),
+                                           current_idx_(0) {}
 
     constexpr char
     peek_char() const NOEXCEPT {
