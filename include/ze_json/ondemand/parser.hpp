@@ -9,13 +9,13 @@
 
 namespace zuu::ondemand {
 
-inline JsonObject
-JsonValue::get_object() noexcept {
+JsonObject
+JsonValue::get_object() NOEXCEPT {
     return JsonObject(iter_);
 }
 
-inline JsonArray
-JsonValue::get_array() noexcept {
+JsonArray
+JsonValue::get_array() NOEXCEPT {
     return JsonArray(iter_);
 }
 

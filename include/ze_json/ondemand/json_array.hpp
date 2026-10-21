@@ -9,7 +9,7 @@ class JsonArray {
     JsonIterator& iter_;
 
   public:
-    constexpr explicit JsonArray(JsonIterator& iter) noexcept : iter_(iter) {
+    constexpr explicit JsonArray(JsonIterator& iter) NOEXCEPT : iter_(iter) {
         iter_.advance(); // Lewati '['
     }
 

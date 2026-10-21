@@ -10,14 +10,14 @@ class Document {
 
   public:
     constexpr Document(
-        const char* src, const types::uint64_t* tape,
-        types::size_t tape_len) noexcept
+        const char* src, 
+		const types::uint64_t* tape,
+        types::size_t tape_len
+	) NOEXCEPT
         : iter_(src, tape, tape_len) {}
 
     JsonValue
-    get_root() noexcept {
-        return JsonValue(iter_);
-    }
+    get_root() NOEXCEPT;
 };
 
 } // namespace zuu::ondemand

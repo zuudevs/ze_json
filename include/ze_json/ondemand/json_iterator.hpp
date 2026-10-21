@@ -19,28 +19,28 @@ class JsonIterator {
   public:
     constexpr JsonIterator(
         const char* src, const types::uint64_t* tape,
-        types::size_t tape_len) noexcept
+        types::size_t tape_len) NOEXCEPT
         : src_(src), tape_(tape), tape_len_(tape_len), current_idx_(0) {}
 
     constexpr char
-    peek_char() const noexcept {
+    peek_char() const NOEXCEPT {
         return current_idx_ >= tape_len_ ? '\0' : src_[tape_[current_idx_]];
     }
 
     constexpr types::uint64_t
-    peek_position() const noexcept {
+    peek_position() const NOEXCEPT {
         return tape_[current_idx_];
     }
 
     constexpr void
-    advance() noexcept {
+    advance() NOEXCEPT {
         if (current_idx_ < tape_len_) {
             current_idx_++;
         }
     }
 
     constexpr void
-    skip_child() noexcept {
+    skip_child() NOEXCEPT {
         char c     = peek_char();
         auto flags = lookups::kStructural[static_cast<types::uint8_t>(c)];
         if ((flags & lookups::PAIR_OPEN) != 0) {
@@ -64,15 +64,15 @@ class JsonIterator {
     }
 
     constexpr const char*
-    src() const noexcept {
+    src() const NOEXCEPT {
         return src_;
     }
     constexpr const types::uint64_t*
-    tape() const noexcept {
+    tape() const NOEXCEPT {
         return tape_;
     }
     constexpr types::size_t
-    index() const noexcept {
+    index() const NOEXCEPT {
         return current_idx_;
     }
 
