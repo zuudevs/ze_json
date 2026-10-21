@@ -13,16 +13,25 @@ if(MSVC)
 		/we4244 
 		/arch:AVX512
 	)
+	if(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "X86" OR ${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "x64")
+		add_compile_options(
+			/arch:AVX512
+		)
+	endif()
 else()
     add_compile_options(
 		-Wall 
 		-Wextra 
 		-Wconversion 
 		-Wsign-conversion 
-		-mavx2
-		-msse2
 		-Wunused-variable
 	)
+	if(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "X86" OR ${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "x64")
+		add_compile_options(
+			-mavx2
+			-msse2
+		)
+	endif()
 endif()
 
 if(ENABLE_AVX512)
