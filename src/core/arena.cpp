@@ -79,9 +79,10 @@ create_arena(void* memory_ptr, zuu::types::size_t total_capacity) NOEXCEPT {
         return nullptr;
     }
 
-    void* buffer_start =
-        static_cast<zuu::types::uint8_t*>(memory_ptr) + sizeof(zuu::core::Arena);
-    zuu::types::size_t buffer_capacity = total_capacity - sizeof(zuu::core::Arena);
+    void* buffer_start = static_cast<zuu::types::uint8_t*>(memory_ptr) +
+                         sizeof(zuu::core::Arena);
+    zuu::types::size_t buffer_capacity =
+        total_capacity - sizeof(zuu::core::Arena);
     return new (memory_ptr) zuu::core::Arena(buffer_start, buffer_capacity);
 }
 
@@ -101,6 +102,6 @@ destroy_arena(zuu::core::Arena* arena) NOEXCEPT {
 
 zuu::types::size_t
 get_arena_used_space(zuu::core::Arena* arena) NOEXCEPT {
-	return arena->get_used_space();
+    return arena->get_used_space();
 }
 EXTERN_C_END
