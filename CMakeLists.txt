@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.40)
 project(
-	zuu_json
+	ze_json
 	VERSION 0.1.0
 	LANGUAGES CXX C
 )
 
-set(LIBRARY_OUTPUT_NAME "zejson_core")
+set(LIBRARY_OUTPUT_NAME "ze_json_core")
 
 if(MSVC)
     add_compile_options(

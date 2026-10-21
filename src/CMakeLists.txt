@@ -1,7 +1,6 @@
 if(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "wasm32" OR ${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "wasm64")
     add_executable(${LIBRARY_OUTPUT_NAME}
-        ${CMAKE_CURRENT_SOURCE_DIR}/core.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/scanner.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/scanner/scanner.cpp
     )
 
 	target_include_directories(${LIBRARY_OUTPUT_NAME}
@@ -21,7 +20,7 @@ if(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "wasm32" OR ${CMAKE_C_COMPILER_A
     )
 elseif(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "X86" OR ${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "x64")
 	add_library(${LIBRARY_OUTPUT_NAME}
-        ${CMAKE_CURRENT_SOURCE_DIR}/scanner.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/scanner/scanner.cpp
 	)
 
 	target_include_directories(${LIBRARY_OUTPUT_NAME}

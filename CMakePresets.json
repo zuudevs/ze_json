@@ -17,12 +17,14 @@
 			}
 		}, {
 			"name": "native",
+			"inherits": "base",
 			"hidden": true,
 			"cacheVariables": {
 				"CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
 			}
 		}, {
 			"name": "wasm",
+			"inherits": "base",
 			"hidden": true,
 			"cacheVariables": {
 				"CMAKE_SYSTEM_NAME": "Generic",
@@ -48,14 +50,14 @@
 			}
 		}, {
 			"name": "native-debug",
-			"inherits": "base",
+			"inherits": "native",
 			"displayName": "Native Debug",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Debug"
 			}
 		}, {
 			"name": "native-release",
-			"inherits": "base",
+			"inherits": "native",
 			"displayName": "Native Release",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Release"
