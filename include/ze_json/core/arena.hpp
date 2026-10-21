@@ -66,15 +66,24 @@ class Arena {
     get_used_space() const NOEXCEPT;
 };
 
+} // namespace zuu::core
+
 EXTERN_C_BEGIN
 
+EXPORT_NAME(create_arena)
 [[nodiscard]] zuu::core::Arena*
-create_arena(void* memory_ptr, types::size_t total_capacity) NOEXCEPT;
+create_arena(void* memory_ptr, zuu::types::size_t total_capacity) NOEXCEPT;
+
+EXPORT_NAME(reset_arena)
 void
 reset_arena(zuu::core::Arena* arena) NOEXCEPT;
+
+EXPORT_NAME(destroy_arena)
 void
 destroy_arena(zuu::core::Arena* arena) NOEXCEPT;
 
-EXTERN_C_END
+EXPORT_NAME(get_arena_used_space)
+[[nodiscard]] zuu::types::size_t
+get_arena_used_space(zuu::core::Arena* arena) NOEXCEPT;
 
-} // namespace zuu::core
+EXTERN_C_END
