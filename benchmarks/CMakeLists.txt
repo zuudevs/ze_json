@@ -19,7 +19,7 @@ if(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "X86" OR ${CMAKE_C_COMPILER_ARCH
 	include("${CMAKE_SOURCE_DIR}/cmake/modules/optimizations.cmake")
 	include("${CMAKE_SOURCE_DIR}/cmake/packages/google-benchmark.cmake")
 
-	# add_release_optimizations_target(${LIBRARY_OUTPUT_NAME})
+	add_release_optimizations_target(${LIBRARY_OUTPUT_NAME})
 
 	function(add_comprehensive_benchmark_target name)
 		add_executable(${name}
@@ -36,18 +36,14 @@ if(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "X86" OR ${CMAKE_C_COMPILER_ARCH
 			${name}
 				PRIVATE
 					benchmark::benchmark_main
-					# ${LIBRARY_OUTPUT_NAME}
+					${LIBRARY_OUTPUT_NAME}
 		)
 
 		add_release_optimizations_target(${name})
 		RunAndExportBenchmarkReport(${name} ${name})
 	endfunction()
 
-	add_comprehensive_benchmark_target(char_utils_benchmark
-		"${CMAKE_CURRENT_SOURCE_DIR}/char_utils_benchmark.cpp"
-	)
-
 	add_comprehensive_benchmark_target(scanner_benchmark
-		"${CMAKE_CURRENT_SOURCE_DIR}/scanner_benchmark.cpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/scanner_benchmark/main.cpp"
 	)
 endif()
