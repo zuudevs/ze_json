@@ -34,19 +34,19 @@ if(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "X86" OR ${CMAKE_C_COMPILER_ARCH
 			${name}
 				PRIVATE	
 					GTest::gtest_main
-					# ${LIBRARY_OUTPUT_NAME}
+					${LIBRARY_OUTPUT_NAME}
 		)
 
 		gtest_discover_tests(${name})
 		RunAndExportTestReport(${name} ${name})
 	endfunction()
 
-	add_comprehensive_test_target(char_utils_test
-		"${CMAKE_CURRENT_SOURCE_DIR}/char_utils_test.cpp"
+	add_test_target(scanner_test
+		"${CMAKE_CURRENT_SOURCE_DIR}/scanner_test/main.cpp"
 	)
 
-	add_comprehensive_test_target(scanner_test
-		"${CMAKE_CURRENT_SOURCE_DIR}/scanner_test.cpp"
+	add_test_target(document_test
+		"${CMAKE_CURRENT_SOURCE_DIR}/document_test/main.cpp"
 	)
 
 endif()

@@ -32,7 +32,7 @@ scanner8(
         const auto flags =
             lookups::kStructural[static_cast<types::uint8_t>(*ptr)];
 
-		if (flags & lookups::SCAN_NORMAL) {
+        if (flags & lookups::SCAN_NORMAL) {
             *cursor++ = static_cast<types::size_t>(ptr - src);
             ptr++;
         } else if (flags & lookups::SCAN_QUOTE) {
@@ -100,7 +100,7 @@ scanner64(
 
         const auto flags =
             lookups::kStructural[static_cast<types::uint8_t>(*ptr)];
-		if (flags & lookups::SCAN_NORMAL) {
+        if (flags & lookups::SCAN_NORMAL) {
             *cursor++ = static_cast<types::uint64_t>(ptr - src);
             ptr++;
         } else if (flags & lookups::SCAN_QUOTE) {

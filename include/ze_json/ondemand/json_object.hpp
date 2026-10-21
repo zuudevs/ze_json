@@ -6,15 +6,16 @@
 namespace zuu::ondemand {
 
 class JsonObject {
-private:
+  private:
     JsonIterator& iter_;
 
-public:
+  public:
     constexpr explicit JsonObject(JsonIterator& iter) noexcept : iter_(iter) {
-        iter_.advance(); 
+        iter_.advance();
     }
 
-    JsonValue find_field(const types::StringView& target_key) noexcept {
+    JsonValue
+    find_field(const types::StringView& target_key) noexcept {
         while (iter_.peek_char() != '}' && iter_.peek_char() != '\0') {
             if (iter_.peek_char() == ',') {
                 iter_.advance();
@@ -24,8 +25,8 @@ public:
             types::StringView current_key = key_val.get_string();
 
             if (iter_.peek_char() == ':') {
-				iter_.advance();
-			}
+                iter_.advance();
+            }
 
             JsonValue val(iter_);
             if (current_key == target_key) {
@@ -34,7 +35,7 @@ public:
                 iter_.skip_child();
             }
         }
-        return JsonValue(iter_); 
+        return JsonValue(iter_);
     }
 };
 

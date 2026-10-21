@@ -23,16 +23,16 @@ namespace __impl {
 [[nodiscard]] static consteval types::Array<types::uint8_t, 256>
 build_structural_map() NOEXCEPT {
     types::Array<types::uint8_t, 256> map{};
-	auto cast = [](zuu::ondemand::JsonType t) { 
-        return static_cast<types::uint8_t>(t); 
+    auto cast = [](zuu::ondemand::JsonType t) {
+        return static_cast<types::uint8_t>(t);
     };
-	map['['] = cast(zuu::ondemand::JsonType::Array)  | SCAN_NORMAL | PAIR_OPEN;
-	map[']'] = cast(zuu::ondemand::JsonType::Array)  | SCAN_NORMAL | PAIR_CLOSE;
-	map['{'] = cast(zuu::ondemand::JsonType::Object) | SCAN_NORMAL | PAIR_OPEN;
+    map['['] = cast(zuu::ondemand::JsonType::Array) | SCAN_NORMAL | PAIR_OPEN;
+    map[']'] = cast(zuu::ondemand::JsonType::Array) | SCAN_NORMAL | PAIR_CLOSE;
+    map['{'] = cast(zuu::ondemand::JsonType::Object) | SCAN_NORMAL | PAIR_OPEN;
     map['}'] = cast(zuu::ondemand::JsonType::Object) | SCAN_NORMAL | PAIR_CLOSE;
     map['\"'] = cast(zuu::ondemand::JsonType::String) | SCAN_QUOTE;
     map['t'] = map['f'] = cast(zuu::ondemand::JsonType::Boolean) | SCAN_NORMAL;
-    map['n'] = cast(zuu::ondemand::JsonType::Null) | SCAN_NORMAL;
+    map['n']            = cast(zuu::ondemand::JsonType::Null) | SCAN_NORMAL;
     map[','] = map[':'] = cast(zuu::ondemand::JsonType::Other) | SCAN_NORMAL;
 
     return map;
