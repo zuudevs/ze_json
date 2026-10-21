@@ -15,14 +15,25 @@ class JsonIterator {
     const types::uint64_t* tape_;
     types::size_t tape_len_;
     types::size_t current_idx_;
+    void* arena_;
 
   public:
     constexpr JsonIterator(
-        const char* src, const types::uint64_t* tape,
-        types::size_t tape_len) NOEXCEPT : src_(src),
-                                           tape_(tape),
-                                           tape_len_(tape_len),
-                                           current_idx_(0) {}
+        const char* src, const types::uint64_t* tape, types::size_t tape_len,
+        void* arena = nullptr) NOEXCEPT : src_(src),
+                                          tape_(tape),
+                                          tape_len_(tape_len),
+                                          current_idx_(0),
+                                          arena_(arena) {}
+
+    constexpr void*
+    arena() const noexcept {
+        return arena_;
+    }
+    constexpr void
+    set_arena(void* arena) noexcept {
+        arena_ = arena;
+    }
 
     constexpr char
     peek_char() const NOEXCEPT {

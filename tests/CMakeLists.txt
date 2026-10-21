@@ -45,6 +45,10 @@ if(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "X86" OR ${CMAKE_C_COMPILER_ARCH
 		"${CMAKE_CURRENT_SOURCE_DIR}/scanner_test/main.cpp"
 	)
 
+	add_test_target(parser_test
+		"${CMAKE_CURRENT_SOURCE_DIR}/parser_test/main.cpp"
+	)
+
 	add_test_target(document_test
 		"${CMAKE_CURRENT_SOURCE_DIR}/document_test/main.cpp"
 	)

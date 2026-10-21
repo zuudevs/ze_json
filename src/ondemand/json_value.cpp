@@ -1,4 +1,5 @@
 #include <ze_json/ondemand/json_value.hpp>
+#include <ze_json/utils/utf8_encoder.hpp>
 
 namespace zuu::ondemand {
 
@@ -12,10 +13,7 @@ JsonValue::get_string() NOEXCEPT {
     const char* str_start = iter_.src() + start_quote_pos + 1;
     types::size_t len     = end_quote_pos - start_quote_pos - 1;
 
-    // TODO: Jika string mengandung escape character (\n, \t, dsb),
-    // di sinilah kita memanggil Arena Allocator untuk menyimpan teks
-    // unescaped!
-    return types::StringView(str_start, len);
+    return utils::unescape(str_start, len, iter_.arena());
 }
 
 bool

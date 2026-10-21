@@ -1,71 +1,104 @@
-#ifndef __wasm__
-#include <cstdio>
-#include <iostream>
+#include <gtest/gtest.h>
+#include <string>
+#include <string_view>
+#include <vector>
+
 #include <ze_json/scanner/scanner.hpp>
+#include <ze_json/utils/utf8_validator.hpp>
 
-constexpr const char PAYLOAD[] =
-    "{\"name\":\"zuu\",\"array{},[]\":[1, 2, 3, 4, 5, 6, 7, 8, 9]}";
+namespace zuu::testing {
 
-void
-print_structural_layout() {
-    for (int i = 0; i < 256; ++i) {
-        if (i == 0) {
-            std::cout << "{\n  ";
-        } else if (i % 16 == 0) {
-            std::cout << "\n  ";
+class ScannerTest : public ::testing::Test {
+  protected:
+    // Helper function untuk menjalankan scanner8 dan mengembalikan tape result
+    std::pair<bool, std::vector<types::size_t>>
+    run_scanner(std::string_view json) {
+        std::vector<types::size_t> tape(json.size() + 1);
+        auto res = scanner::scanner8(
+            json.data(), json.size(), tape.data(), tape.size());
+
+        if (!res.has_value()) {
+            return {false, {}};
         }
 
-        switch ((char)i) {
-        case ',':
-        case ':':
-        case '[':
-        case ']':
-        case '{':
-        case '}':
-        case '"':
-        case 't':
-        case 'f':
-        case 'n':
-            std::cout << "1, ";
-            continue;
-        }
-
-        std::cout << "0, ";
+        types::size_t count = res.getValue();
+        tape.resize(count);
+        return {true, tape};
     }
+};
 
-    std::cout << "\n}";
+TEST_F(ScannerTest, StandardJsonPayload) {
+    std::string json     = R"({"name":"zuu","age":21,"active":true})";
+    auto [success, tape] = run_scanner(json);
+
+    ASSERT_TRUE(success);
+    // Karakter struktural: {, ", ", :, ", ", ,, ", ", :, 21, ,, ", ", :, true,
+    // }
+    EXPECT_GT(tape.size(), 0u);
+
+    // Verifikasi titik awal dan akhir
+    EXPECT_EQ(json[tape.front()], '{');
+    EXPECT_EQ(json[tape.back()], '}');
 }
 
-int
-main() {
-    std::cout << "== Payload ==\n";
-    std::cout << PAYLOAD << '\n';
+TEST_F(ScannerTest, EmptyContainers) {
+    auto [obj_ok, obj_tape] = run_scanner("{}");
+    ASSERT_TRUE(obj_ok);
+    EXPECT_EQ(obj_tape.size(), 2u);
+    EXPECT_EQ(obj_tape[0], 0u);
+    EXPECT_EQ(obj_tape[1], 1u);
 
-    uint32_t scanner_result[sizeof(PAYLOAD)]{};
-    int len = scanner8(
-        PAYLOAD, sizeof(PAYLOAD), scanner_result, sizeof(scanner_result));
-
-    std::cout << "== Unvalidated Tape ==\n";
-    for (int i = 0; i < len; ++i) {
-        printf(
-            "%03d -> %c = %d\n", i, PAYLOAD[scanner_result[i]],
-            scanner_result[i]);
-    }
-
-    uint32_t validated_tape[sizeof(PAYLOAD)]{};
-    len = tape_validator8(
-        PAYLOAD, scanner_result, len, validated_tape, sizeof(validated_tape));
-
-    std::cout << "== Validated Tape ==\n";
-    for (int i = 0; i < len; ++i) {
-        printf(
-            "%03d -> %c = %d\n", i, PAYLOAD[validated_tape[i]],
-            validated_tape[i]);
-    }
-
-    // print_structural_layout();
-
-    return 0;
+    auto [arr_ok, arr_tape] = run_scanner("[]");
+    ASSERT_TRUE(arr_ok);
+    EXPECT_EQ(arr_tape.size(), 2u);
 }
 
-#endif // __wasm__
+TEST_F(ScannerTest, ValidUtf8Multibyte) {
+    // String dengan karakter UTF-8 valid: 2-byte (Cina/Jepang), 4-byte (Emoji)
+    std::string json = R"({"message":"Hello 世界 🌍","status":"ok"})";
+
+    // Pastikan UTF-8 Validator meloloskannya
+    bool utf8_valid = utils::Utf8Validator(json.data(), json.size());
+    EXPECT_TRUE(utf8_valid);
+
+    auto [ok, tape] = run_scanner(json);
+    ASSERT_TRUE(ok);
+}
+
+TEST_F(ScannerTest, RejectsInvalidUtf8) {
+    // 1. Invalid continuation byte (0xFF)
+    std::string invalid_byte = "{\"key\":\"\xFF\xFF\"}";
+    EXPECT_FALSE(
+        utils::Utf8Validator(invalid_byte.data(), invalid_byte.size()));
+    auto [ok1, tape1] = run_scanner(invalid_byte);
+    EXPECT_FALSE(ok1);
+
+    // 2. Overlong Encoding karakter ASCII '/' (0xC0 0xAF)
+    std::string overlong = "{\"path\":\"\xC0\xAF\"}";
+    EXPECT_FALSE(utils::Utf8Validator(overlong.data(), overlong.size()));
+    auto [ok2, tape2] = run_scanner(overlong);
+    EXPECT_FALSE(ok2);
+
+    // 3. Unmatched surrogate pair byte
+    std::string surrogate = "{\"code\":\"\xED\xA0\x80\"}";
+    EXPECT_FALSE(utils::Utf8Validator(surrogate.data(), surrogate.size()));
+    auto [ok3, tape3] = run_scanner(surrogate);
+    EXPECT_FALSE(ok3);
+}
+
+TEST_F(ScannerTest, EdgeCasesAndBuffers) {
+    // Null ptr / empty size handling
+    std::vector<types::size_t> tape(10);
+    auto null_res = scanner::scanner8(nullptr, 0, tape.data(), tape.size());
+    EXPECT_FALSE(null_res.has_value());
+
+    // Buffer destination terlalu kecil
+    std::string json = R"({"a": 1, "b": 2, "c": 3})";
+    std::vector<types::size_t> tiny_tape(
+        2); // Terlalu kecil untuk menampung tape
+    auto overflow_res = scanner::scanner8(
+        json.data(), json.size(), tiny_tape.data(), tiny_tape.size());
+    EXPECT_FALSE(overflow_res.has_value());
+}
+
+} // namespace zuu::testing

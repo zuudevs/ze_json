@@ -3,9 +3,9 @@
 #include <filesystem>
 #include <fstream>
 #include <print>
-#include <ze_json/scanner/scanner.hpp>
 #include <string>
 #include <unordered_map>
+#include <ze_json/scanner/scanner.hpp>
 
 namespace fs = std::filesystem;
 using namespace zuu;
@@ -94,18 +94,23 @@ get_dataset(const std::string& target_name) {
         ->MinWarmUpTime(5);
 
 MAKE_SCANNER_BENCHMARK(Scanner8, Tiny, "tiny.json", scanner::scanner8, 128)
-MAKE_SCANNER_BENCHMARK(Scanner8, Literal, "literal.json", scanner::scanner8, 512)
+MAKE_SCANNER_BENCHMARK(
+    Scanner8, Literal, "literal.json", scanner::scanner8, 512)
 MAKE_SCANNER_BENCHMARK(
     Scanner8, GithubEvents, "github_events.json", scanner::scanner8, 316 * 1024)
 MAKE_SCANNER_BENCHMARK(
-    Scanner8, UpdateCenter, "update-center.json", scanner::scanner8, 3214 * 1024)
+    Scanner8, UpdateCenter, "update-center.json", scanner::scanner8,
+    3214 * 1024)
 MAKE_SCANNER_BENCHMARK(
     Scanner8, Jeopardy, "jeopardy.json", scanner::scanner8, 53 * 1024 * 1024)
 MAKE_SCANNER_BENCHMARK(Scanner64, Tiny, "tiny.json", scanner::scanner64, 128)
-MAKE_SCANNER_BENCHMARK(Scanner64, Literal, "literal.json", scanner::scanner64, 512)
 MAKE_SCANNER_BENCHMARK(
-    Scanner64, GithubEvents, "github_events.json", scanner::scanner64, 316 * 1024)
+    Scanner64, Literal, "literal.json", scanner::scanner64, 512)
 MAKE_SCANNER_BENCHMARK(
-    Scanner64, UpdateCenter, "update-center.json", scanner::scanner64, 3214 * 1024)
+    Scanner64, GithubEvents, "github_events.json", scanner::scanner64,
+    316 * 1024)
+MAKE_SCANNER_BENCHMARK(
+    Scanner64, UpdateCenter, "update-center.json", scanner::scanner64,
+    3214 * 1024)
 MAKE_SCANNER_BENCHMARK(
     Scanner64, Jeopardy, "jeopardy.json", scanner::scanner64, 53 * 1024 * 1024)

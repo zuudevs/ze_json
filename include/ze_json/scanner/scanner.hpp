@@ -14,11 +14,6 @@ scanner8(
     types::size_t* RESTRICT dst, types::size_t dst_size) NOEXCEPT;
 
 #if __LITTLE_ENDIAN__ == 1
-[[nodiscard]] constexpr types::uint64_t
-swar_has_zero_byte(types::uint64_t v) NOEXCEPT {
-    return (v - utils::repeat_byte_v<types::uint64_t, 0x01_u8>)&~v &
-           utils::repeat_byte_v<types::uint64_t, 0x80_u8>;
-}
 #if __IS_64_BIT__ == 1
 [[nodiscard]] types::Result<types::size_t, core::JsonErrc>
 scanner64(

@@ -1,4 +1,5 @@
 #include <ze_json/scanner/scanner.hpp>
+#include <ze_json/utils/swar.hpp>
 #include <ze_json/utils/utf8_validator.hpp>
 
 namespace zuu::scanner {
@@ -122,10 +123,10 @@ scanner64(
                     __builtin_memcpy(&block, ptr, sizeof(types::uint64_t));
 
                     types::uint64_t mask =
-                        swar_has_zero_byte(
+                        utils::swar_has_zero_byte(
                             block ^
                             utils::repeat_byte_v<types::uint64_t, 0x22_u8>) |
-                        swar_has_zero_byte(
+                        utils::swar_has_zero_byte(
                             block ^
                             utils::repeat_byte_v<types::uint64_t, 0x5C_u8>);
 
@@ -214,10 +215,10 @@ scanner32(
                     __builtin_memcpy(&block, ptr, sizeof(types::uint64_t));
 
                     types::uint64_t mask =
-                        swar_has_zero_byte(
+                        utils::swar_has_zero_byte(
                             block ^
                             utils::repeat_byte_v<types::uint64_t, 0x22_u8>) |
-                        swar_has_zero_byte(
+                        utils::swar_has_zero_byte(
                             block ^
                             utils::repeat_byte_v<types::uint64_t, 0x5C_u8>);
 
