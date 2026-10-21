@@ -84,7 +84,6 @@ unescape(const char* src, types::size_t len, ArenaPtr arena) noexcept {
         return types::StringView(src, len);
     }
 
-    // Alokasikan memori di Arena (maksimal ukuran sama dengan len)
     char* dst = static_cast<char*>(arena->allocate(len));
     if (!dst) [[unlikely]]
         return types::StringView(src, len);

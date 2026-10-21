@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ze_json/ondemand/parser.hpp>
+#include <ze_json/ondemand/json_array.hpp>
 
 namespace zuu::ondemand {
 

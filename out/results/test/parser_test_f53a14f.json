@@ -1,0 +1,100 @@
+{
+  "tests": 4,
+  "failures": 3,
+  "disabled": 0,
+  "errors": 0,
+  "timestamp": "2026-10-21T23:46:21Z",
+  "time": "0.001s",
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "ParserTest",
+      "tests": 4,
+      "failures": 3,
+      "disabled": 0,
+      "errors": 0,
+      "timestamp": "2026-10-21T23:46:21Z",
+      "time": "0s",
+      "testsuite": [
+        {
+          "name": "DocumentTypes",
+          "file": "D:\/kuliah_\/7_semester\/skripsi\/v3\/src\/ze_json\/tests\/parser_test\/main.cpp",
+          "line": 21,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-21T23:46:21Z",
+          "time": "0s",
+          "classname": "ParserTest"
+        },
+        {
+          "name": "ObjectFieldLookup",
+          "file": "D:\/kuliah_\/7_semester\/skripsi\/v3\/src\/ze_json\/tests\/parser_test\/main.cpp",
+          "line": 36,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-21T23:46:21Z",
+          "time": "0s",
+          "classname": "ParserTest",
+          "failures": [
+            {
+              "failure": "D:\/kuliah_\/7_semester\/skripsi\/v3\/src\/ze_json\/tests\/parser_test\/main.cpp:55\nExpected equality of these values:\n  active_val.type()\n    Which is: 1-byte object <02>\n  ondemand::JsonType::Boolean\n    Which is: 1-byte object <04>\n",
+              "type": ""
+            },
+            {
+              "failure": "D:\/kuliah_\/7_semester\/skripsi\/v3\/src\/ze_json\/tests\/parser_test\/main.cpp:56\nValue of: active_val.get_bool()\n  Actual: false\nExpected: true\n",
+              "type": ""
+            }
+          ]
+        },
+        {
+          "name": "LemireNumberParsing",
+          "file": "D:\/kuliah_\/7_semester\/skripsi\/v3\/src\/ze_json\/tests\/parser_test\/main.cpp",
+          "line": 59,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-21T23:46:21Z",
+          "time": "0s",
+          "classname": "ParserTest",
+          "failures": [
+            {
+              "failure": "D:\/kuliah_\/7_semester\/skripsi\/v3\/src\/ze_json\/tests\/parser_test\/main.cpp:75\nExpected equality of these values:\n  int_node.get_int()\n    Which is: 0\n  42\n",
+              "type": ""
+            },
+            {
+              "failure": "D:\/kuliah_\/7_semester\/skripsi\/v3\/src\/ze_json\/tests\/parser_test\/main.cpp:79\nExpected equality of these values:\n  neg_node.get_int()\n    Which is: 0\n  -2024\n",
+              "type": ""
+            },
+            {
+              "failure": "D:\/kuliah_\/7_semester\/skripsi\/v3\/src\/ze_json\/tests\/parser_test\/main.cpp:84\nThe difference between double_node.get_double() and 3.1415926535 is 3.1415926535000001, which exceeds 1e-9, where\ndouble_node.get_double() evaluates to 0,\n3.1415926535 evaluates to 3.1415926535000001, and\n1e-9 evaluates to 1.0000000000000001e-09.\n",
+              "type": ""
+            },
+            {
+              "failure": "D:\/kuliah_\/7_semester\/skripsi\/v3\/src\/ze_json\/tests\/parser_test\/main.cpp:88\nThe difference between exp_node.get_double() and 12300.0 is 12300, which exceeds 1e-5, where\nexp_node.get_double() evaluates to 0,\n12300.0 evaluates to 12300, and\n1e-5 evaluates to 1.0000000000000001e-05.\n",
+              "type": ""
+            }
+          ]
+        },
+        {
+          "name": "SkipNestedStructures",
+          "file": "D:\/kuliah_\/7_semester\/skripsi\/v3\/src\/ze_json\/tests\/parser_test\/main.cpp",
+          "line": 91,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-21T23:46:21Z",
+          "time": "0s",
+          "classname": "ParserTest",
+          "failures": [
+            {
+              "failure": "D:\/kuliah_\/7_semester\/skripsi\/v3\/src\/ze_json\/tests\/parser_test\/main.cpp:108\nExpected equality of these values:\n  target_val.type()\n    Which is: 1-byte object <02>\n  ondemand::JsonType::String\n    Which is: 1-byte object <03>\n",
+              "type": ""
+            },
+            {
+              "failure": "D:\/kuliah_\/7_semester\/skripsi\/v3\/src\/ze_json\/tests\/parser_test\/main.cpp:109\nExpected equality of these values:\n  to_sv(target_val.get_string())\n    Which is: \"\"\n  \"found\"\n    Which is: 00007FF65677CC40\n",
+              "type": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
