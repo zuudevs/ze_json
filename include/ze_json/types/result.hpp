@@ -98,20 +98,20 @@ template <typename R, typename E> class [[nodiscard]] Result {
     }
 
     [[nodiscard]] constexpr R&
-    getValue() & noexcept {
+    value() & noexcept {
         return m_result;
     }
     [[nodiscard]] constexpr const R&
-    getValue() const& noexcept {
+    value() const& noexcept {
         return m_result;
     }
 
     [[nodiscard]] constexpr E&
-    getError() & noexcept {
+    error() & noexcept {
         return m_error;
     }
     [[nodiscard]] constexpr const E&
-    getError() const& noexcept {
+    error() const& noexcept {
         return m_error;
     }
 };
@@ -121,9 +121,9 @@ template <size_t I, typename R, typename E>
 get(Result<R, E>& res) noexcept {
     static_assert(I < 2, "Result only has 2 elements for structured binding");
     if constexpr (I == 0) {
-        return res.has_value() ? &res.getValue() : nullptr;
+        return res.has_value() ? &res.value() : nullptr;
     } else if constexpr (I == 1) {
-        return res.has_error() ? &res.getError() : nullptr;
+        return res.has_error() ? &res.error() : nullptr;
     }
 }
 
@@ -132,9 +132,9 @@ template <size_t I, typename R, typename E>
 get(const Result<R, E>& res) noexcept {
     static_assert(I < 2, "Result only has 2 elements for structured binding");
     if constexpr (I == 0) {
-        return res.has_value() ? &res.getValue() : nullptr;
+        return res.has_value() ? &res.value() : nullptr;
     } else if constexpr (I == 1) {
-        return res.has_error() ? &res.getError() : nullptr;
+        return res.has_error() ? &res.error() : nullptr;
     }
 }
 
@@ -143,9 +143,9 @@ template <size_t I, typename R, typename E>
 get(Result<R, E>&& res) noexcept {
     static_assert(I < 2, "Result only has 2 elements for structured binding");
     if constexpr (I == 0) {
-        return res.has_value() ? &res.getValue() : nullptr;
+        return res.has_value() ? &res.value() : nullptr;
     } else if constexpr (I == 1) {
-        return res.has_error() ? &res.getError() : nullptr;
+        return res.has_error() ? &res.error() : nullptr;
     }
 }
 
@@ -154,9 +154,9 @@ template <size_t I, typename R, typename E>
 get(const Result<R, E>&& res) noexcept {
     static_assert(I < 2, "Result only has 2 elements for structured binding");
     if constexpr (I == 0) {
-        return res.has_value() ? &res.getValue() : nullptr;
+        return res.has_value() ? &res.value() : nullptr;
     } else if constexpr (I == 1) {
-        return res.has_error() ? &res.getError() : nullptr;
+        return res.has_error() ? &res.error() : nullptr;
     }
 }
 
