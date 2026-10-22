@@ -8,7 +8,9 @@
 
 #if defined(__wasm__)
 #define EXPORT_NAME(name) __attribute__((export_name(#name)))
-#elif defined(_WIN32) || defined(_WIN64)
+#else
+// Platform lain (Windows/Linux/macOS native): tidak butuh anotasi export;
+// makro tetap ADA agar deklarasi terkompilasi di mana pun.
 #define EXPORT_NAME(name)
 #endif
 
