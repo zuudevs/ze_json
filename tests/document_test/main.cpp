@@ -1,79 +1,79 @@
 #include <gtest/gtest.h>
-#include <iostream>
-#include <string>
 #include <string_view>
-#include <vector>
 
-// Include library ze_json Anda (Sesuaikan path jika diperlukan)
 #include <ze_json/ondemand/document.hpp>
 #include <ze_json/scanner/scanner.hpp>
+#include <ze_json/ze_json.hpp>
 
 using namespace zuu;
 
-// Helper function untuk GTest: Konversi zuu::ondemand::StringView
-// ke std::string_view agar mudah dibandingkan menggunakan EXPECT_EQ
-inline std::string_view
-to_std_view(const types::StringView& sv) {
+// Helper: mengonversi types::StringView ke std::string_view untuk asersi
+// GTest. StringView zero-copy TIDAK null-terminated (berujung langsung di
+// payload mentah), sehingga EXPECT_STREQ tidak bisa dipakai.
+static std::string_view
+to_sv(const types::StringView& sv) {
     return std::string_view(sv.data, sv.length);
 }
 
-// =========================================================================
-// TEST SUITE 1: Menguji Scanner (Pembuat Tape Index)
-// =========================================================================
-TEST(ZeJsonScannerTest, ScanValidPayload) {
-    std::string payload =
-        R"({"name":"zuu","age":21,"active":true,"status":null,"colors":["white","black"],"pos":{"x":24,"y":-24}})";
+class Memory : public ::testing::Test {
+  protected:
+    types::uint8_t buffer[1024 * 1024]{}; // allocate 1 MB
+    memory::Arena* arena_handle{nullptr};
 
-    // Alokasi memori dinamis di Heap menggunakan std::vector (Hanya untuk
-    // pengujian) Kapasitas buffer dst kita buat sama dengan ukuran payload
-    // untuk berjaga-jaga
-    std::vector<types::size_t> tape(payload.size());
+    Memory() noexcept : arena_handle(create_arena(buffer, sizeof(buffer))) {}
+};
+
+TEST_F(Memory, ScanValidPayload) {
+    alignas(8) constexpr const char payload[] =
+        R"({"name":"zuu","age":21,"active":true,"status":null,"colors":["white","black"],"pos":{"x":24,"y":-24}})";
+    constexpr auto payload_size = sizeof(payload) - 1;
+
+    auto tape_handle = arena_handle->allocate(
+        payload_size * sizeof(types::size_t), sizeof(types::size_t));
+    auto tape_size  = payload_size; // satuan entry, bukan byte
+    auto tape       = reinterpret_cast<types::size_t*>(tape_handle);
+    auto const_tape = reinterpret_cast<const types::size_t*>(tape_handle);
 
     // 1. Eksekusi Scanner
-    auto result = scanner::scanner8(
-        payload.data(), payload.size(), tape.data(), tape.size());
+    auto result = scanner::scanner8(payload, payload_size, tape, tape_size);
 
-    // 2. Asersi Keberhasilan Scanner
-    // Asumsi Result memiliki method .has_value() atau serupa ala std::expected
     ASSERT_TRUE(result.has_value()) << "Scanner gagal, error code didapatkan.";
 
-    types::size_t tape_length = result.getValue();
+    types::size_t tape_length = result.value();
 
-    // Berdasarkan hasil JS Anda sebelumnya, panjang tape struktural harus 45
     EXPECT_EQ(tape_length, 45);
-
-    // 3. Asersi Nilai Tape (Mengecek posisi karakter tertentu)
-    // Index 0 haruslah karakter '{' di offset 0
-    EXPECT_EQ(payload[tape[0]], '{');
-    EXPECT_EQ(tape[0], 0);
+    EXPECT_EQ(payload[const_tape[0]], '{');
+    EXPECT_EQ(const_tape[0], 0);
 
     // Index 1 haruslah karakter '"' di offset 1 (awal dari "name")
-    EXPECT_EQ(payload[tape[1]], '"');
-    EXPECT_EQ(tape[1], 1);
+    EXPECT_EQ(payload[const_tape[1]], '"');
+    EXPECT_EQ(const_tape[1], 1);
 
     // Index 3 haruslah karakter ':' di offset 7
-    EXPECT_EQ(payload[tape[3]], ':');
-    EXPECT_EQ(tape[3], 7);
+    EXPECT_EQ(payload[const_tape[3]], ':');
+    EXPECT_EQ(const_tape[3], 7);
+
+    arena_handle->reset();
 }
 
-// =========================================================================
-// TEST SUITE 2: Menguji On-Demand Parser (Navigasi JSON)
-// =========================================================================
-TEST(ZeJsonOnDemandTest, ParseAndFindFields) {
-    std::string payload =
+TEST_F(Memory, ParseAndFindFields) {
+    alignas(8) constexpr const char payload[] =
         R"({"name":"zuu","age":21,"active":true,"status":null})";
+    constexpr auto payload_size = sizeof(payload) - 1;
 
-    // Persiapan Scanner Tape
-    std::vector<types::size_t> tape(payload.size());
-    auto scan_res = scanner::scanner8(
-        payload.data(), payload.size(), tape.data(), tape.size());
-    ASSERT_TRUE(scan_res.has_value());
-    types::size_t tape_length = scan_res.getValue();
+    auto tape_handle = arena_handle->allocate(
+        payload_size * sizeof(types::size_t), sizeof(types::size_t));
+    auto tape_size  = payload_size; // satuan entry, bukan byte
+    auto tape       = reinterpret_cast<types::size_t*>(tape_handle);
+    auto const_tape = reinterpret_cast<const types::size_t*>(tape_handle);
+
+    auto result = scanner::scanner8(payload, payload_size, tape, tape_size);
+    ASSERT_TRUE(result.has_value());
+    types::size_t tape_length = result.value();
 
     // 1. Inisialisasi Document
-    // GTest meniru perilaku Node.js: Memberikan source teks dan tape index ke
-    // Document
-    ondemand::Document doc(payload.data(), tape.data(), tape_length);
+    ondemand::Document doc(
+        payload, const_tape, result.value(), tape + result.value());
 
     // 2. Ambil Root Node (Harus Object)
     ondemand::JsonValue root = doc.get_root();
@@ -88,7 +88,7 @@ TEST(ZeJsonOnDemandTest, ParseAndFindFields) {
 
     // Pastikan ketemu dan tipenya String
     ASSERT_EQ(name_val.type(), ondemand::JsonType::String);
-    EXPECT_EQ(to_std_view(name_val.get_string()), "zuu");
+    EXPECT_EQ(to_sv(name_val.get_string()), "zuu");
 
     // 5. Uji pencarian properti boolean ("active": true)
     // Karena forward-only linear search, kita harus mencari property SETELAH
@@ -98,4 +98,6 @@ TEST(ZeJsonOnDemandTest, ParseAndFindFields) {
         root_obj.find_field(types::StringView("active", 6));
     ASSERT_EQ(active_val.type(), ondemand::JsonType::Boolean);
     EXPECT_TRUE(active_val.get_bool());
+
+    arena_handle->reset();
 }

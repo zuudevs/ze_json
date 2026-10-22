@@ -21,7 +21,7 @@ class ScannerTest : public ::testing::Test {
             return {false, {}};
         }
 
-        types::size_t count = res.getValue();
+        types::size_t count = res.value();
         tape.resize(count);
         return {true, tape};
     }
