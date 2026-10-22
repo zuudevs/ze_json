@@ -1,6 +1,6 @@
 {
   "name": "@zuudevs/ze-json",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Binding JavaScript Raw WebAssembly (memory64, tanpa Emscripten) untuk ze_json — parser JSON on-demand berbasis scanner SWAR/tape",
   "type": "module",
   "main": "ze_json.mjs",
