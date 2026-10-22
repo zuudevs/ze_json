@@ -1,0 +1,314 @@
+{
+  "hash": "05d2180",
+  "generated_at": "2026-10-22T10:29:32.018Z",
+  "presets": [
+    "native-release"
+  ],
+  "groups": [
+    {
+      "group": "parser_benchmark",
+      "hash": "05d2180",
+      "executable": "build\\native-release\\benchmarks\\parser_benchmark.exe",
+      "report": "out/results/benchmark/parser_benchmark_native-release_05d2180.json",
+      "host_name": "ZUU",
+      "cpus": "2096 MHz × 12 core",
+      "library_version": "v1.9.5",
+      "build_type": "release",
+      "context_date": "2026-10-22T17:11:22+07:00",
+      "benchmarks": [
+        {
+          "name": "DocumentInitialization",
+          "time_ns": 2.86449890470977,
+          "cpu_ns": 2.8359723772637944,
+          "iterations": 7344262295,
+          "bytes_per_second": 140339871851.6429,
+          "items_per_second": null
+        },
+        {
+          "name": "FindField_Early_And_ParseInt",
+          "time_ns": 29.619950823880544,
+          "cpu_ns": 29.332449785079117,
+          "iterations": 628037383,
+          "bytes_per_second": 13568590517.197624,
+          "items_per_second": null
+        },
+        {
+          "name": "ParseDouble_Nested_Lemire",
+          "time_ns": 157.1272224406134,
+          "cpu_ns": 156.5569193166969,
+          "iterations": 108387097,
+          "bytes_per_second": 2542206385.620626,
+          "items_per_second": null
+        },
+        {
+          "name": "Extreme_Deep_Search_SkipChild",
+          "time_ns": 136.52383631198555,
+          "cpu_ns": 133.6482747057735,
+          "iterations": 166131026,
+          "bytes_per_second": 2977965865.0752993,
+          "items_per_second": null
+        },
+        {
+          "name": "FindField_First_InWideObject",
+          "time_ns": 18.29811785322711,
+          "cpu_ns": 18.16313243804363,
+          "iterations": 1138983051,
+          "bytes_per_second": 438966132477.2447,
+          "items_per_second": null
+        },
+        {
+          "name": "FindField_Middle_InWideObject",
+          "time_ns": 3756.4793571488863,
+          "cpu_ns": 3736.0491071428573,
+          "iterations": 5600000,
+          "bytes_per_second": 2134072591.4861836,
+          "items_per_second": null
+        },
+        {
+          "name": "FindField_Last_InWideObject",
+          "time_ns": 7568.795327509,
+          "cpu_ns": 7530.3324178649755,
+          "iterations": 2877944,
+          "bytes_per_second": 1058784600.4095169,
+          "items_per_second": null
+        },
+        {
+          "name": "GetString_PlainPayload",
+          "time_ns": 21.713322480305404,
+          "cpu_ns": 21.6702706432905,
+          "iterations": 966906475,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "GetString_EscapedPayload",
+          "time_ns": 26.265036542445273,
+          "cpu_ns": 26.150948670248486,
+          "iterations": 824539877,
+          "bytes_per_second": null,
+          "items_per_second": null
+        }
+      ]
+    },
+    {
+      "group": "scanner_benchmark",
+      "hash": "05d2180",
+      "executable": "build\\native-release\\benchmarks\\scanner_benchmark.exe",
+      "report": "out/results/benchmark/scanner_benchmark_native-release_05d2180.json",
+      "host_name": "ZUU",
+      "cpus": "2096 MHz × 12 core",
+      "library_version": "v1.9.5",
+      "build_type": "release",
+      "context_date": "2026-10-22T17:16:40+07:00",
+      "benchmarks": [
+        {
+          "name": "BM_Scanner8_Tiny",
+          "time_ns": 139.7060225291687,
+          "cpu_ns": 139.38162662121678,
+          "iterations": 144051447,
+          "bytes_per_second": 1147927484.2645915,
+          "items_per_second": null
+        },
+        {
+          "name": "BM_Scanner8_Literal",
+          "time_ns": 365.1465789780959,
+          "cpu_ns": 363.7858065337796,
+          "iterations": 61935484,
+          "bytes_per_second": 1129785694.2690706,
+          "items_per_second": null
+        },
+        {
+          "name": "BM_Scanner8_GithubEvents",
+          "time_ns": 272418.9908849439,
+          "cpu_ns": 271402.9947916667,
+          "iterations": 76800,
+          "bytes_per_second": 1190955907.6461768,
+          "items_per_second": null
+        },
+        {
+          "name": "BM_Scanner8_UpdateCenter",
+          "time_ns": 3463023.306953586,
+          "cpu_ns": 3440156.8454998536,
+          "iterations": 6822,
+          "bytes_per_second": 956521794.7270306,
+          "items_per_second": null
+        },
+        {
+          "name": "BM_Scanner8_Jeopardy",
+          "time_ns": 46944136.74995303,
+          "cpu_ns": 46601562.5,
+          "iterations": 400,
+          "bytes_per_second": 1192119362.9505448,
+          "items_per_second": null
+        },
+        {
+          "name": "BM_Scanner64_Tiny",
+          "time_ns": 125.6565146722239,
+          "cpu_ns": 124.67773424976566,
+          "iterations": 178961385,
+          "bytes_per_second": 1283308531.092437,
+          "items_per_second": null
+        },
+        {
+          "name": "BM_Scanner64_Literal",
+          "time_ns": 379.52905630842025,
+          "cpu_ns": 377.2077285420484,
+          "iterations": 73442623,
+          "bytes_per_second": 1089585310.42978,
+          "items_per_second": null
+        },
+        {
+          "name": "BM_Scanner64_GithubEvents",
+          "time_ns": 245309.10164783365,
+          "cpu_ns": 244461.3864011668,
+          "iterations": 82963,
+          "bytes_per_second": 1322208814.890601,
+          "items_per_second": null
+        },
+        {
+          "name": "BM_Scanner64_UpdateCenter",
+          "time_ns": 2586914.302613646,
+          "cpu_ns": 2565657.163137348,
+          "iterations": 8453,
+          "bytes_per_second": 1282550547.7809799,
+          "items_per_second": null
+        },
+        {
+          "name": "BM_Scanner64_Jeopardy",
+          "time_ns": 40061144.16649022,
+          "cpu_ns": 39908854.166666664,
+          "iterations": 480,
+          "bytes_per_second": 1392037585.644372,
+          "items_per_second": null
+        }
+      ]
+    },
+    {
+      "group": "session_benchmark",
+      "hash": "05d2180",
+      "executable": "build\\native-release\\benchmarks\\session_benchmark.exe",
+      "report": "out/results/benchmark/session_benchmark_native-release_05d2180.json",
+      "host_name": "ZUU",
+      "cpus": "2096 MHz × 12 core",
+      "library_version": "v1.9.5",
+      "build_type": "release",
+      "context_date": "2026-10-22T17:22:51+07:00",
+      "benchmarks": [
+        {
+          "name": "CreateSession_Pipeline",
+          "time_ns": 238.13807227856284,
+          "cpu_ns": 237.05357227519133,
+          "iterations": 93333333,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "FindRead_SingleField",
+          "time_ns": 288.09909759347,
+          "cpu_ns": 286.8640740203768,
+          "iterations": 59207048,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "FindRead_ThreeFields",
+          "time_ns": 411.54105122460896,
+          "cpu_ns": 410.28645741751535,
+          "iterations": 49051095,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "ArrayRead_AllElements",
+          "time_ns": 523.0811768932209,
+          "cpu_ns": 520.4148051149294,
+          "iterations": 37229917,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "PathQuery_Flat",
+          "time_ns": 40.72398092026189,
+          "cpu_ns": 40.59779574624176,
+          "iterations": 555371901,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "PathQuery_Nested",
+          "time_ns": 125.58303880360961,
+          "cpu_ns": 125.06510447932943,
+          "iterations": 169911504,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "PathQuery_ArrayElement",
+          "time_ns": 154.26733955547047,
+          "cpu_ns": 151.8229164633324,
+          "iterations": 126792453,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "PathQuery_Deep",
+          "time_ns": 165.54148337645188,
+          "cpu_ns": 164.41010961246195,
+          "iterations": 130485437,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "PathQuery_ThreeTypes",
+          "time_ns": 208.1257045955267,
+          "cpu_ns": 203.83300811582293,
+          "iterations": 111074380,
+          "bytes_per_second": null,
+          "items_per_second": null
+        }
+      ]
+    }
+  ],
+  "scanner_speedups": [
+    {
+      "dataset": "Tiny",
+      "scanner8_ns": 139.7060225291687,
+      "scanner64_ns": 125.6565146722239,
+      "speedup": 1.111808829757797,
+      "scanner8_mbs": 1147.9274842645914,
+      "scanner64_mbs": 1283.308531092437
+    },
+    {
+      "dataset": "Literal",
+      "scanner8_ns": 365.1465789780959,
+      "scanner64_ns": 379.52905630842025,
+      "speedup": 0.9621044104759225,
+      "scanner8_mbs": 1129.7856942690705,
+      "scanner64_mbs": 1089.58531042978
+    },
+    {
+      "dataset": "GithubEvents",
+      "scanner8_ns": 272418.9908849439,
+      "scanner64_ns": 245309.10164783365,
+      "speedup": 1.1105131813495828,
+      "scanner8_mbs": 1190.955907646177,
+      "scanner64_mbs": 1322.208814890601
+    },
+    {
+      "dataset": "UpdateCenter",
+      "scanner8_ns": 3463023.306953586,
+      "scanner64_ns": 2586914.302613646,
+      "speedup": 1.3386695119566885,
+      "scanner8_mbs": 956.5217947270306,
+      "scanner64_mbs": 1282.55054778098
+    },
+    {
+      "dataset": "Jeopardy",
+      "scanner8_ns": 46944136.74995303,
+      "scanner64_ns": 40061144.16649022,
+      "speedup": 1.17181218177039,
+      "scanner8_mbs": 1192.1193629505449,
+      "scanner64_mbs": 1392.037585644372
+    }
+  ]
+}
