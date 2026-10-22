@@ -6,6 +6,7 @@
 //  sendiri), flow per-langkah memakai create_session per-iterasi.
 // ==========================================================================
 #include <benchmark/benchmark.h>
+#include <cstdio>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -471,3 +472,119 @@ BENCHMARK(BM_CreateSession_Pipeline_Scanner64)
     ->ArgName("Idx")
     ->Arg(2)
     ->Arg(4);
+
+// --- Path query root object LEBAR: biaya pencarian field sekuensial --------
+// Klaim README: field pertama 18 ns vs terakhir 7,6 µs pada objek 512 field.
+// Satu session lintas iterasi (find_path me-rewind sendiri) — setiap kueri
+// membayar ulang penelusuran sequences dari root.
+
+namespace {
+using zuu::types::int32_t;
+using zuu::types::int64_t;
+using zuu::types::uint64_t;
+
+constexpr int kWidthCount = 3;
+const size_t kRootWidth[kWidthCount] = {16, 128, 1024};
+
+std::string
+make_field_label(size_t index) {
+    // Kunci lebar-tetap 4 digit agar pencocokan konsisten lintas ukuran.
+    std::string label = std::to_string(index);
+    while (label.size() < 4) {
+        label.insert(label.begin(), '0');
+    }
+    return "k" + label;
+}
+
+// Per lebar root object: payload + session yang hidup lintas iterasi.
+struct WideRootCase {
+    std::string json;
+    std::vector<uint64_t> tape;
+    std::vector<zuu::types::uint8_t> arena_storage;
+    zuu::memory::Arena* arena{nullptr};
+    zuu::api::Session* session{nullptr};
+
+    void
+    resize_for(size_t width) {
+        json = "{";
+        for (size_t i = 0; i < width; ++i) {
+            if (i != 0) json += ",";
+            json += "\"" + make_field_label(i) + "\":\"value-" +
+                    std::to_string(i) + "\"";
+        }
+        json += "}";
+
+        // Kasus terburuk tape: sebesar ukuran payload.
+        tape.assign(json.size(), 0);
+        arena_storage.assign(512 * 1024, 0);
+        arena = create_arena(arena_storage.data(), arena_storage.size());
+
+        int32_t err = static_cast<int32_t>(zuu::api::INVALID_JSON);
+        session     = create_session(
+            json.data(), json.size(), tape.data(), tape.size(), arena, err);
+    }
+};
+
+WideRootCase&
+get_wide_root_case(int width_index) {
+    static WideRootCase cases[kWidthCount];
+    WideRootCase& wide = cases[width_index];
+    if (!wide.session) {
+        wide.resize_for(kRootWidth[width_index]);
+        if (!wide.session) {
+            std::fprintf(stderr, "session lebar gagal (width %d)\n",
+                width_index); // Kegagalan diam-diam diteruskan via null.
+        }
+    }
+    return wide;
+}
+
+void
+BM_RootWide_PathQuery(benchmark::State& state) {
+    // Argumen = widthIdx*3 + caseIdx — 0:first, 1:mid, 2:last.
+    const int id          = static_cast<int>(state.range(0));
+    const int width_index = id / 3;
+    const int case_index  = id % 3;
+
+    const size_t width = kRootWidth[width_index];
+    const size_t target
+        = case_index == 0 ? 0 : (case_index == 1 ? width / 2 : width - 1);
+    std::string label = make_field_label(target);
+
+    WideRootCase& wide = get_wide_root_case(width_index);
+    if (!wide.session) {
+        state.SkipWithError("session lebar gagal dibuat.");
+        return;
+    }
+
+    for (auto _ : state) {
+        int32_t err   = static_cast<int32_t>(zuu::api::OK);
+        const char* data = nullptr;
+        size_t len       = 0;
+        get_string_at(
+            wide.session, label.data(), static_cast<size_t>(label.size()),
+            data, len, err);
+        if (err != static_cast<int32_t>(zuu::api::OK)) {
+            state.SkipWithError("get_string_at gagal pada root lebar.");
+            return;
+        }
+        benchmark::DoNotOptimize(data);
+        benchmark::DoNotOptimize(len);
+    }
+}
+BENCHMARK(BM_RootWide_PathQuery)
+    ->Unit(benchmark::kNanosecond)
+    ->MinTime(30)
+    ->MinWarmUpTime(3)
+    ->ArgName("WxK")
+    ->Arg(0)
+    ->Arg(1)
+    ->Arg(2)
+    ->Arg(3)
+    ->Arg(4)
+    ->Arg(5)
+    ->Arg(6)
+    ->Arg(7)
+    ->Arg(8);
+
+} // namespace

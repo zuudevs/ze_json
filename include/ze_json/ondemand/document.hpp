@@ -17,6 +17,13 @@ class Document {
     [[nodiscard]] JsonValue
     get_root() NOEXCEPT;
 
+    // Akses iterator mentah — dipakai mekanisme indeks lazy di Session
+    // (lompatan kursor langsung ke entry tape hasil pembangunan indeks).
+    JsonIterator&
+    iter() NOEXCEPT {
+        return iter_;
+    }
+
     // Kembalikan kursor ke posisi root (idx 0) tanpa membatalkan arena.
     void
     rewind() NOEXCEPT {

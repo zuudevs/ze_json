@@ -149,6 +149,14 @@ class JsonIterator {
     reset() NOEXCEPT {
         current_idx_ = 0;
     }
+
+    // Loncat langsung ke entry tape tertentu — dipakai indeks pencarian
+    // field (kunci → posisi nilai pada tape). Rentang dijaga agar kursor
+    // tidak pernah menunjuk di luar area tape (peek_char tetap aman '\0').
+    constexpr void
+    seek(types::size_t tape_idx) NOEXCEPT {
+        current_idx_ = tape_idx <= tape_len_ ? tape_idx : tape_len_;
+    }
     constexpr const types::uint64_t*
     tape() const NOEXCEPT {
         return tape_;

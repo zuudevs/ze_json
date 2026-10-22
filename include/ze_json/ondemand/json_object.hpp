@@ -24,6 +24,13 @@ class JsonObject {
     bool
     find_field_checked(
         const types::StringView& target_key, JsonValue* out) NOEXCEPT;
+
+    // Varian berhitung: jumlah member root yang diritamatkan dalam satu
+    // pencarian — bahan kebijakan pembangunan indeks lazy di Session.
+    bool
+    find_field_counted(
+        const types::StringView& target_key, JsonValue* out,
+        types::size_t& members) NOEXCEPT;
 };
 
 } // namespace zuu::ondemand

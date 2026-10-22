@@ -29,6 +29,7 @@
 #include <ze_json/ondemand/document.hpp>
 #include <ze_json/ondemand/json_object.hpp>
 #include <ze_json/types/string_view.hpp>
+#include <ze_json/utils/hash_fnv1a.hpp>
 
 // ============================================================================
 //  KONTRAK STATUS (ABI-stabil)
@@ -122,6 +123,32 @@ class Session {
     // array_next berikutnya harus me-skip()-nya dulu.
     bool value_pending_{false};
 
+    // ---- Indeks root object (lazy) ------------------------------------
+    // Klaim analisis: pencarian field sekuensial member+posisi O(width) —
+    // kunci terakhir pada object 1024 field menyapu semua member. Kebijakan:
+    // kueri path BERAT pertama tetap sekuensial (tanpa regresi, kasus
+    // pemakai sekali-baca), kueri berat kedua memicu pembangunan indeks
+    // penuh (sekali), kueri berikutnya O(1) + verifikasi kunci byte-exact.
+    // Lihat resolve_root_key().
+    static constexpr types::size_t kIdxQuota = 24;
+
+    struct RootFieldSlot {
+        types::uint64_t hash;    // FNV-1a 64-bit teks kunci mentah
+        types::uint64_t key_idx; // entry tape quote pembuka kunci
+        types::uint64_t val_idx; // entry tape SAAT nilai mulai (pasca ':')
+    };
+
+    RootFieldSlot* idx_slots_{nullptr}; // null = indeks belum dibangun
+    types::size_t idx_count_{0};
+    types::size_t idx_mask_{0}; // kapasitas open-addressing = mask + 1
+    types::uint64_t heavy_queries_{0};
+    bool idx_disabled_{false};
+    // Kunci ber-escape TIDAK terindeks (pencocokan sekuensial membandingkan
+    // hasil unescape — teks mentah tidak ekuivalen). Bila ada kandidatnya,
+    // miss indeks wajib jatuh ke sekuensial agar semantik tidak berubah.
+    bool idx_has_escape_keys_{false};
+    memory::Arena* arena_{nullptr};
+
   public:
     Session(
         const char* const RESTRICT src, const types::uint64_t* RESTRICT tape,
@@ -129,7 +156,9 @@ class Session {
         : doc_(src, tape, tape_len, arena),
           root_obj_(doc_.get_root().get_object()),
           value_(doc_.get_root()),
-          found_(false) {}
+          found_(false) {
+        arena_ = arena;
+    }
 
     Session(const Session&) = delete;
     Session&
@@ -139,6 +168,255 @@ class Session {
     found() const NOEXCEPT {
         return found_;
     }
+
+  private:
+    // ------------------------------------------------------------------
+    //  INDEKS ROOT OBJECT (LAZY) — kebijakan, pembangunan, dan lookup
+    // ------------------------------------------------------------------
+    // Kebijakan: kueri path BERAT (menyapu > kIdxQuota member root) yang
+    // pertama tetap sekuensial murni, kueri berat KEDUA membangun indeks
+    // penuh, kueri berikutnya O(1) + verifikasi kunci byte-exact. Kunci
+    // mentah (teks tape) disimpan apa adanya — batasan "kunci beranimalan
+    // escape tidak akan cocok" sama persis dengan pencarian sekuensial.
+    //
+    // Target: object lebar yang DIBACA BERKALI-KALI (pola path query
+    // berulang). Object kecil & pemakaian sekali-baca tidak pernah
+    // membayar biaya indeks sama sekali.
+    [[nodiscard]] bool
+    resolve_root_key(const types::StringView& key) NOEXCEPT {
+        if (idx_slots_) [[likely]] {
+            if (lookup_root_key(key)) {
+                return true;
+            }
+            // Miss indeks: keputusan final O(1) HANYA bila semua kunci root
+            // terindeks (bebas escape). Kandidat kunci ber-escape memaksa
+            // fallback sekuensial penuh demi semantik pencocokan yang sama
+            // persis dengan jalur tanpa indeks.
+            if (idx_has_escape_keys_) {
+                restore_root_cursor();
+                types::size_t ignored = 0;
+                return root_obj_.find_field_counted(key, &value_, ignored);
+            }
+            return false;
+        }
+
+        if (idx_disabled_) [[unlikely]] {
+            // Indeks tidak memungkinkan (arena penuh): jalur murni lama
+            // tanpa bookkeeping berat.
+            types::size_t ignored = 0;
+            doc_.get_root().get_object(); // ritual kursor = kode lama.
+            return root_obj_.find_field_counted(key, &value_, ignored);
+        }
+
+        // Fallback sekuensial seperti kode lama, PLUS penghitung berat.
+        doc_.get_root().get_object(); // kursor = kunci pertama root.
+        types::size_t members = 0;
+        const bool hit
+            = root_obj_.find_field_counted(key, &value_, members);
+
+        if (members <= kIdxQuota || ++heavy_queries_ < 2) [[likely]] {
+            return hit;
+        }
+
+        // Kueri berat kedua: bangun indeks. Bila sukses, mata ulang posisi
+        // kursor via lookup (semantik nilai identik dengan hit sekuensial).
+        build_root_index();
+        if (idx_slots_ && lookup_root_key(key)) {
+            return true;
+        }
+
+        // Gagal membangun (arena penuh) / lookup tak wajar: pulihkan
+        // ritme kursor lalu ulangi sekuensial MURNI.
+        restore_root_cursor();
+        types::size_t ignored = 0;
+        return root_obj_.find_field_counted(key, &value_, ignored);
+    }
+
+    // Telusuri seluruh member teratas root object dalam SATU jalan.
+    // kFill=false: hitung member saja (pass pembangun kapasitas).
+    // kFill=true : pasang setiap member ke slot open-addressing.
+    // Kursor: me-rewind sendiri di awal; PEMANGGIL wajib memulihkan ritme
+    // kursor root setelah walk selesai.
+    template <bool kFill>
+    types::size_t
+    walk_root_object() NOEXCEPT {
+        doc_.rewind();
+        ondemand::JsonIterator& it = doc_.iter();
+        if (it.peek_char() != '{') [[unlikely]] {
+            return 0;
+        }
+
+        it.advance(); // habiskan '{' → kursor pada kunci pertama.
+        types::size_t count = 0;
+        for (;;) {
+            char c = it.peek_char();
+            if (c == '}' || c == '\0') [[unlikely]] {
+                break;
+            }
+            if (c == ',') {
+                it.advance();
+            }
+
+            const types::size_t key_open_idx = it.index();
+            ondemand::JsonValue key_val(it);
+            types::StringView current_key = key_val.get_string();
+            if (it.peek_char() == ':') {
+                it.advance();
+            }
+            const types::size_t val_idx = it.index();
+
+            if (kFill) {
+                if (raw_key_has_escape(key_open_idx)) {
+                    // Kunci ber-escape dilewatkan: pencocokan sekuensial
+                    // membandingkan hasil unescape, teks mentah tidak
+                    // setara — index mundur dan biarkan langkah fallback
+                    // sekuensial memberi keputusan.
+                    idx_has_escape_keys_ = true;
+                } else {
+                    types::uint64_t h = utils::Hash::fnv1a64(current_key);
+                    if (h == 0) [[unlikely]] {
+                        h = 1; // 0 = slot kosong, dipaksa jauh dari sentinel.
+                    }
+                    insert_slot(h, current_key, key_open_idx, val_idx);
+                }
+            }
+            ++count;
+
+            it.skip_child(); // lewati nilai, kursor menuju separator/'}'
+        }
+        return count;
+    }
+
+    void
+    insert_slot(
+        types::uint64_t h, const types::StringView& key,
+        types::size_t key_idx, types::size_t val_idx) NOEXCEPT {
+        types::size_t pos = static_cast<types::size_t>(h) & idx_mask_;
+        while (idx_slots_[pos].hash != 0) {
+            // Hash samberita TIDAKMUNGKIN tanpa kunci berkembar — namun
+            // selalu verifikasi byte-exact: kunci kembar mempertahankan
+            // kemunculan PERTAMA (semantik sama dengan pencarian sekuensial).
+            if (idx_slots_[pos].hash == h
+                && key_text_at(
+                       static_cast<types::size_t>(idx_slots_[pos].key_idx))
+                    == key) {
+                return;
+            }
+            pos = (pos + 1) & idx_mask_;
+        }
+        idx_slots_[pos].hash    = h;
+        idx_slots_[pos].key_idx = key_idx;
+        idx_slots_[pos].val_idx = val_idx;
+    }
+
+    [[nodiscard]] bool
+    lookup_root_key(const types::StringView& key) NOEXCEPT {
+        ondemand::JsonIterator& it = doc_.iter();
+
+        types::uint64_t h = utils::Hash::fnv1a64(key);
+        if (h == 0) [[unlikely]] {
+            h = 1;
+        }
+
+        types::size_t pos = static_cast<types::size_t>(h) & idx_mask_;
+        while (idx_slots_[pos].hash != 0) {
+            if (idx_slots_[pos].hash == h
+                && key_text_at(
+                       static_cast<types::size_t>(idx_slots_[pos].key_idx))
+                    == key) {
+                // Lompatan kursor ke entry awal nilai (rutenya identik
+                // dengan keadaan pasca-hitung find_field sekuensial).
+                it.seek(static_cast<types::size_t>(
+                    idx_slots_[pos].val_idx));
+                return true;
+            }
+            pos = (pos + 1) & idx_mask_;
+        }
+        restore_root_cursor();
+        return false;
+    }
+
+    void
+    build_root_index() NOEXCEPT {
+        if (!arena_ || idx_slots_ || idx_disabled_) [[unlikely]] {
+            idx_disabled_ = true;
+            return;
+        }
+
+        idx_has_escape_keys_ = false;
+
+        // Pass 1: hitung member (menyapu kursor).
+        const types::size_t count = walk_root_object<false>();
+
+        // Pass 2: kapasitas power-of-two ≥ 2× member (bantu probing).
+        types::size_t capacity = 16;
+        while (capacity < count * 2) {
+            capacity <<= 1;
+        }
+
+        void* mem = arena_->allocate(
+            capacity * sizeof(RootFieldSlot), alignof(RootFieldSlot));
+
+        // Pulihkan kursor SEBELUM pemeriksaan apapun — state selalu bersih.
+        restore_root_cursor();
+
+        if (!mem) [[unlikely]] {
+            idx_disabled_ = true; // arena penuh: fallback sekuensial saja.
+            return;
+        }
+
+        auto* slots = static_cast<RootFieldSlot*>(mem);
+        for (types::size_t j = 0; j < capacity; ++j) {
+            slots[j].hash = 0; // 0 = slot kosong
+        }
+        idx_slots_ = slots;
+        idx_mask_  = capacity - 1;
+        idx_count_ = count;
+
+        walk_root_object<true>();
+    }
+
+    // Teks kunci MENTAH dari pasangan entry tape quote (pembuka/penutup) —
+    // tanpa pelintasan kursor sepenuhnya via tape/src.
+    [[nodiscard]] types::StringView
+    key_text_at(types::size_t key_idx) NOEXCEPT {
+        ondemand::JsonIterator& it = doc_.iter();
+        const types::uint64_t* tape   = it.tape();
+        const char* src               = it.src();
+        const types::uint64_t open_pos  = tape[key_idx];
+        const types::uint64_t close_pos = tape[key_idx + 1];
+        return types::StringView(
+            src + open_pos + 1,
+            static_cast<types::size_t>(close_pos - (open_pos + 1)));
+    }
+
+    // True bila teks kunci mentah memuat '\\' — kunci ber-escape TIDAK bisa
+    // mengikuti keputusan indeks (urutan pencocokan sekuensial membandingkan
+    // hasil unescape).
+    [[nodiscard]] bool
+    raw_key_has_escape(types::size_t key_idx) NOEXCEPT {
+        ondemand::JsonIterator& it = doc_.iter();
+        const types::uint64_t* tape   = it.tape();
+        const char* src               = it.src();
+        const types::uint64_t open_pos  = tape[key_idx];
+        const types::uint64_t close_pos = tape[key_idx + 1];
+        for (const char* p = src + open_pos + 1; p < src + close_pos; ++p) {
+            if (*p == '\\') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Pulihkan ritme kursor persis seperti state pasca-construction
+    // (find_field berikutnya mengharapkan kursor di kunci pertama).
+    void
+    restore_root_cursor() NOEXCEPT {
+        doc_.rewind();
+        doc_.get_root().get_object();
+    }
+
+  public:
 
     // ------------------------------------------------------------------
     //  PATH — pencarian + pembacaan dalam SATU lapis pemanggilan C ABI
@@ -207,10 +485,21 @@ class Session {
                 if (value_.peek_char() != '{') {
                     return NOT_FOUND;
                 }
-                ondemand::JsonObject obj = value_.get_object();
-                if (!obj.find_field_checked(
-                        types::StringView(path + start, i - start), &value_)) {
-                    return NOT_FOUND;
+
+                // Segmen pertama = kunci root: pemecah lewat indeks lazy
+                // (bila sudah terbangun) atau sekuensial berhitung; segmen
+                // berjalan tetap sekuensial murni.
+                const types::StringView root_seg
+                    (path + start, i - start);
+                if (start == 0) {
+                    if (!resolve_root_key(root_seg)) {
+                        return NOT_FOUND;
+                    }
+                } else {
+                    ondemand::JsonObject obj = value_.get_object();
+                    if (!obj.find_field_checked(root_seg, &value_)) {
+                        return NOT_FOUND;
+                    }
                 }
             }
 

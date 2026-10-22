@@ -14,6 +14,15 @@ JsonObject::find_field(const types::StringView& target_key) NOEXCEPT {
 bool
 JsonObject::find_field_checked(
     const types::StringView& target_key, JsonValue* out) NOEXCEPT {
+    types::size_t ignored = 0;
+    return find_field_counted(target_key, out, ignored);
+}
+
+bool
+JsonObject::find_field_counted(
+    const types::StringView& target_key, JsonValue* out,
+    types::size_t& members) NOEXCEPT {
+    members = 0;
     while (iter_.peek_char() != '}' && iter_.peek_char() != '\0') {
         if (iter_.peek_char() == ',') {
             iter_.advance();
@@ -31,6 +40,7 @@ JsonObject::find_field_checked(
             *out = val;
             return true;
         } else {
+            ++members; // Member dilalui tanpa hit; mahal pada object lebar.
             iter_.skip_child();
         }
     }

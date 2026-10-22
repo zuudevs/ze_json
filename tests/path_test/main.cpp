@@ -3,7 +3,10 @@
 // tipe salah, indeks luar jangkauan, overflow sintaks, dan pemakaian
 // ulang Session.
 #include <gtest/gtest.h>
+#include <cstdio>
+#include <string>
 #include <string_view>
+#include <vector>
 
 #include <ze_json/ze_json.hpp>
 
@@ -225,6 +228,237 @@ TEST_F(PathTest, RepeatedQueriesAreIndependent) {
     EXPECT_EQ(std::string_view(data, len), "green");
 
     arena_handle->reset();
+}
+
+TEST_F(PathTest, RootWideIndexPathQueries) {
+    // Indeks root lazy: objek LEBAR (128 member) + kueri path berulang.
+    // Kebijakan: kueri berat pertama murni sekuensial, kedua membangun
+    // indeks, berikutnya lompatan langsung — seluruhnya transparen bagi
+    // pemanggil (hasil & status identik).
+    std::string json = "{";
+    for (int n = 0; n < 128; ++n) {
+        if (n != 0) json += ",";
+        char label[8];
+        std::snprintf(label, sizeof(label), "k%04d", n);
+        json += std::string("\"") + label + "\":\"" + std::to_string(1000 + n)
+            + "\"";
+    }
+    json += "}";
+
+    alignas(8) std::vector<types::uint8_t> buffer(1024 * 1024);
+    memory::Arena* arena = create_arena(buffer.data(), buffer.size());
+    ASSERT_NE(arena, nullptr);
+    std::vector<types::uint64_t> wide_tape(json.size());
+
+    types::int32_t err = api::OK;
+    auto* session = create_session(
+        json.data(), json.size(), wide_tape.data(), wide_tape.size(), arena,
+        err);
+    ASSERT_NE(session, nullptr);
+    ASSERT_EQ(static_cast<api::Status>(err), api::OK);
+
+    const char* data  = nullptr;
+    types::size_t len = 0;
+    types::int32_t st = api::OK;
+
+    // Kueri berat-1 (belum ada indeks): kunci tengah tetap ketemu.
+    st = api::OK;
+    get_string_at(session, "k0064", 5, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "1064");
+
+    // Kueri berat-2: pembangunan indeks terjadi di sini; hasil identik.
+    st = api::OK;
+    get_string_at(session, "k0065", 5, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "1065");
+
+    // Terpenting: SEMUA arah kini lompatan lewat indeks — depan, tengah,
+    // belakang memberikan hasil yang sama.
+    st = api::OK;
+    get_string_at(session, "k0000", 5, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "1000");
+
+    st = api::OK;
+    get_string_at(session, "k0064", 5, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "1064");
+
+    st = api::OK;
+    get_string_at(session, "k0127", 5, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "1127");
+
+    // Kunci yang TIDAK ADA: indeks menjawab NOT_FOUND; sesi tetap hidup.
+    st = api::OK;
+    get_string_at(session, "k9999", 5, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::NOT_FOUND);
+
+    st = api::OK;
+    get_string_at(session, "k0021", 5, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "1021");
+
+    // Perjalanan bauran find() sekuensial TETAP valid (indeks hanya
+    // menyentuh jalur find_path segmen pertama; find() tidak diubah).
+    // Kursor bersifat forward-only: pasca kueri k0064/k0065, hanya member
+    // DI ATAS k0065 yang masih jangkauan find() — k0100.
+    EXPECT_EQ(find_field(session, "k0100", 5), 1);
+    get_string(session, data, len);
+    EXPECT_EQ(std::string_view(data, len), "1100");
+
+    // Path setelah find() sekuensial: tetap rewind + indeks.
+    st = api::OK;
+    get_string_at(session, "k0021", 5, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "1021");
+
+    destroy_arena(arena);
+}
+
+TEST_F(PathTest, RootWideIndexDuplicateKeyKeepsFirst) {
+    // Semantik dup key: kemunculan PERTAMA, baik sekuensial maupun setelah
+    // indeks dibangun.
+    std::string json = "{";
+    for (int n = 0; n < 48; ++n) {
+        if (n != 0) json += ",";
+        json += "\"dup\":\"v" + std::to_string(n) + "\"";
+    }
+    json += "}";
+
+    alignas(8) std::vector<types::uint8_t> buffer(1024 * 1024);
+    memory::Arena* arena = create_arena(buffer.data(), buffer.size());
+    std::vector<types::uint64_t> wide_tape(json.size());
+
+    types::int32_t err = api::OK;
+    auto* session = create_session(
+        json.data(), json.size(), wide_tape.data(), wide_tape.size(), arena,
+        err);
+    ASSERT_NE(session, nullptr);
+    ASSERT_EQ(static_cast<api::Status>(err), api::OK);
+
+    const char* data  = nullptr;
+    types::size_t len = 0;
+    types::int32_t st = api::OK;
+
+    // Dua kueri berat membangun indeks; hasil wajib masih "v0".
+    get_string_at(session, "dup", 3, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "v0");
+
+    st = api::OK;
+    get_string_at(session, "dup", 3, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "v0");
+
+    // Berikutnya (indeks aktif): PERTAMA — bukan kemunculan lain.
+    st = api::OK;
+    get_string_at(session, "dup", 3, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "v0");
+
+    destroy_arena(arena);
+}
+
+TEST_F(PathTest, RootWideIndexNestedObjects) {
+    // Nilai bersarang: segmen pertama di-resolve lewat indeks, lanjutan
+    // dipegang sekuensial — path "kXXXX.v" tetap benar.
+    std::string json = "{";
+    for (int n = 0; n < 64; ++n) {
+        if (n != 0) json += ",";
+        char label[8];
+        std::snprintf(label, sizeof(label), "k%04d", n);
+        json += std::string("\"") + label + "\":{\"v\":" + std::to_string(n)
+            + "}";
+    }
+    json += "}";
+
+    alignas(8) std::vector<types::uint8_t> buffer(1024 * 1024);
+    memory::Arena* arena = create_arena(buffer.data(), buffer.size());
+    std::vector<types::uint64_t> wide_tape(json.size());
+
+    types::int32_t err = api::OK;
+    auto* session = create_session(
+        json.data(), json.size(), wide_tape.data(), wide_tape.size(), arena,
+        err);
+    ASSERT_NE(session, nullptr);
+    ASSERT_EQ(static_cast<api::Status>(err), api::OK);
+
+    types::int32_t st = api::OK;
+    // Berat-1: sekuensial murni.
+    EXPECT_EQ(get_int_at(session, "k0015.v", 7, st), 15);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+
+    // Berat-2: pembangunan indeks; nested setelahnya lewat lompatan kursor.
+    EXPECT_EQ(get_int_at(session, "k0016.v", 7, st), 16);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+
+    EXPECT_EQ(get_int_at(session, "k0063.v", 7, st), 63);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+
+    EXPECT_EQ(get_int_at(session, "k0000.v", 7, st), 0);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+
+    // Kontainer pada lompatan: kursor wajib tepat pada '{' nilai, bukan
+    // pada ':' ataupun member lain.
+    EXPECT_EQ(get_int_at(session, "k0032.v", 7, st), 32);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+
+    destroy_arena(arena);
+}
+
+TEST_F(PathTest, RootWideIndexEscapeKeyUnchanged) {
+    // Kunci mengandung escape: kontrak lama — pencarian sekuensial
+    // membandingkan hasil unescape, sehingga path teks pintas TIDAK
+    // pernah cocok (baik tanpa maupun dengan indeks aktif). Kunci
+    // ber-escape tidak dimasukkan ke indeks; miss wajib tetap dijawab
+    // fallback sekuensial supaya hasil identik di semua mode.
+    std::string json = "{";
+    for (int n = 0; n < 32; ++n) {
+        if (n != 0) json += ",";
+        json += "\"f" + std::to_string(n) + "\":\"" + std::to_string(n) + "\"";
+    }
+    json += R"(,"na\ty":"on-time"})";
+
+    alignas(8) std::vector<types::uint8_t> buffer(1024 * 1024);
+    memory::Arena* arena = create_arena(buffer.data(), buffer.size());
+    std::vector<types::uint64_t> wide_tape(json.size());
+
+    types::int32_t err = api::OK;
+    auto* session = create_session(
+        json.data(), json.size(), wide_tape.data(), wide_tape.size(), arena,
+        err);
+    ASSERT_NE(session, nullptr);
+    ASSERT_EQ(static_cast<api::Status>(err), api::OK);
+
+    const char* data  = nullptr;
+    types::size_t len = 0;
+    types::int32_t st = api::OK;
+
+    // Kueri berat-1 (sekuensial murni): kunci escape tak terjangkau.
+    get_string_at(session, "na\\ty", 5, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::NOT_FOUND);
+
+    // Kueri berat-2: indeks dibangun (kunci escape dikecualikan).
+    st = api::OK;
+    get_string_at(session, "f10", 3, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "10");
+
+    // Pasca-indeks: kueri kunci escape murni lewat fallback — keputusan
+    // wajib serupa dengan mode sekuensial (NOT_FOUND).
+    st = api::OK;
+    get_string_at(session, "na\\ty", 5, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::NOT_FOUND);
+
+    // Kunci murni lain tetap lompatan O(1).
+    st = api::OK;
+    get_string_at(session, "f28", 3, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "28");
+
+    destroy_arena(arena);
 }
 
 } // namespace zuu::testing
