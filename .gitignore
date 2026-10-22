@@ -1,3 +1,7 @@
+# Large golden datasets (benchmark & roundtrip corpora, ~61 MB) -- kept out
+# of git; regenerated / distributed separately
+/dataset/
+
 # Build output directories
 /build/
 /bin/
