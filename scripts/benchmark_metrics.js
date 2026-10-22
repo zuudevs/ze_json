@@ -5,12 +5,15 @@
 // Pemakaian:
 //   node scripts/benchmark_metrics.js                    # native-release
 //   node scripts/benchmark_metrics.js native-release ... (preset lain)
+//   node scripts/benchmark_metrics.js --parse-only       # hanya re-summarize
 const { execFileSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const presets = process.argv.slice(2).length
-  ? process.argv.slice(2)
+const args = process.argv.slice(2);
+const parse_only = args.includes("--parse-only");
+const presets = args.filter((arg) => !arg.startsWith("--")).length
+  ? args.filter((arg) => !arg.startsWith("--"))
   : ["native-release"];
 const rootDir = path.join(__dirname, "..");
 const outDir = path.join(rootDir, "out", "results", "benchmark");
@@ -50,17 +53,25 @@ for (const preset of presets) {
     const command = `${path.join(benchDir, exe)} --benchmark_out=${report_path}`;
 
     let failed_to_run = false;
-    try {
-      execFileSync(path.join(benchDir, exe), [
-        `--benchmark_out=${report_path}`,
-        `--benchmark_out_format=json`,
-      ]);
-    } catch (error) {
-      failed_to_run = true;
-      console.error(
-        `[GAGAL] ${group} (${preset}): ${error.stderr?.toString().trim()}`
-      );
-      console.error(`        ${command}`);
+    if (parse_only) {
+      // Mode re-summarize: hanya baca report yang sudah ada dari run ini.
+      if (!fs.existsSync(report_path)) {
+        console.error(`[skip] report tidak ada: ${report_path}`);
+        continue;
+      }
+    } else {
+      try {
+        execFileSync(path.join(benchDir, exe), [
+          `--benchmark_out=${report_path}`,
+          `--benchmark_out_format=json`,
+        ]);
+      } catch (error) {
+        failed_to_run = true;
+        console.error(
+          `[GAGAL] ${group} (${preset}): ${error.stderr?.toString().trim()}`
+        );
+        console.error(`        ${command}`);
+      }
     }
 
     let report;
@@ -79,7 +90,9 @@ for (const preset of presets) {
     const benchmarks = report.benchmarks
       .filter((row) => row.run_type === "iteration" && row.iterations > 0)
       .map((row) => ({
-        name: row.name.split("/")[0], // buang suffix argumen RunAndExport
+        // Nama benchmark tanpa suffix argumen (".../min_time:...").
+        // "Fixture/Nama" → ambil segmen terakhir; "BM_X" tetap utuh.
+        name: row.name.split("/min")[0].split("/").pop(),
         time_ns: to_ns(row.real_time, row.time_unit),
         cpu_ns: to_ns(row.cpu_time, row.time_unit),
         iterations: row.iterations,
@@ -152,7 +165,7 @@ md += `Dibuat: ${summary.generated_at} · preset: ${presets.join(", ")}\n\n`;
 for (const g of groups) {
   md += `## ${g.group} (${g.hash}, ${g.build_type})\n\n`;
   md += `> host \`${g.host_name}\` · CPU ${g.cpus} · benchmark lib `
-    + `v${g.library_version} · ${g.context_date}\n\n`;
+    + `${g.library_version} · ${g.context_date}\n\n`;
   md += "| benchmark | ns/op | iterasi | throughput |\n";
   md += "|---|---:|---:|---:|\n";
   for (const b of g.benchmarks) {
@@ -167,8 +180,7 @@ for (const g of groups) {
 
 if (scanner_speedups.length) {
   md += "## Pengganda speed scanner64 vs scanner8 (per dataset)\n\n";
-  md += "| dataset | scanner8 (ns/op) | scanner64 (ns/op) | "
-       + "`pengganda` | scanner8 (MB/s) | scanner64 (MB/s) |\n";
+  md += "| dataset | scanner8 (ns/op) | scanner64 (ns/op) | pengganda | scanner8 (MB/s) | scanner64 (MB/s) |\n";
   md += "|---|---:|---:|---:|---:|---:|\n";
   for (const s of scanner_speedups) {
     md += `| ${s.dataset} | ${s.scanner8_ns.toFixed(1)} `
