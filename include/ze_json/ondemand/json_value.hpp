@@ -36,10 +36,12 @@ class JsonValue {
     // Angka tidak direkam oleh scanner; teksnya berada di antara entry
     // struktural sebelumnya (':' / ',' / '[') dan entry struktural saat ini
     // (',' / '}' / ']') yang menjadi terminator angka.
-    // Habiskan nilai yang sedang dipegang kursor TANPA membacanya:    // string = 2 entry, literal = 1 entry, kontainer = bracket-depth walk,
-    // angka = 0 entry (kursor sudah berada di karakter / terminator
-    // penerusnya). Dipakai traversal array untuk elemen yang sengaja tidak
-    // dibaca, dan sebagai langkah lintas-separator angka.
+    //
+    // Habiskan nilai yang sedang dipegang kursor TANPA membacanya: string =
+    // 2 entry, literal = 1 entry, kontainer = walk bracket-depth, angka = 0
+    // entry (kursor sudah berada di karakter penerus/terminatornya). Dipakai
+    // traversal array untuk elemen yang sengaja tidak dibaca, dan sebagai
+    // langkah lintas-separator angka.
     constexpr void
     skip() NOEXCEPT {
         iter_->skip_child();

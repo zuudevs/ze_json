@@ -41,16 +41,34 @@ if(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "X86" OR ${CMAKE_C_COMPILER_ARCH
 		RunAndExportTestReport(${name} ${name})
 	endfunction()
 
+	# Satu kelompok uji = satu folder (modular): scanner, document, object,
+	# number, session, array, path.
 	add_test_target(scanner_test
 		"${CMAKE_CURRENT_SOURCE_DIR}/scanner_test/main.cpp"
 	)
 
-	add_test_target(parser_test
-		"${CMAKE_CURRENT_SOURCE_DIR}/parser_test/main.cpp"
-	)
-
 	add_test_target(document_test
 		"${CMAKE_CURRENT_SOURCE_DIR}/document_test/main.cpp"
+	)
+
+	add_test_target(object_test
+		"${CMAKE_CURRENT_SOURCE_DIR}/object_test/main.cpp"
+	)
+
+	add_test_target(number_test
+		"${CMAKE_CURRENT_SOURCE_DIR}/number_test/main.cpp"
+	)
+
+	add_test_target(session_test
+		"${CMAKE_CURRENT_SOURCE_DIR}/session_test/main.cpp"
+	)
+
+	add_test_target(array_test
+		"${CMAKE_CURRENT_SOURCE_DIR}/array_test/main.cpp"
+	)
+
+	add_test_target(path_test
+		"${CMAKE_CURRENT_SOURCE_DIR}/path_test/main.cpp"
 	)
 
 endif()
