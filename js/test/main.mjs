@@ -122,6 +122,31 @@ const ze = await ZeJson.load();
   );
 }
 
+// --- 5. Regresi payload di-atas 64 KiB --------------------------------------
+// Sebelum fix --global-base, penulisan payload > ~63,9 KB menyapu segmen
+// .rodata wasm (kStructural/kUtf8Dfa) yang menyebabkan INVALID_UTF8 palsu.
+{
+  // Pad ASCII besar dengan karakter UTF-8 multi-byte di tengah string.
+  const besar = "a".repeat(65_000) + "名名名" + "b".repeat(1_000);
+  check(
+    "payload ~66 KB ber-UTF-8 → scan OK",
+    (() => {
+      const doc = ze.openDocument(`{"s":"${besar}"}`);
+      return doc.find("s").found;
+    })(),
+  );
+  check(
+    "payload string besar masih di-emit dengan benar",
+    (() => {
+      const doc = ze.openDocument(`{"s":"x${besar}"}`);
+      doc.find("s");
+      const v = doc.asString();
+      // 65.000 'a' + 3 karakter UTF-8 + 1.000 'b' + karakter 'x' = 66.004 char
+      return v.startsWith("x") && v.endsWith("b") && v.length === 66_004;
+    })(),
+  );
+}
+
 ze.close();
 console.log(`\n${passed} lolos, ${failed} gagal · STATUS✓ ${STATUS.length} kode`);
 process.exitCode = failed ? 1 : 0;
