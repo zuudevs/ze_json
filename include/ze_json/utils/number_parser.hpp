@@ -11,6 +11,11 @@ parse_double(const char* p) NOEXCEPT {
     // Implementasi berdasarkan:
     // "Number parsing at a gigabyte per second" - Daniel Lemire (2021)
 
+    // Toleransi whitespace di awal (contoh: `"key": 1048576`)
+    while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') {
+        p++;
+    }
+
     bool negative = false;
     if (*p == '-') {
         negative = true;
@@ -185,6 +190,11 @@ parse_double(const char* p) NOEXCEPT {
 // Helper tambahan jika user yakin datanya hanya integer murni (lebih cepat)
 static constexpr types::int64_t
 parse_int(const char* p) NOEXCEPT {
+    // Toleransi whitespace di awal (contoh: `"key": 1048576`)
+    while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') {
+        p++;
+    }
+
     bool negative = false;
     if (*p == '-') {
         negative = true;

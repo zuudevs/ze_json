@@ -10,10 +10,11 @@ class Document {
 
   public:
     constexpr Document(
-        const char* src, const types::uint64_t* tape, types::size_t tape_len,
-        void* arena) NOEXCEPT : iter_(src, tape, tape_len, arena) {}
+        const char* RESTRICT src, const types::uint64_t* RESTRICT tape,
+        types::size_t tape_len, void* RESTRICT arena) NOEXCEPT
+        : iter_(src, tape, tape_len, arena) {}
 
-    JsonValue
+    [[nodiscard]] JsonValue
     get_root() NOEXCEPT;
 };
 

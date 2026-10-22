@@ -9,30 +9,44 @@ namespace zuu::ondemand {
 
 class JsonValue {
   private:
-    JsonIterator& iter_;
+    // Pointer (bukan referensi) agar JsonValue bisa di-copy-assign — kursor
+    // yang di-copy seluruhnya menunjuk ke iterator yang sama, sehingga state
+    // kursor terbagi (onedemand forward-only per satu Document).
+    JsonIterator* iter_;
 
   public:
-    constexpr explicit JsonValue(JsonIterator& iter) NOEXCEPT : iter_(iter) {}
+    constexpr explicit JsonValue(JsonIterator& iter) NOEXCEPT : iter_(&iter) {}
+
+    // Akses karakter struktural saat ini. Dipakai lapisan API publik untuk
+    // membedakan nilai angka (tidak direkam tape; posisinya berakhir di
+    // karakter struktural penerus) dari bracket penutup objek/array.
+    [[nodiscard]] constexpr char
+    peek_char() const NOEXCEPT {
+        return iter_->peek_char();
+    }
 
     [[nodiscard]] constexpr JsonType
     type() const NOEXCEPT {
         auto type = lookups::kStructural[static_cast<types::uint8_t>(
-                        iter_.peek_char())] &
+                        iter_->peek_char())] &
                     lookups::TYPE_MASK;
         return type == 0 ? JsonType::Number : static_cast<JsonType>(type);
     }
 
+    // Angka tidak direkam oleh scanner; teksnya berada di antara entry
+    // struktural sebelumnya (':' / ',' / '[') dan entry struktural saat ini
+    // (',' / '}' / ']') yang menjadi terminator angka.
     [[nodiscard]] constexpr double
     get_double() NOEXCEPT {
-        const char* p = iter_.src() + iter_.peek_position();
-        iter_.advance();
+        const char* p = iter_->src() + iter_->peek_prev_position() + 1;
+        iter_->advance();
         return utils::parse_double(p);
     }
 
     [[nodiscard]] constexpr types::int64_t
     get_int() NOEXCEPT {
-        const char* p = iter_.src() + iter_.peek_position();
-        iter_.advance();
+        const char* p = iter_->src() + iter_->peek_prev_position() + 1;
+        iter_->advance();
         return utils::parse_int(p);
     }
 

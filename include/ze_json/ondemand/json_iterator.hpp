@@ -52,24 +52,43 @@ class JsonIterator {
         }
     }
 
+    // Dapatkan posisi tape entry sebelum entry saat ini. Dipakai nilai (angka)
+    // yang tidak direkam scanner, karena teks angka berada di antara entry
+    // struktural sebelumnya dan entry saat ini.
+    constexpr types::uint64_t
+    peek_prev_position() const NOEXCEPT {
+        return current_idx_ == 0 ? 0 : tape_[current_idx_ - 1];
+    }
+
     constexpr void
     skip_child() NOEXCEPT {
         char c     = peek_char();
         auto flags = lookups::kStructural[static_cast<types::uint8_t>(c)];
-        if ((flags & lookups::PAIR_OPEN) != 0) {
+
+        if (flags & lookups::SCAN_QUOTE) {
+            // String = tepat 2 tape entry (quote pembuka & penutup)
             advance();
-            if (c == '"') {
-                advance();
-            }
+            advance();
             return;
         }
 
+        if ((flags & lookups::PAIR_OPEN) == 0) {
+            // Scalar: literal 't'/'f'/'n' menempati 1 entry, sedangkan angka
+            // menempati 0 entry (iterasi sudah berada pada karakter struktural
+            // setelah angka). Satu langkah cukup untuk keduanya.
+            advance();
+            return;
+        }
+
+        // Kontainer: lakukan bracket depth scanning. flags WAJIB dihitung
+        // ulang pada setiap iterasi karena karakter berubah.
         int depth = 0;
         do {
-            c = peek_char();
-            if (flags & lookups::PAIR_OPEN) {
+            c     = peek_char();
+            flags = lookups::kStructural[static_cast<types::uint8_t>(c)];
+            if ((flags & lookups::PAIR_OPEN) != 0) {
                 depth++;
-            } else if (flags & lookups::PAIR_CLOSE) {
+            } else if ((flags & lookups::PAIR_CLOSE) != 0) {
                 depth--;
             }
             advance();

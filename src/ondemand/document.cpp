@@ -9,12 +9,12 @@ Document::get_root() NOEXCEPT {
 
 JsonObject
 JsonValue::get_object() NOEXCEPT {
-    return JsonObject(iter_);
+    return JsonObject(*iter_);
 }
 
 JsonArray
 JsonValue::get_array() NOEXCEPT {
-    return JsonArray(iter_);
+    return JsonArray(*iter_);
 }
 
 } // namespace zuu::ondemand
