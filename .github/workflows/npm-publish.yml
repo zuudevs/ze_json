@@ -1,0 +1,63 @@
+name: npm publish (@zuudevs/ze-json)
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Build wasm64 & publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # >= 3.40 is mandatory (runner still ships 3.31).
+      - name: Install CMake >= 3.40 + Ninja
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: "3.40.2"
+          ninjaVersion: "1.12.1"
+
+      # The wasm64 presets point straight to clang/clang++ on PATH. Install
+      # the SAME major version as the dev machine (LLVM 23) and expose it as
+      # the unversioned `clang` / `clang++` symbols.
+      - name: Install LLVM/Clang 23
+        run: |
+          wget -q https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 23
+          sudo update-alternatives \
+            --install /usr/bin/clang clang /usr/lib/llvm-23/bin/clang 100
+          sudo update-alternatives \
+            --install /usr/bin/clang++ clang++ /usr/lib/llvm-23/bin/clang++ 100
+          clang --version
+
+      - name: Configure wasm64 (preset)
+        run: cmake --preset wasm64-release
+
+      - name: Build wasm64
+        run: cmake --build build/wasm64-release
+
+      # The `.wasm` path is now real: build/wasm64-release/src/ze_json_core.wasm
+      - name: Smoke test the public API
+        run: node js/test/main.mjs
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
+      # `npm publish` runs the `prepack` script, which copies the freshly
+      # built ze_json_core.wasm next to ze_json.mjs inside the tarball.
+      - name: Publish @zuudevs/ze-json
+        working-directory: js
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
