@@ -142,6 +142,14 @@ class JsonIterator {
     src() const NOEXCEPT {
         return src_;
     }
+
+    // Kembalikan kursor ke awal dokumen. Dipakai pencarian path: tiap query
+    // path melintasi ulang dari root (kursor forward-only, jadi satu-satunya
+    // cara kueri independen — biayanya O(panjang path), tetap skala nanosekon).
+    constexpr void
+    reset() NOEXCEPT {
+        current_idx_ = 0;
+    }
     constexpr const types::uint64_t*
     tape() const NOEXCEPT {
         return tape_;

@@ -44,6 +44,10 @@ enum Status : types::int32_t {
     INVALID_QUOTE       = 4,
     INSUFFICIENT_BUFFER = 5,
     INVALID_UTF8        = 6,
+    // Status pencarian path (get_*_at):
+    NOT_FOUND       = 7,
+    TYPE_MISMATCH   = 8,
+    INVALID_PATH    = 9,
 };
 
 // Pastikan pemetaan Status <-> JsonErrc tidak pernah salah katupan
@@ -136,6 +140,124 @@ class Session {
         return found_;
     }
 
+    // ------------------------------------------------------------------
+    //  PATH — pencarian + pembacaan dalam SATU lapis pemanggilan C ABI
+    // ------------------------------------------------------------------
+    // Sintaks path (subset JSONPath, byte tegas):
+    //   key     : segmen sampai '.' atau '[' — pencocokan byte-exact
+    //             terhadap teks kunci mentah di payload (kunci JSON yang
+    //             berisi escape tidak akan cocok — batasan yang sama
+    //             dengan find_field)
+    //   [index] : indeks array, digit murni
+    // Contoh   : "position.x", "colors[1]", "items[0].name"
+    //
+    // Setiap panggilan ME-REWIND kursor ke root lalu menelusuri dari awal —
+    // kueri independen, biaya O(panjang path). Hasil: kursor tepat
+    // di nilai terpilih dan SIAP dibaca lewat value_type/get_*.
+    // CATATAN: setelah find_path, array_next/array_size TIDAK berlanjut
+    // (penghitung array tidak relevan) — buat session baru atau pakai path
+    // lebih spesifik untuk menjangkau elemen lain.
+    [[nodiscard]] types::int32_t
+    find_path(const char* const path, types::size_t len) NOEXCEPT {
+        doc_.rewind();
+        value_pending_   = false;
+        array_remaining_ = 0;
+
+        if (!path || len == 0) [[unlikely]] {
+            return INVALID_PATH;
+        }
+
+        types::size_t i = 0;
+        while (i < len) {
+            if (path[i] == '[') {
+                // --- segmen [index] ------------------------------------
+                ++i; // masuk ke isinya
+                types::size_t idx = 0;
+                while (i < len && path[i] >= '0' && path[i] <= '9') {
+                    const int d = path[i] - '0';
+                    if (idx > (static_cast<types::size_t>(-1) - d) / 10) {
+                        return INVALID_PATH;
+                    }
+                    idx = idx * 10 + d;
+                    ++i;
+                }
+                if (i >= len || path[i] != ']') [[unlikely]] {
+                    return INVALID_PATH;
+                }
+                ++i; // lintas ']'
+
+                if (value_.peek_char() != '[') {
+                    return NOT_FOUND;
+                }
+                value_.get_array(); // habiskan '[' → kursor di elemen pertama
+                if (!position_at_index(idx)) {
+                    return NOT_FOUND;
+                }
+            } else {
+                // --- segmen key ----------------------------------------
+                const types::size_t start = i;
+                while (i < len && path[i] != '.' && path[i] != '[') {
+                    ++i;
+                }
+                if (start == i) [[unlikely]] {
+                    // leading '.', '..', atau trailing '.'
+                    return INVALID_PATH;
+                }
+
+                if (value_.peek_char() != '{') {
+                    return NOT_FOUND;
+                }
+                ondemand::JsonObject obj = value_.get_object();
+                if (!obj.find_field_checked(
+                        types::StringView(path + start, i - start),
+                        &value_)) {
+                    return NOT_FOUND;
+                }
+            }
+
+            if (i < len && path[i] == '.') {
+                ++i; // lintas '.' setelah segmen
+            }
+        }
+
+        value_pending_ = true;
+        return OK;
+    }
+
+  private:
+    // Posisikan kursor di elemen ke-`index` array (kursor saat ini harus
+    // sudah pasca-'['). Kembali true bila indeks valid; elemen 0..index-1
+    // di-skip utuh (angka 0 entry dilintasi lewat kursor di terminatornya).
+    [[nodiscard]] bool
+    position_at_index(types::size_t index) NOEXCEPT {
+        types::size_t i = 0;
+        for (;;) {
+            char c = value_.peek_char();
+            if (c == '\0') [[unlikely]] {
+                return false;
+            }
+            if (c == ']') {
+                // ']': habis, atau terminator elemen ANGKA terakhir.
+                return i == index ? value_.has_inline_number() : false;
+            }
+            if (i == index) {
+                return true; // elemen sedang dipegang kursor
+            }
+            ++i;
+
+            if (c == ',') {
+                // angka: lintas terminator/separator-nya ke elemen berikut
+                value_.skip();
+            } else {
+                value_.skip(); // habiskan elemen string/literal/kontainer
+                if (value_.peek_char() == ',') {
+                    value_.skip();
+                }
+            }
+        }
+    }
+
+  public:
     // Cari field; menggeser kursor internal (forward-only).
     void
     find(const types::StringView& key) NOEXCEPT {
@@ -155,10 +277,9 @@ class Session {
     // ------------------------------------------------------------------
 
     // Valid SAAT kursor tepat menunjuk '[' (hasil find_field bertipe
-    // Array dan belum pernah dipanggil untuk array ini). Menghabiskan '[',
-    // menghitung jumlah elemen top-level, dan memposisikan kursor di
-    // elemen pertama. Kursor bisa dihitung ulang karena penghitungan
-    // bersifat inspeksi (snapshot & restore).
+    // Array). Menghabiskan '[' dan menghitung jumlah elemen top-level;
+    // penghitungan inspektif (snapshot & restore) sehingga kursor kembali
+    // tepat ke posisi elemen pertama.
     [[nodiscard]] types::size_t
     array_size() NOEXCEPT {
         if (value_.peek_char() != '[') [[unlikely]] {
@@ -167,14 +288,13 @@ class Session {
         }
 
         ondemand::JsonArray arr = value_.get_array();
-        array_remaining_        = arr.count_elements();
-        value_pending_                = false;
+        array_remaining_        = arr.count_elements();        value_pending_                = false;
         return array_remaining_;
     }
 
-    // Maju ke elemen berikutnya dan menuntun kursor di atasnya.
+    // Maju ke elemen berikutnya dan mendelegasikan kursor ke atasnya.
     // Mengembalikan 1 saat elemen tersedia (nilai siap dibaca lewat
-    // value_type/get_*), 0 saat array habis (kursor kembali di irama
+    // value_type/get_*), 0 saat array habis (kursor kembali ke ritme
     // object root: ',' / '}' — find_field tetap valid). Elemen yang tidak
     // dibaca getter di-skip otomatis oleh array_next.
     [[nodiscard]] types::int32_t
@@ -182,7 +302,7 @@ class Session {
         if (array_remaining_ == 0) {
             value_pending_ = false;
 
-            // Grand kursor kembali ke ritme object root:
+            // Menuntun kursor kembali ke ritme object root:
             //   ']'   → array kosong ATAU elemen terakhir sudah dibaca
             //           hingga terminatornya → satu langkah keluar.
             //   lain  → elemen terakhir belum dibaca → habiskan elemen,
@@ -375,6 +495,59 @@ array_size(zuu::api::Session* session) NOEXCEPT;
 EXPORT_NAME(array_next)
 [[nodiscard]] zuu::types::int32_t
 array_next(zuu::api::Session* session) NOEXCEPT;
+
+// ============================================================================
+//  C ABI — path query (SATU panggilan wasm: navigasi penuh + baca nilai)
+// ============================================================================
+//  Sintaks path: "position.x", "colors[1]", "items[0].name".
+//  Setiap kueri me-rewind kursor ke root dan menelusuri ulang di C++
+//  (O(panjang path), skala nanosekon) — JS tidak perlu menjejaki kursor
+//  per-langkah lagi. Kode status dari zuu::api::Status dituliskan ke
+//  out-param `error`: OK / NOT_FOUND / TYPE_MISMATCH / INVALID_PATH.
+//
+//  find_path hanya men-POSISIKAN kursor; nilainya dibaca sesudahnya lewat
+//  value_type/get_*. Varian get_*_at melakukan navigasi + cek tipe + baca
+//  dalam SATU panggilan yang sama.
+// ============================================================================
+
+// Navigasi path. Mengembalikan zuu::api::OK bila kursor berada tepat di
+// nilai terpilih (harga read sesudahnya), atau NOT_FOUND / INVALID_PATH.
+EXPORT_NAME(find_path)
+[[nodiscard]] zuu::types::int32_t
+find_path(
+    zuu::api::Session* session, const char* const RESTRICT path,
+    zuu::types::size_t path_len) NOEXCEPT;
+
+// Hanya valid bila nilai path bertipe Number (integer). Mengembalikan 0
+// bila gagal (lihat `error_out`).
+EXPORT_NAME(get_int_at)
+[[nodiscard]] zuu::types::int64_t
+get_int_at(
+    zuu::api::Session* session, const char* const RESTRICT path,
+    zuu::types::size_t path_len, zuu::types::int32_t& error_out) NOEXCEPT;
+
+// Hanya valid bila nilai path bertipe Number (integer atau pecahan).
+EXPORT_NAME(get_double_at)
+[[nodiscard]] double
+get_double_at(
+    zuu::api::Session* session, const char* const RESTRICT path,
+    zuu::types::size_t path_len, zuu::types::int32_t& error_out) NOEXCEPT;
+
+// Hanya valid bila nilai path bertipe Boolean. Mengembalikan 0/1.
+EXPORT_NAME(get_bool_at)
+[[nodiscard]] zuu::types::int32_t
+get_bool_at(
+    zuu::api::Session* session, const char* const RESTRICT path,
+    zuu::types::size_t path_len, zuu::types::int32_t& error_out) NOEXCEPT;
+
+// Zero-copy: out_data menunjuk LANGSUNG ke memory payload / arena.
+// Hanya valid bila nilai path bertipe String.
+EXPORT_NAME(get_string_at)
+void
+get_string_at(
+    zuu::api::Session* session, const char* const RESTRICT path,
+    zuu::types::size_t path_len, const char*& out_data,
+    zuu::types::size_t& out_len, zuu::types::int32_t& error_out) NOEXCEPT;
 
 // Tipe nilai pada kursor saat ini (hasil zuu::api::ValueType).
 EXPORT_NAME(value_type)

@@ -35,6 +35,7 @@ const WASM = join(ROOT, "build/wasm64-release/src/ze_json_core.wasm");
 const STATUS = [
   "OK", "EMPTY_JSON", "INVALID_JSON", "UNEXPECTED_QUOTE",
   "INVALID_QUOTE", "INSUFFICIENT_BUFFER", "INVALID_UTF8",
+  "NOT_FOUND", "TYPE_MISMATCH", "INVALID_PATH",
 ];
 
 const VALUE_TYPE = ["Array", "Object", "String", "Number", "Boolean", "Null"];
@@ -117,7 +118,9 @@ class ZeJson {
     for (const name of [
       "create_arena", "reset_arena", "get_arena_used_space",
       "create_session", "find_field", "array_size", "array_next",
-      "value_type", "get_int", "get_double", "get_bool", "get_string",
+      "find_path", "get_int_at", "get_double_at", "get_bool_at",
+      "get_string_at", "value_type",
+      "get_int", "get_double", "get_bool", "get_string",
     ]) {
       if (typeof ex[name] !== "function") {
         throw new Error(
@@ -238,6 +241,55 @@ class ZeJson {
     return this.ex.array_next(doc.session) === 1;
   }
 
+  // ------------------------------------------------------------------
+  //  PATH QUERY — satu panggilan wasm per kueri:
+  //  navigasi penuh ("position.x", "colors[1]", "items[0].name") +
+  //  cek tipe + pembacaan nilai SEMUA di dalam C++.
+  // ------------------------------------------------------------------
+  status() {
+    return STATUS[
+      new DataView(this.buffer()).getInt32(Number(ERR_REF), true)];
+  }
+
+  intAt(doc, path) {
+    const [ptr, len] = this.writeText(KEY_BASE, KEY_CAP, path);
+    // error (int32) ke slot ERR_REF; NILAI int64 langsung di-return → BigInt
+    const value = this.ex.get_int_at(doc.session, ptr, len, ERR_REF);
+    return { status: this.status(), value: Number(value) };
+  }
+
+  doubleAt(doc, path) {
+    const [ptr, len] = this.writeText(KEY_BASE, KEY_CAP, path);
+    const value = this.ex.get_double_at(doc.session, ptr, len, ERR_REF);
+    return { status: this.status(), value };
+  }
+
+  boolAt(doc, path) {
+    const [ptr, len] = this.writeText(KEY_BASE, KEY_CAP, path);
+    const value = this.ex.get_bool_at(doc.session, ptr, len, ERR_REF);
+    return { status: this.status(), value };
+  }
+
+  stringAt(doc, path) {
+    const [ptr, len] = this.writeText(KEY_BASE, KEY_CAP, path);
+    this.ex.get_string_at(doc.session, ptr, len, DATA_REF, LEN_REF, ERR_REF);
+    const view = new DataView(this.buffer());
+    const data = view.getBigUint64(Number(DATA_REF), true);
+    const dlen = view.getBigUint64(Number(LEN_REF), true);
+    const value =
+      data === 0n ? "" : decoder.decode(
+        new Uint8Array(this.buffer(), Number(data), Number(dlen)));
+    return { status: this.status(), value };
+  }
+
+  // Navigasi path saja (nilai dibaca terpisah: dua panggilan).
+  typeAt(doc, path) {
+    const [ptr, len] = this.writeText(KEY_BASE, KEY_CAP, path);
+    const st = this.ex.find_path(doc.session, ptr, len);
+    if (st !== 0) return { status: STATUS[st], type: null };
+    return { status: "OK", type: this.typeOf(doc) };
+  }
+
   // String ZERO-COPY: data menunjuk langsung ke payload / arena.
   // JS WAJIB menyalin (decode) SEBELUM resetArena() dipanggil lagi.
   stringOf(doc) {
@@ -329,8 +381,25 @@ function demoTiny(ze) {
   if (position.found) {
     console.log(
       `  position : ${position.type}` +
-      ` (nested object — traversal dalam belum tersedia)`);
+      ` (isi dalamnya dibaca via path query di bawah)`);
   }
+
+  // QUERY PATH: satu panggilan wasm per kueri; kursor di-rewind dan
+  // di-telusuri ulang di C++ (O(panjang path)), rerata nanosekon.
+  // Bahkan kursor "habis" (di '}' akhir) pun tak masalah: find_path
+  // mengulang dari root.
+  console.log("  — path queries:",);
+  const px = ze.intAt(doc, "position.x");
+  const py = ze.intAt(doc, "position.y");
+  const c0 = ze.stringAt(doc, "colors[0]");
+  const c1 = ze.stringAt(doc, "colors[1]");
+  console.log(
+    `  position.x/y : ${px.value}/${py.value} [${px.status}, ${py.status}]`);
+  console.log(
+    `  colors[0/1]  : ${JSON.stringify(c0.value)}/${JSON.stringify(c1.value)}` +
+    ` [${c0.status}]`);
+  const miss = ze.intAt(doc, "colors[9]");
+  console.log(`  colors[9]    : status=${miss.status} (bagian dari ABI)`);
 
   console.log(`  arena terpakai: ${ze.arenaUsed()} byte`);
 }
@@ -408,6 +477,102 @@ function demoHotLoop(ze) {
 }
 
 // ---------------------------------------------------------------------------
+//  DEMO 4: A/B strategi baca dokumen yang sama:
+//  A) per-langkah streaming: find_field kumulatif + getter (6 panggilan/dok)
+//  B) path query: get_*_at (3 panggilan/dok, tiap kueri rewind dari root)
+//  Kunci SEKALI ditulis; patch payload sama — membandingkan biaya scan
+//  tape vs jumlah panggilan lintas JS↔WASM.
+// ---------------------------------------------------------------------------
+
+function demoPathVsSteps(ze) {
+  console.log("\n[4] A/B strategi baca: per-langkah (6×) vs path (3×) per dokumen");
+
+  const template =
+    '{"id":         ,"name":"ze","score":3.1415926535,"active":true,"note":"ze"}';
+  const tb = encoder.encode(template);
+  const slot = indexOfBytes(tb, 0, '"id":') + 5;
+  const base = Number(PAYLOAD_BASE);
+  const payloadSize = BigInt(tb.length);
+  const N = 100_000;
+
+  // Template + ketiga kunci ditulis SEKALI — kedua strategi memakai region
+  // kunci yang sama sehingga yang diukur hanya biaya panggilan wasm.
+  ze.u8().set(tb, base);
+  const key_at = (txt, ptr) => {
+    const bytes = encoder.encode(txt);
+    for (let k = 0; k < bytes.length; k++) {
+      ze.u8()[Number(ptr) + k] = bytes[k];
+    }
+    return [ptr, BigInt(bytes.length)];
+  };
+  const keyId = key_at("id", KEY_BASE);
+  const keyScore = key_at("score", KEY_BASE + 8n);
+  const keyActive = key_at("active", KEY_BASE + 16n);
+
+  const patched = (u8, digits) => {
+    for (let k = 0; k < 9; k++) {
+      u8[base + slot + k] = digits.charCodeAt(k);
+    }
+  };
+
+  // --- Strategi A: find_field + getter (= 6 panggilan wasm/dokumen) ------
+  const u8A = ze.u8();
+  let sumA = 0n;
+  let t0 = process.hrtime.bigint();
+  for (let i = 0; i < N; i++) {
+    patched(u8A, String(i).padStart(9, " "));
+    ze.resetArena();
+    const s = ze.ex.create_session(
+      PAYLOAD_BASE, payloadSize, TAPE_BASE, TAPE_ENTRIES, ze.arena, ERR_REF);
+
+    if (ze.ex.find_field(s, ...keyId) === 1) {
+      sumA ^= ze.ex.get_int(s);
+    }
+    if (ze.ex.find_field(s, ...keyScore) === 1) {
+      sumA += BigInt(Math.round(ze.ex.get_double(s) * 1e6));
+    }
+    if (ze.ex.find_field(s, ...keyActive) === 1) {
+      sumA += BigInt(ze.ex.get_bool(s));
+    }
+  }
+  const msA = Number(process.hrtime.bigint() - t0) / 1e6;
+
+  // --- Strategi B: get_*_at path (= 3 panggilan wasm/dokumen) ------------
+  // Satu Session cukup untuk SEMUA dokumen: tiap find_path me-rewind
+  // kursor sendiri lalu menelusuri ulang dari root di C++. Bahkan scan
+  // tape diulang per kueri, total panggilan lintas JS↔WASM tetap jauh
+  // lebih sedikit — dan seluruh navigasi berjalan memakai tape, bukan JS.
+  const u8B = ze.u8();
+  let sumB = 0n;
+  t0 = process.hrtime.bigint();
+  const s = ze.ex.create_session(
+    PAYLOAD_BASE, payloadSize, TAPE_BASE, TAPE_ENTRIES, ze.arena, ERR_REF);
+  for (let i = 0; i < N; i++) {
+    patched(u8B, String(i).padStart(9, " "));
+    sumB ^= ze.ex.get_int_at(s, ...keyId, ERR_REF);
+    sumB += BigInt(
+      Math.round(ze.ex.get_double_at(s, ...keyScore, ERR_REF) * 1e6));
+    sumB += BigInt(ze.ex.get_bool_at(s, ...keyActive, ERR_REF));
+  }
+  const msB = Number(process.hrtime.bigint() - t0) / 1e6;
+
+  console.log(`  A per-langkah : ${msA.toFixed(1)} ms (${(msA / N * 1000).toFixed(2)} µs/dok)`);
+  console.log(`  B path        : ${msB.toFixed(1)} ms (${(msB / N * 1000).toFixed(2)} µs/dok)`);
+  console.log(
+    `  checksum sama : ${sumA === sumB ? "ya" : "TIDAK"}`);
+  // Interpretasi JUJUR: untuk kunci TOP-LEVEL yang berurutan di tape,
+  // find_field kumulatif (A) menang — kursor maju sekali jalan, sementara
+  // tiap kueri path me-rewind lalu menelusuri ulang dari root. Keunggulan
+  // PATH ada pada akses ACak/bersarang ("items[0].name") yang via
+  // per-langkah butuh orkestrasi JS yang tumbuh dengan kedalaman, sedangkan
+  // path tetap SATU panggilan tidak peduli seberapa dalam targetnya.
+  console.log(
+    "  → kunci berurutan: per-langkah menang (scan 1× penuh vs 3× rewind);");
+  console.log(
+    "    path unggul untuk akses acak/bersarang (1 panggilan, kedalaman apa pun)");
+}
+
+// ---------------------------------------------------------------------------
 //  DEMO 3: dokumen rusak → kode STATUS ABI
 // ---------------------------------------------------------------------------
 
@@ -426,5 +591,6 @@ console.log("Muat wasm:", WASM);
 const ze = await ZeJson.load();
 demoTiny(ze);
 demoHotLoop(ze);
+demoPathVsSteps(ze);
 demoBroken(ze);
 console.log("\nSelesai — seluruh memori tetap, alokasi hot loop nol ✓");

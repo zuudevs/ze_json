@@ -152,6 +152,131 @@ array_next(zuu::api::Session* session) NOEXCEPT {
     return (session && session->array_next() == 1) ? 1 : 0;
 }
 
+// ============================================================================
+//  IMPLEMENTASI PATH QUERY
+// ============================================================================
+
+zuu::types::int32_t
+find_path(
+    zuu::api::Session* session, const char* const RESTRICT path,
+    zuu::types::size_t path_len) NOEXCEPT {
+    if (!session) [[unlikely]] {
+        return static_cast<zuu::types::int32_t>(zuu::api::INVALID_PATH);
+    }
+    return session->find_path(path, path_len);
+}
+
+zuu::types::int64_t
+get_int_at(
+    zuu::api::Session* session, const char* const RESTRICT path,
+    zuu::types::size_t path_len, zuu::types::int32_t& error_out) NOEXCEPT {
+    if (!session || !path || path_len == 0) [[unlikely]] {
+        error_out =
+            static_cast<zuu::types::int32_t>(zuu::api::INVALID_PATH);
+        return 0;
+    }
+
+    const auto status = session->find_path(path, path_len);
+    if (status != static_cast<zuu::types::int32_t>(zuu::api::OK)) [[likely]] {
+        error_out = status;
+        return 0;
+    }
+
+    if (session->type() != zuu::api::ValueType::Number) {
+        error_out =
+            static_cast<zuu::types::int32_t>(zuu::api::TYPE_MISMATCH);
+        return 0;
+    }
+
+    error_out = static_cast<zuu::types::int32_t>(zuu::api::OK);
+    return session->get_int();
+}
+
+double
+get_double_at(
+    zuu::api::Session* session, const char* const RESTRICT path,
+    zuu::types::size_t path_len, zuu::types::int32_t& error_out) NOEXCEPT {
+    if (!session || !path || path_len == 0) [[unlikely]] {
+        error_out =
+            static_cast<zuu::types::int32_t>(zuu::api::INVALID_PATH);
+        return 0.0;
+    }
+
+    const auto status = session->find_path(path, path_len);
+    if (status != static_cast<zuu::types::int32_t>(zuu::api::OK)) [[likely]] {
+        error_out = status;
+        return 0.0;
+    }
+
+    if (session->type() != zuu::api::ValueType::Number) {
+        error_out =
+            static_cast<zuu::types::int32_t>(zuu::api::TYPE_MISMATCH);
+        return 0.0;
+    }
+
+    error_out = static_cast<zuu::types::int32_t>(zuu::api::OK);
+    return session->get_double();
+}
+
+zuu::types::int32_t
+get_bool_at(
+    zuu::api::Session* session, const char* const RESTRICT path,
+    zuu::types::size_t path_len, zuu::types::int32_t& error_out) NOEXCEPT {
+    if (!session || !path || path_len == 0) [[unlikely]] {
+        error_out =
+            static_cast<zuu::types::int32_t>(zuu::api::INVALID_PATH);
+        return 0;
+    }
+
+    const auto status = session->find_path(path, path_len);
+    if (status != static_cast<zuu::types::int32_t>(zuu::api::OK)) [[likely]] {
+        error_out = status;
+        return 0;
+    }
+
+    if (session->type() != zuu::api::ValueType::Boolean) {
+        error_out =
+            static_cast<zuu::types::int32_t>(zuu::api::TYPE_MISMATCH);
+        return 0;
+    }
+
+    error_out = static_cast<zuu::types::int32_t>(zuu::api::OK);
+    return session->get_bool() ? 1 : 0;
+}
+
+void
+get_string_at(
+    zuu::api::Session* session, const char* const RESTRICT path,
+    zuu::types::size_t path_len, const char*& out_data,
+    zuu::types::size_t& out_len, zuu::types::int32_t& error_out) NOEXCEPT {
+    if (!session || !path || path_len == 0) [[unlikely]] {
+        error_out =
+            static_cast<zuu::types::int32_t>(zuu::api::INVALID_PATH);
+        out_data = nullptr;
+        out_len  = 0;
+        return;
+    }
+    out_data = nullptr;
+    out_len  = 0;
+
+    const auto status = session->find_path(path, path_len);
+    if (status != static_cast<zuu::types::int32_t>(zuu::api::OK)) [[likely]] {
+        error_out = status;
+        return;
+    }
+
+    if (session->type() != zuu::api::ValueType::String) {
+        error_out =
+            static_cast<zuu::types::int32_t>(zuu::api::TYPE_MISMATCH);
+        return;
+    }
+
+    const auto sv = session->get_string();
+    out_data      = sv.data;
+    out_len       = sv.length;
+    error_out     = static_cast<zuu::types::int32_t>(zuu::api::OK);
+}
+
 zuu::types::int32_t
 value_type(zuu::api::Session* session) NOEXCEPT {
     if (!session) [[unlikely]] {
