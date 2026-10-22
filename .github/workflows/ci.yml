@@ -24,13 +24,36 @@ jobs:
         uses: actions/checkout@v4
 
       # The project requires CMake >= 3.40 (see the top-level CMakeLists).
-      # Runner defaults are still at 3.31, so we install the version
-      # explicitly (= 3.40.2, bundled with matching Ninja).
-      - name: Install CMake >= 3.40 + Ninja
-        uses: lukka/get-cmake@latest
-        with:
-          cmakeVersion: "3.40.2"
-          ninjaVersion: "1.12.1"
+      # NOTE: there is no 3.40.x release asset - CMake jumped from 3.31 to
+      # 4.0, so we install the CMake 4.x line (4.0 > 3.40 satisfies the
+      # minimum). Runner defaults (3.31) are below the minimum; the earlier
+      # lukka/get-cmake attempt failed exactly because it was pinned to the
+      # non-existent 3.40.2.
+      - name: Install CMake 4.4.4
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            curl -Lf -o "$RUNNER_TEMP/cmake.zip" \
+              https://github.com/Kitware/CMake/releases/download/v4.4.4/cmake-4.4.4-windows-x86_64.zip
+            unzip -q "$RUNNER_TEMP/cmake.zip" -d "$RUNNER_TEMP/cmake"
+            echo "$RUNNER_TEMP/cmake/cmake-4.4.4-windows-x86_64/bin" >> "$GITHUB_PATH"
+          else
+            curl -Lf -o "$RUNNER_TEMP/cmake.tgz" \
+              https://github.com/Kitware/CMake/releases/download/v4.4.4/cmake-4.4.4-linux-x86_64.tar.gz
+            tar xf "$RUNNER_TEMP/cmake.tgz" -C "$RUNNER_TEMP"
+            echo "$RUNNER_TEMP/cmake-4.4.4-linux-x86_64/bin" >> "$GITHUB_PATH"
+          fi
+
+      - name: Install Ninja
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            choco install ninja --no-progress -y
+          else
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ninja-build
+          fi
+          ninja --version
 
       # Configure via a project preset: the `native-*` preset is bound to the
       # vcpkg toolchain ($VCPKG_ROOT), so gtest + benchmark are pulled in as

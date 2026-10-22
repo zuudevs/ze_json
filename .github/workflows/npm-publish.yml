@@ -17,12 +17,23 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # >= 3.40 is mandatory (runner still ships 3.31).
-      - name: Install CMake >= 3.40 + Ninja
-        uses: lukka/get-cmake@latest
-        with:
-          cmakeVersion: "3.40.2"
-          ninjaVersion: "1.12.1"
+      # NOTE: there is no 3.40.x release - CMake jumped 3.31 -> 4.0, so
+      # install 4.4.4 (satisfies the project's 3.40 minimum) from the
+      # official Kitware binary.
+      - name: Install CMake 4.4.4
+        run: |
+          curl -Lf -o "$RUNNER_TEMP/cmake.tgz" \
+            https://github.com/Kitware/CMake/releases/download/v4.4.4/cmake-4.4.4-linux-x86_64.tar.gz
+          tar xf "$RUNNER_TEMP/cmake.tgz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/cmake-4.4.4-linux-x86_64/bin" >> "$GITHUB_PATH"
+
+      # The wasm64 build uses Ninja (project generator preset) - ubuntu has it
+      # in apt.
+      - name: Install Ninja
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ninja-build
+          ninja --version
 
       # The wasm64 presets point straight to clang/clang++ on PATH. Install
       # the SAME major version as the dev machine (LLVM 23) and expose it as
