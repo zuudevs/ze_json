@@ -68,7 +68,6 @@ get_dataset(const std::string& target_name) {
                                                                                \
         std::vector<size_t> tape_idx(capacity);                                \
                                                                                \
-        /* Verifikasi awal di luar pengukuran benchmark. */                    \
         const auto validation = zuu::FUNC(                                     \
             json.data(), json.size(), tape_idx.data(), tape_idx.size());       \
                                                                                \
