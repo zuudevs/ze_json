@@ -11,23 +11,23 @@ namespace zuu::testing {
 
 class NumberTest : public ::testing::Test {
   protected:
-    ondemand::Document* build_document(const char* payload,
-                                       types::size_t payload_size) {
+    ondemand::Document*
+    build_document(const char* payload, types::size_t payload_size) {
         auto tape_handle = arena_handle->allocate(
             payload_size * sizeof(types::size_t), sizeof(types::size_t));
         auto* tape       = static_cast<types::size_t*>(tape_handle);
         auto* const_tape = static_cast<const types::size_t*>(tape_handle);
 
-        auto scan_res = scanner::scanner8(payload, payload_size, tape,
-                                          payload_size);
+        auto scan_res =
+            scanner::scanner8(payload, payload_size, tape, payload_size);
         if (!scan_res.has_value()) {
             return nullptr;
         }
 
-        return new (arena_handle->allocate(sizeof(ondemand::Document),
-                                           alignof(ondemand::Document)))
-            ondemand::Document(payload, const_tape, scan_res.value(),
-                               arena_handle);
+        return new (arena_handle->allocate(
+            sizeof(ondemand::Document), alignof(ondemand::Document)))
+            ondemand::Document(
+                payload, const_tape, scan_res.value(), arena_handle);
     }
 
     types::uint8_t buffer[1024 * 1024]{}; // allocate 1 MB

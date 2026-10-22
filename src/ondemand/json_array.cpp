@@ -41,7 +41,7 @@ JsonArray::count_elements() NOEXCEPT {
             // Bedakan lewat teks payload di antara entry sebelumnya dan
             // entry ']': hanya-whitespace berarti kasus (a).
             if (iter_.index() >= 1) {
-                const types::uint64_t prev_pos = iter_.peek_prev_position();
+                const types::uint64_t prev_pos  = iter_.peek_prev_position();
                 const types::uint64_t close_pos = iter_.peek_position();
 
                 const char* p   = iter_.src() + prev_pos + 1;

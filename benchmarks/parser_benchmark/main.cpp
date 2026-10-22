@@ -245,9 +245,8 @@ BENCHMARK_REGISTER_F(WideObjectFixture, FindField_Last_InWideObject)
 //  KELOMPOK UJI STRING — payload tanpa escape (zero-copy langsung ke
 //  memory payload) vs payload ber-escape (aliran unescape arena).
 // ==========================================================================
-constexpr char kPlainStringJson[] = R"({"s":"white black red"})";
-constexpr char kEscapedStringJson[] =
-    R"({"s":"Ze\nJson \"one\" two\u00eb"})";
+constexpr char kPlainStringJson[]   = R"({"s":"white black red"})";
+constexpr char kEscapedStringJson[] = R"({"s":"Ze\nJson \"one\" two\u00eb"})";
 
 class StringReadFixture : public benchmark::Fixture {
   public:

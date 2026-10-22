@@ -15,15 +15,14 @@ class PathTest : public ::testing::Test {
     memory::Arena* arena_handle{nullptr};
     types::uint64_t tape_[256]{}; // tape untuk Session (entry struktural)
 
-    PathTest() noexcept
-        : arena_handle(create_arena(buffer, sizeof(buffer))) {}
+    PathTest() noexcept : arena_handle(create_arena(buffer, sizeof(buffer))) {}
 
     api::Session*
-    make_session(const char* payload, types::size_t payload_size,
-                 types::int32_t& err) {
+    make_session(
+        const char* payload, types::size_t payload_size, types::int32_t& err) {
         err = static_cast<types::int32_t>(api::INVALID_JSON);
-        return create_session(payload, payload_size, tape_, 256,
-                              arena_handle, err);
+        return create_session(
+            payload, payload_size, tape_, 256, arena_handle, err);
     }
 };
 
@@ -35,7 +34,7 @@ TEST_F(PathTest, MixedQueriesAcrossTapeOrder) {
     constexpr auto payload_size = sizeof(payload) - 1;
 
     types::int32_t err = api::OK;
-    auto* session = make_session(payload, payload_size, err);
+    auto* session      = make_session(payload, payload_size, err);
     ASSERT_NE(session, nullptr);
     ASSERT_EQ(static_cast<api::Status>(err), api::OK);
 
@@ -56,7 +55,7 @@ TEST_F(PathTest, MixedQueriesAcrossTapeOrder) {
     EXPECT_EQ(static_cast<api::Status>(st), api::OK);
 
     // String via array-index
-    const char* data = nullptr;
+    const char* data  = nullptr;
     types::size_t len = 0;
     get_string_at(session, "colors[1]", 9, data, len, st);
     EXPECT_EQ(static_cast<api::Status>(st), api::OK);
@@ -114,7 +113,7 @@ TEST_F(PathTest, ThreeLevelsDeep) {
     constexpr auto payload_size = sizeof(payload) - 1;
 
     types::int32_t err = api::OK;
-    auto* session = make_session(payload, payload_size, err);
+    auto* session      = make_session(payload, payload_size, err);
     ASSERT_NE(session, nullptr);
     ASSERT_EQ(static_cast<api::Status>(err), api::OK);
 
@@ -137,7 +136,7 @@ TEST_F(PathTest, ObjectInsideArray) {
     constexpr auto payload_size = sizeof(payload) - 1;
 
     types::int32_t err = api::OK;
-    auto* session = make_session(payload, payload_size, err);
+    auto* session      = make_session(payload, payload_size, err);
     ASSERT_NE(session, nullptr);
     ASSERT_EQ(static_cast<api::Status>(err), api::OK);
 
@@ -160,12 +159,11 @@ TEST_F(PathTest, ObjectInsideArray) {
 
 TEST_F(PathTest, NullValueIsTypeMismatch) {
     // Null bukan Number maupun Boolean → TYPE_MISMATCH pada getter.
-    alignas(8) constexpr const char payload[] =
-        R"({"n":null})";
-    constexpr auto payload_size = sizeof(payload) - 1;
+    alignas(8) constexpr const char payload[] = R"({"n":null})";
+    constexpr auto payload_size               = sizeof(payload) - 1;
 
     types::int32_t err = api::OK;
-    auto* session = make_session(payload, payload_size, err);
+    auto* session      = make_session(payload, payload_size, err);
     ASSERT_NE(session, nullptr);
     ASSERT_EQ(static_cast<api::Status>(err), api::OK);
 
@@ -183,19 +181,16 @@ TEST_F(PathTest, NullValueIsTypeMismatch) {
 TEST_F(PathTest, IndexOverflowIsInvalidPath) {
     // Segmen digit melebihi size_t → ditolak sebagai INVALID_PATH,
     // tanpa overflow aritmetika senyap.
-    alignas(8) constexpr const char payload[] =
-        R"({"colors":["red"]})";
-    constexpr auto payload_size = sizeof(payload) - 1;
+    alignas(8) constexpr const char payload[] = R"({"colors":["red"]})";
+    constexpr auto payload_size               = sizeof(payload) - 1;
 
     types::int32_t err = api::OK;
-    auto* session = make_session(payload, payload_size, err);
+    auto* session      = make_session(payload, payload_size, err);
     ASSERT_NE(session, nullptr);
     ASSERT_EQ(static_cast<api::Status>(err), api::OK);
 
     types::int32_t st = api::OK;
-    EXPECT_EQ(get_int_at(
-                  session, "colors[99999999999999999999]", 30, st),
-              0);
+    EXPECT_EQ(get_int_at(session, "colors[99999999999999999999]", 30, st), 0);
     EXPECT_EQ(static_cast<api::Status>(st), api::INVALID_PATH);
 
     arena_handle->reset();
@@ -209,11 +204,11 @@ TEST_F(PathTest, RepeatedQueriesAreIndependent) {
     constexpr auto payload_size = sizeof(payload) - 1;
 
     types::int32_t err = api::OK;
-    auto* session = make_session(payload, payload_size, err);
+    auto* session      = make_session(payload, payload_size, err);
     ASSERT_NE(session, nullptr);
     ASSERT_EQ(static_cast<api::Status>(err), api::OK);
 
-    const char* data = nullptr;
+    const char* data  = nullptr;
     types::size_t len = 0;
     types::int32_t st = api::NOT_FOUND;
 

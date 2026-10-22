@@ -45,9 +45,9 @@ enum Status : types::int32_t {
     INSUFFICIENT_BUFFER = 5,
     INVALID_UTF8        = 6,
     // Status pencarian path (get_*_at):
-    NOT_FOUND       = 7,
-    TYPE_MISMATCH   = 8,
-    INVALID_PATH    = 9,
+    NOT_FOUND     = 7,
+    TYPE_MISMATCH = 8,
+    INVALID_PATH  = 9,
 };
 
 // Pastikan pemetaan Status <-> JsonErrc tidak pernah salah katupan
@@ -209,8 +209,7 @@ class Session {
                 }
                 ondemand::JsonObject obj = value_.get_object();
                 if (!obj.find_field_checked(
-                        types::StringView(path + start, i - start),
-                        &value_)) {
+                        types::StringView(path + start, i - start), &value_)) {
                     return NOT_FOUND;
                 }
             }
@@ -288,7 +287,8 @@ class Session {
         }
 
         ondemand::JsonArray arr = value_.get_array();
-        array_remaining_        = arr.count_elements();        value_pending_                = false;
+        array_remaining_        = arr.count_elements();
+        value_pending_          = false;
         return array_remaining_;
     }
 

@@ -67,10 +67,9 @@ BENCHMARK_DEFINE_F(SessionFixture, CreateSession_Pipeline)(
     for (auto _ : state) {
         reset_arena(arena);
 
-        int32_t err = static_cast<int32_t>(zuu::api::INVALID_JSON);
-        auto* session =
-            create_session(kSessionPayload, kPayloadSize, tape, kTapeEntries,
-                           arena, err);
+        int32_t err   = static_cast<int32_t>(zuu::api::INVALID_JSON);
+        auto* session = create_session(
+            kSessionPayload, kPayloadSize, tape, kTapeEntries, arena, err);
 
         if (!session || err != static_cast<int32_t>(zuu::api::OK)) {
             state.SkipWithError("create_session gagal.");
@@ -91,10 +90,9 @@ BENCHMARK_DEFINE_F(SessionFixture, FindRead_SingleField)(
     benchmark::State& state) {
     for (auto _ : state) {
         reset_arena(arena);
-        int32_t err = static_cast<int32_t>(zuu::api::INVALID_JSON);
-        auto* session =
-            create_session(kSessionPayload, kPayloadSize, tape, kTapeEntries,
-                           arena, err);
+        int32_t err   = static_cast<int32_t>(zuu::api::INVALID_JSON);
+        auto* session = create_session(
+            kSessionPayload, kPayloadSize, tape, kTapeEntries, arena, err);
         if (!session) {
             state.SkipWithError("create_session gagal.");
             return;
@@ -118,10 +116,9 @@ BENCHMARK_DEFINE_F(SessionFixture, FindRead_ThreeFields)(
     benchmark::State& state) {
     for (auto _ : state) {
         reset_arena(arena);
-        int32_t err = static_cast<int32_t>(zuu::api::INVALID_JSON);
-        auto* session =
-            create_session(kSessionPayload, kPayloadSize, tape, kTapeEntries,
-                           arena, err);
+        int32_t err   = static_cast<int32_t>(zuu::api::INVALID_JSON);
+        auto* session = create_session(
+            kSessionPayload, kPayloadSize, tape, kTapeEntries, arena, err);
         if (!session) {
             state.SkipWithError("create_session gagal.");
             return;
@@ -150,10 +147,9 @@ BENCHMARK_DEFINE_F(SessionFixture, ArrayRead_AllElements)(
     benchmark::State& state) {
     for (auto _ : state) {
         reset_arena(arena);
-        int32_t err = static_cast<int32_t>(zuu::api::INVALID_JSON);
-        auto* session =
-            create_session(kSessionPayload, kPayloadSize, tape, kTapeEntries,
-                           arena, err);
+        int32_t err   = static_cast<int32_t>(zuu::api::INVALID_JSON);
+        auto* session = create_session(
+            kSessionPayload, kPayloadSize, tape, kTapeEntries, arena, err);
         if (!session) {
             state.SkipWithError("create_session gagal.");
             return;
@@ -182,11 +178,10 @@ BENCHMARK_REGISTER_F(SessionFixture, ArrayRead_AllElements)
 
 // --- Path query: SATU panggilan C ABI per kueri, lintas iterasi -----------
 
-BENCHMARK_DEFINE_F(SessionFixture, PathQuery_Flat)(
-    benchmark::State& state) {
+BENCHMARK_DEFINE_F(SessionFixture, PathQuery_Flat)(benchmark::State& state) {
     int32_t err = static_cast<int32_t>(zuu::api::OK);
     for (auto _ : state) {
-        err = static_cast<int32_t>(zuu::api::OK);
+        err              = static_cast<int32_t>(zuu::api::OK);
         const auto value = get_int_at(shared, "id", 2, err);
         if (err != static_cast<int32_t>(zuu::api::OK)) {
             state.SkipWithError("get_int_at gagal.");
@@ -200,11 +195,10 @@ BENCHMARK_REGISTER_F(SessionFixture, PathQuery_Flat)
     ->MinTime(15)
     ->MinWarmUpTime(5);
 
-BENCHMARK_DEFINE_F(SessionFixture, PathQuery_Nested)(
-    benchmark::State& state) {
+BENCHMARK_DEFINE_F(SessionFixture, PathQuery_Nested)(benchmark::State& state) {
     int32_t err = static_cast<int32_t>(zuu::api::OK);
     for (auto _ : state) {
-        err = static_cast<int32_t>(zuu::api::OK);
+        err              = static_cast<int32_t>(zuu::api::OK);
         const auto value = get_int_at(shared, "position.x", 10, err);
         if (err != static_cast<int32_t>(zuu::api::OK)) {
             state.SkipWithError("get_int_at gagal.");
@@ -222,7 +216,7 @@ BENCHMARK_DEFINE_F(SessionFixture, PathQuery_ArrayElement)(
     benchmark::State& state) {
     int32_t err = static_cast<int32_t>(zuu::api::OK);
     for (auto _ : state) {
-        err       = static_cast<int32_t>(zuu::api::OK);
+        err              = static_cast<int32_t>(zuu::api::OK);
         const char* data = nullptr;
         size_t len       = 0;
         get_string_at(shared, "colors[1]", 9, data, len, err);

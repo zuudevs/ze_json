@@ -14,16 +14,15 @@ class ArrayTest : public ::testing::Test {
     memory::Arena* arena_handle{nullptr};
     types::uint64_t tape_[256]{}; // tape untuk Session (entry struktural)
 
-    ArrayTest() noexcept
-        : arena_handle(create_arena(buffer, sizeof(buffer))) {}
+    ArrayTest() noexcept : arena_handle(create_arena(buffer, sizeof(buffer))) {}
 
     // Membuat Session siap pakai; gagal → nullptr (status di `err`).
     api::Session*
-    make_session(const char* payload, types::size_t payload_size,
-                 types::int32_t& err) {
+    make_session(
+        const char* payload, types::size_t payload_size, types::int32_t& err) {
         err = static_cast<types::int32_t>(api::INVALID_JSON);
-        return create_session(payload, payload_size, tape_, 256,
-                              arena_handle, err);
+        return create_session(
+            payload, payload_size, tape_, 256, arena_handle, err);
     }
 };
 
@@ -35,26 +34,29 @@ TEST_F(ArrayTest, TraversalMixedElements) {
     constexpr auto payload_size = sizeof(payload) - 1;
 
     types::int32_t err = api::OK;
-    auto* session = make_session(payload, payload_size, err);
+    auto* session      = make_session(payload, payload_size, err);
     ASSERT_NE(session, nullptr);
     ASSERT_EQ(static_cast<api::Status>(err), api::OK);
 
     ASSERT_EQ(find_field(session, "colors", 6), 1);
-    EXPECT_EQ(static_cast<api::ValueType>(value_type(session)),
-              api::ValueType::Array);
+    EXPECT_EQ(
+        static_cast<api::ValueType>(value_type(session)),
+        api::ValueType::Array);
     EXPECT_EQ(array_size(session), 7u);
 
     // Elemen 0: angka (0 entry — kursor di terminatornya)
     EXPECT_EQ(array_next(session), 1);
-    EXPECT_EQ(static_cast<api::ValueType>(value_type(session)),
-              api::ValueType::Number);
+    EXPECT_EQ(
+        static_cast<api::ValueType>(value_type(session)),
+        api::ValueType::Number);
     EXPECT_EQ(get_int(session), 1);
 
     // Elemen 1: string
     EXPECT_EQ(array_next(session), 1);
-    EXPECT_EQ(static_cast<api::ValueType>(value_type(session)),
-              api::ValueType::String);
-    const char* str_data = nullptr;
+    EXPECT_EQ(
+        static_cast<api::ValueType>(value_type(session)),
+        api::ValueType::String);
+    const char* str_data  = nullptr;
     types::size_t str_len = 0;
     get_string(session, str_data, str_len);
     EXPECT_EQ(std::string_view(str_data, str_len), "two");
@@ -63,31 +65,35 @@ TEST_F(ArrayTest, TraversalMixedElements) {
     EXPECT_EQ(array_next(session), 1);
     EXPECT_EQ(get_bool(session), 1);
     EXPECT_EQ(array_next(session), 1);
-    EXPECT_EQ(static_cast<api::ValueType>(value_type(session)),
-              api::ValueType::Null);
+    EXPECT_EQ(
+        static_cast<api::ValueType>(value_type(session)), api::ValueType::Null);
     EXPECT_EQ(get_bool(session), 0); // 'n' != 't' → false, tapi tetap konsumsi
 
     // Elemen 4: array bersarang — TIDAK dibaca, array_next harus skip
     EXPECT_EQ(array_next(session), 1);
-    EXPECT_EQ(static_cast<api::ValueType>(value_type(session)),
-              api::ValueType::Array);
+    EXPECT_EQ(
+        static_cast<api::ValueType>(value_type(session)),
+        api::ValueType::Array);
 
     // Elemen 5: object bersarang — juga di-skip
     EXPECT_EQ(array_next(session), 1);
-    EXPECT_EQ(static_cast<api::ValueType>(value_type(session)),
-              api::ValueType::Object);
+    EXPECT_EQ(
+        static_cast<api::ValueType>(value_type(session)),
+        api::ValueType::Object);
 
     // Elemen 6: angka negatif-pecahan
     EXPECT_EQ(array_next(session), 1);
-    EXPECT_EQ(static_cast<api::ValueType>(value_type(session)),
-              api::ValueType::Number);
+    EXPECT_EQ(
+        static_cast<api::ValueType>(value_type(session)),
+        api::ValueType::Number);
     EXPECT_NEAR(get_double(session), -8.5, 1e-9);
 
     // Elemen habis; kursor kembali ke ']' agar object root bisa dilanjutkan
     EXPECT_EQ(array_next(session), 0);
     ASSERT_EQ(find_field(session, "after", 5), 1);
-    EXPECT_EQ(static_cast<api::ValueType>(value_type(session)),
-              api::ValueType::Number);
+    EXPECT_EQ(
+        static_cast<api::ValueType>(value_type(session)),
+        api::ValueType::Number);
     EXPECT_EQ(get_int(session), 99);
 
     arena_handle->reset();
@@ -101,7 +107,7 @@ TEST_F(ArrayTest, AmbiguousTapeCases) {
     constexpr auto payload_size = sizeof(payload) - 1;
 
     types::int32_t err = api::OK;
-    auto* session = make_session(payload, payload_size, err);
+    auto* session      = make_session(payload, payload_size, err);
     ASSERT_NE(session, nullptr);
     ASSERT_EQ(static_cast<api::Status>(err), api::OK);
 
@@ -131,7 +137,7 @@ TEST_F(ArrayTest, AmbiguousTapeCases) {
     ASSERT_EQ(find_field(session, "mixed", 5), 1);
     EXPECT_EQ(array_size(session), 2u);
     EXPECT_EQ(array_next(session), 1);
-    const char* str_data = nullptr;
+    const char* str_data  = nullptr;
     types::size_t str_len = 0;
     get_string(session, str_data, str_len);
     EXPECT_EQ(std::string_view(str_data, str_len), "a");
@@ -159,9 +165,8 @@ TEST_F(ArrayTest, DrainContractAndForgiveness) {
     //  (b) drain penuh (array_next sampai 0) → find berikutnya sukses;
     //  (c) elemen terakhir selesai dibaca, TANPA memanggil array_next
     //      terakhir → pengampunan kursor ']'-sisa tetap membuat find sukses.
-    alignas(8) constexpr const char payload[] =
-        R"({"nums":[1,2,3],"after":9})";
-    constexpr auto payload_size = sizeof(payload) - 1;
+    alignas(8) constexpr const char payload[] = R"({"nums":[1,2,3],"after":9})";
+    constexpr auto payload_size               = sizeof(payload) - 1;
 
     types::int32_t err = api::OK;
 
@@ -201,8 +206,9 @@ TEST_F(ArrayTest, DrainContractAndForgiveness) {
         EXPECT_EQ(array_next(session), 0);
 
         ASSERT_EQ(find_field(session, "after", 5), 1);
-        EXPECT_EQ(static_cast<api::ValueType>(value_type(session)),
-                  api::ValueType::Number);
+        EXPECT_EQ(
+            static_cast<api::ValueType>(value_type(session)),
+            api::ValueType::Number);
         EXPECT_EQ(get_int(session), 9);
         arena_handle->reset();
     }

@@ -97,8 +97,7 @@ class JsonIterator {
                 continue;
             }
             const char c = *p;
-            return c == '-' || c == '+' || c == '.' ||
-                   (c >= '0' && c <= '9');
+            return c == '-' || c == '+' || c == '.' || (c >= '0' && c <= '9');
         }
         return false;
     }

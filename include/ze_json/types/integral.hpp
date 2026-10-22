@@ -20,41 +20,41 @@ using uintptr_t = __UINTPTR_TYPE__;
 } // namespace zuu::types
 
 constexpr auto
-operator""_u8(zuu::types::uint64_t v) NOEXCEPT {
+operator""_u8(unsigned long long v) NOEXCEPT {
     return static_cast<zuu::types::uint8_t>(v);
 }
 
 constexpr auto
-operator""_u16(zuu::types::uint64_t v) NOEXCEPT {
+operator""_u16(unsigned long long v) NOEXCEPT {
     return static_cast<zuu::types::uint16_t>(v);
 }
 
 constexpr auto
-operator""_u32(zuu::types::uint64_t v) NOEXCEPT {
+operator""_u32(unsigned long long v) NOEXCEPT {
     return static_cast<zuu::types::uint32_t>(v);
 }
 
 constexpr auto
-operator""_u64(zuu::types::uint64_t v) NOEXCEPT {
+operator""_u64(unsigned long long v) NOEXCEPT {
     return static_cast<zuu::types::uint64_t>(v);
 }
 
 constexpr auto
-operator""_i8(zuu::types::uint64_t v) NOEXCEPT {
+operator""_i8(unsigned long long v) NOEXCEPT {
     return static_cast<zuu::types::int8_t>(v);
 }
 
 constexpr auto
-operator""_i16(zuu::types::uint64_t v) NOEXCEPT {
+operator""_i16(unsigned long long v) NOEXCEPT {
     return static_cast<zuu::types::int16_t>(v);
 }
 
 constexpr auto
-operator""_i32(zuu::types::uint64_t v) NOEXCEPT {
+operator""_i32(unsigned long long v) NOEXCEPT {
     return static_cast<zuu::types::int32_t>(v);
 }
 
 constexpr auto
-operator""_i64(zuu::types::uint64_t v) NOEXCEPT {
+operator""_i64(unsigned long long v) NOEXCEPT {
     return static_cast<zuu::types::int64_t>(v);
 }

@@ -22,24 +22,24 @@ class ObjectTest : public ::testing::Test {
     // Bangun Document dari payload: scanner → tape di arena → ctor.
     // Mengembalikan jumlah entry tape (0 bila scan gagal).
     types::size_t
-    build_document(const char* payload, types::size_t payload_size,
-                   ondemand::Document** out_doc) {
+    build_document(
+        const char* payload, types::size_t payload_size,
+        ondemand::Document** out_doc) {
         auto tape_handle = arena_handle->allocate(
             payload_size * sizeof(types::size_t), sizeof(types::size_t));
         auto* tape       = static_cast<types::size_t*>(tape_handle);
         auto* const_tape = static_cast<const types::size_t*>(tape_handle);
 
-        auto scan_res = scanner::scanner8(payload, payload_size, tape,
-                                          payload_size);
+        auto scan_res =
+            scanner::scanner8(payload, payload_size, tape, payload_size);
         if (!scan_res.has_value()) {
             return 0;
         }
 
-        *out_doc =
-            new (arena_handle->allocate(sizeof(ondemand::Document),
-                                        alignof(ondemand::Document)))
-                ondemand::Document(payload, const_tape, scan_res.value(),
-                                   arena_handle);
+        *out_doc = new (arena_handle->allocate(
+            sizeof(ondemand::Document), alignof(ondemand::Document)))
+            ondemand::Document(
+                payload, const_tape, scan_res.value(), arena_handle);
         return scan_res.value();
     }
 
@@ -103,14 +103,12 @@ TEST_F(ObjectTest, MissedFindIsReported) {
     ondemand::JsonObject obj = doc->get_root().get_object();
     ondemand::JsonValue out(doc->get_root());
 
-    EXPECT_FALSE(obj.find_field_checked(
-        types::StringView("missing", 7), &out));
+    EXPECT_FALSE(obj.find_field_checked(types::StringView("missing", 7), &out));
 
     // Rewind lalu cari ulang pada object yang fresh.
     doc->rewind();
     ondemand::JsonObject fresh = doc->get_root().get_object();
-    EXPECT_TRUE(
-        fresh.find_field_checked(types::StringView("active", 6), &out));
+    EXPECT_TRUE(fresh.find_field_checked(types::StringView("active", 6), &out));
     EXPECT_EQ(out.type(), ondemand::JsonType::Boolean);
 
     arena_handle->reset();
@@ -150,18 +148,15 @@ TEST_F(ObjectTest, EscapedStringsAreUnescaped) {
 
     ondemand::JsonValue newline_val =
         obj.find_field(types::StringView("newline", 7));
-    EXPECT_EQ(to_sv(newline_val.get_string()),
-              std::string_view("a\nb", 3));
+    EXPECT_EQ(to_sv(newline_val.get_string()), std::string_view("a\nb", 3));
 
     ondemand::JsonValue quote_val =
         obj.find_field(types::StringView("quote", 5));
     EXPECT_EQ(to_sv(quote_val.get_string()), std::string_view("s\"x", 3));
 
     // "A\u00eb" → 'A' + UTF-8 "ë" (0xC3 0xAB)
-    ondemand::JsonValue uni_val =
-        obj.find_field(types::StringView("uni", 3));
-    EXPECT_EQ(to_sv(uni_val.get_string()),
-              std::string_view("A\xC3\xAB", 3));
+    ondemand::JsonValue uni_val = obj.find_field(types::StringView("uni", 3));
+    EXPECT_EQ(to_sv(uni_val.get_string()), std::string_view("A\xC3\xAB", 3));
 
     arena_handle->reset();
 }
