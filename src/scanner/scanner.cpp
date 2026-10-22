@@ -25,6 +25,10 @@ scanner8(
     auto cursor           = dst;
     const auto end_cursor = dst + dst_size;
 
+    // Kedalaman bracket: melampaui scan oleh-oleh, semua kontainer wajib
+    // berpasangan — tape tidak bisa dibuat dari payload terpotong.
+    types::int64_t depth = 0;
+
     while (ptr < end && cursor < end_cursor) {
         while (ptr < end &&
                (lookups::kStructural[static_cast<types::uint8_t>(*ptr)]) == 0) {
@@ -37,6 +41,16 @@ scanner8(
 
         const auto flags =
             lookups::kStructural[static_cast<types::uint8_t>(*ptr)];
+
+        if (flags & lookups::PAIR_CLOSE) {
+            // Tutup tanpa pasangan buka → JSON bermata.
+            if (depth == 0) {
+                return types::Unexpected{core::JsonErrc::InvalidJson};
+            }
+            depth--;
+        } else if (flags & lookups::PAIR_OPEN) {
+            depth++;
+        }
 
         if (flags & lookups::SCAN_NORMAL) {
             *cursor++ = static_cast<types::size_t>(ptr - src);
@@ -73,6 +87,11 @@ scanner8(
         }
     }
 
+    // Wajib semua bracket tertutup: input terpotong (depth > 0) ditolak.
+    if (depth != 0) {
+        return types::Unexpected{core::JsonErrc::InvalidJson};
+    }
+
     return static_cast<types::size_t>(cursor - dst);
 }
 #if __LITTLE_ENDIAN__ == 1
@@ -98,6 +117,10 @@ scanner64(
     auto cursor           = dst;
     const auto end_cursor = dst + dst_size;
 
+    // Kedalaman bracket: melampaui scan oleh-oleh, semua kontainer wajib
+    // berpasangan — tape tidak bisa dibuat dari payload terpotong.
+    types::int64_t depth = 0;
+
     while (ptr < end && cursor < end_cursor) {
         while (ptr < end &&
                lookups::kStructural[static_cast<types::uint8_t>(*ptr)] == 0) {
@@ -110,6 +133,16 @@ scanner64(
 
         const auto flags =
             lookups::kStructural[static_cast<types::uint8_t>(*ptr)];
+        if (flags & lookups::PAIR_CLOSE) {
+            // Tutup tanpa pasangan buka → JSON mati.
+            if (depth == 0) {
+                return types::Unexpected{core::JsonErrc::InvalidJson};
+            }
+            depth--;
+        } else if (flags & lookups::PAIR_OPEN) {
+            depth++;
+        }
+
         if (flags & lookups::SCAN_NORMAL) {
             *cursor++ = static_cast<types::uint64_t>(ptr - src);
             ptr++;
@@ -165,6 +198,11 @@ scanner64(
             *cursor++ = static_cast<types::uint64_t>(ptr - src);
             ptr++;
         }
+    }
+
+    // Wajib semua bracket tertutup: input terpotong (depth > 0) ditolak.
+    if (depth != 0) {
+        return types::Unexpected{core::JsonErrc::InvalidJson};
     }
     return static_cast<types::size_t>(cursor - dst);
 }

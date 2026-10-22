@@ -53,6 +53,23 @@ TEST_F(ScannerTest, EmptyContainers) {
     EXPECT_EQ(arr_tape.size(), 2u);
 }
 
+TEST_F(ScannerTest, BracketDepthMustBalance) {
+    // Kontrak kedalaman: semua kontainer wajib berpasangan — tape tidak
+    // boleh dibangun dari payload terpotong.
+    // 1) Kontainer tidak ditutup → ditolak.
+    auto [trunc_ok, _1] = run_scanner(R"({"a":"x")");
+    EXPECT_FALSE(trunc_ok);
+
+    // 2) Kurung tutup berlebih tanpa pembuka → ditolak seketika.
+    auto [premature_ok, _2] = run_scanner(R"({"a":{"b":1}}})");
+    EXPECT_FALSE(premature_ok);
+
+    // 3) Bersarang dalam-sejajar (balanced) → diterima, entry lengkap.
+    auto [deep_ok, deep_tape] = run_scanner(R"({"d":{"x":[1,{"y":2}]}})");
+    ASSERT_TRUE(deep_ok);
+    EXPECT_GT(deep_tape.size(), 0u);
+}
+
 TEST_F(ScannerTest, ValidUtf8Multibyte) {
     // String dengan karakter UTF-8 valid: 2-byte (Cina/Jepang), 4-byte (Emoji)
     std::string json = R"({"message":"Hello 世界 🌍","status":"ok"})";
