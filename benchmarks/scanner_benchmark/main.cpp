@@ -113,3 +113,69 @@ MAKE_SCANNER_BENCHMARK(
     3214 * 1024)
 MAKE_SCANNER_BENCHMARK(
     Scanner64, Jeopardy, "jeopardy.json", scanner::scanner64, 53 * 1024 * 1024)
+
+// --- Pengganda scanner8 vs scanner64 dalam SATU proses ---------------------
+// Dataset eksternal tidak tersedia lintas mesin; payload sintetis membuat
+// perbandingan kedua scanner bisa berdampingan pada kondisi clock sama.
+namespace {
+using zuu::types::size_t;
+
+std::string
+make_synth_json(size_t target_bytes) {
+    std::string json = "{\"widgets\":[";
+    size_t index     = 0;
+    while (json.size() < target_bytes) {
+        json += R"({"index":)";
+        json += std::to_string(index++);
+        json += R"(,"name":"ZeJson","score":3.5},)";
+    }
+    json.pop_back(); // Buang koma terakhir sebelum ']'.
+    json += "]}";
+    return json;
+}
+
+void
+BM_Scanner_Synth(benchmark::State& state, bool use_scanner64) {
+    static const std::string json = make_synth_json(256 * 1024);
+    std::vector<size_t> tape_idx(json.size());
+
+    auto scan = use_scanner64 ? zuu::scanner::scanner64
+                              : zuu::scanner::scanner8;
+    auto validation = scan(
+        json.data(), json.size(), tape_idx.data(), tape_idx.size());
+    if (!validation) {
+        state.SkipWithError("Scanner gagal pada verifikasi awal.");
+        return;
+    }
+
+    for (auto _ : state) {
+        auto res = scan(
+            json.data(), json.size(), tape_idx.data(), tape_idx.size());
+        benchmark::DoNotOptimize(res);
+        benchmark::ClobberMemory();
+    }
+    state.SetBytesProcessed(state.iterations()
+        * static_cast<int64_t>(json.size()));
+}
+
+void
+BM_Scanner8_Synth(benchmark::State& state) {
+    BM_Scanner_Synth(state, false);
+}
+
+void
+BM_Scanner64_Synth(benchmark::State& state) {
+    BM_Scanner_Synth(state, true);
+}
+} // namespace
+
+// MinTime Panjang: peredam noise antar-run (clock bisa bergetar 15-45%
+// lintas proses) — raw name dipakai `--benchmark_filter=_Synth`.
+BENCHMARK(BM_Scanner8_Synth)
+    ->Unit(benchmark::kNanosecond)
+    ->MinTime(30)
+    ->MinWarmUpTime(3);
+BENCHMARK(BM_Scanner64_Synth)
+    ->Unit(benchmark::kNanosecond)
+    ->MinTime(30)
+    ->MinWarmUpTime(3);

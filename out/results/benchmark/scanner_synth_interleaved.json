@@ -1,0 +1,71 @@
+{
+  "context": {
+    "date": "2026-10-23T00:01:21+07:00",
+    "host_name": "ZUU",
+    "executable": "build\\native-release\\benchmarks\\scanner_benchmark.exe",
+    "num_cpus": 12,
+    "mhz_per_cpu": 2096,
+    "caches": [
+      {
+        "type": "Data",
+        "level": 1,
+        "size": 32768,
+        "num_sharing": 2
+      },
+      {
+        "type": "Instruction",
+        "level": 1,
+        "size": 32768,
+        "num_sharing": 2
+      },
+      {
+        "type": "Unified",
+        "level": 2,
+        "size": 524288,
+        "num_sharing": 2
+      },
+      {
+        "type": "Unified",
+        "level": 3,
+        "size": 4194304,
+        "num_sharing": 6
+      }
+    ],
+    "load_avg": [],
+    "library_version": "v1.9.5",
+    "library_build_type": "release",
+    "json_schema_version": 1
+  },
+  "benchmarks": [
+    {
+      "name": "BM_Scanner8_Synth/min_time:30.000/min_warmup_time:3.000",
+      "family_index": 0,
+      "per_family_instance_index": 0,
+      "run_name": "BM_Scanner8_Synth/min_time:30.000/min_warmup_time:3.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 189163,
+      "real_time": 2.2615759107224634e+05,
+      "cpu_time": 2.2384795123782134e+05,
+      "time_unit": "ns",
+      "bytes_per_second": 1.1711029676634686e+09
+    },
+    {
+      "name": "BM_Scanner64_Synth/min_time:30.000/min_warmup_time:3.000",
+      "family_index": 1,
+      "per_family_instance_index": 0,
+      "run_name": "BM_Scanner64_Synth/min_time:30.000/min_warmup_time:3.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 216600,
+      "real_time": 1.9516013204061246e+05,
+      "cpu_time": 1.9304016620498616e+05,
+      "time_unit": "ns",
+      "bytes_per_second": 1.3580023533632288e+09
+    }
+  ]
+}

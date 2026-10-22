@@ -1,0 +1,97 @@
+{
+  "context": {
+    "date": "2026-10-23T00:08:49+07:00",
+    "host_name": "ZUU",
+    "executable": "build\\native-release\\benchmarks\\session_benchmark.exe",
+    "num_cpus": 12,
+    "mhz_per_cpu": 2096,
+    "caches": [
+      {
+        "type": "Data",
+        "level": 1,
+        "size": 32768,
+        "num_sharing": 2
+      },
+      {
+        "type": "Instruction",
+        "level": 1,
+        "size": 32768,
+        "num_sharing": 2
+      },
+      {
+        "type": "Unified",
+        "level": 2,
+        "size": 524288,
+        "num_sharing": 2
+      },
+      {
+        "type": "Unified",
+        "level": 3,
+        "size": 4194304,
+        "num_sharing": 6
+      }
+    ],
+    "load_avg": [],
+    "library_version": "v1.9.5",
+    "library_build_type": "release",
+    "json_schema_version": 1
+  },
+  "benchmarks": [
+    {
+      "name": "BM_CreateSession_Pipeline_Scanner8/Idx:2/min_time:30.000/min_warmup_time:3.000",
+      "family_index": 0,
+      "per_family_instance_index": 0,
+      "run_name": "BM_CreateSession_Pipeline_Scanner8/Idx:2/min_time:30.000/min_warmup_time:3.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 772414,
+      "real_time": 5.5501320664823172e+04,
+      "cpu_time": 5.4941391533555841e+04,
+      "time_unit": "ns"
+    },
+    {
+      "name": "BM_CreateSession_Pipeline_Scanner8/Idx:4/min_time:30.000/min_warmup_time:3.000",
+      "family_index": 0,
+      "per_family_instance_index": 1,
+      "run_name": "BM_CreateSession_Pipeline_Scanner8/Idx:4/min_time:30.000/min_warmup_time:3.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 94648,
+      "real_time": 4.4884747802380560e+05,
+      "cpu_time": 4.4407964246471133e+05,
+      "time_unit": "ns"
+    },
+    {
+      "name": "BM_CreateSession_Pipeline_Scanner64/Idx:2/min_time:30.000/min_warmup_time:3.000",
+      "family_index": 1,
+      "per_family_instance_index": 0,
+      "run_name": "BM_CreateSession_Pipeline_Scanner64/Idx:2/min_time:30.000/min_warmup_time:3.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 893023,
+      "real_time": 4.7537586825870618e+04,
+      "cpu_time": 4.6943779723478568e+04,
+      "time_unit": "ns"
+    },
+    {
+      "name": "BM_CreateSession_Pipeline_Scanner64/Idx:4/min_time:30.000/min_warmup_time:3.000",
+      "family_index": 1,
+      "per_family_instance_index": 1,
+      "run_name": "BM_CreateSession_Pipeline_Scanner64/Idx:4/min_time:30.000/min_warmup_time:3.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 109268,
+      "real_time": 3.9348170095544425e+05,
+      "cpu_time": 3.8852294358824176e+05,
+      "time_unit": "ns"
+    }
+  ]
+}

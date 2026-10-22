@@ -1,0 +1,410 @@
+{
+  "hash": "26c8330",
+  "generated_at": "2026-10-22T17:40:14.918Z",
+  "presets": [
+    "native-release"
+  ],
+  "groups": [
+    {
+      "group": "parser_benchmark",
+      "hash": "26c8330",
+      "executable": "build\\native-release\\benchmarks\\parser_benchmark.exe",
+      "report": "out/results/benchmark/parser_benchmark_native-release_26c8330.json",
+      "host_name": "ZUU",
+      "cpus": "2096 MHz × 12 core",
+      "library_version": "v1.9.5",
+      "build_type": "release",
+      "context_date": "2026-10-23T00:12:42+07:00",
+      "benchmarks": [
+        {
+          "name": "DocumentInitialization",
+          "time_ns": 1.8790337209116699,
+          "cpu_ns": 1.871186756030347,
+          "iterations": 11389830508,
+          "bytes_per_second": 212699239515.9648,
+          "items_per_second": null
+        },
+        {
+          "name": "FindField_Early_And_ParseInt",
+          "time_ns": 23.866211359712466,
+          "cpu_ns": 23.73232887752345,
+          "iterations": 884210526,
+          "bytes_per_second": 16770372686.725243,
+          "items_per_second": null
+        },
+        {
+          "name": "ParseDouble_Nested_Lemire",
+          "time_ns": 136.63098510443064,
+          "cpu_ns": 135.8900672413235,
+          "iterations": 155916473,
+          "bytes_per_second": 2928838053.2861357,
+          "items_per_second": null
+        },
+        {
+          "name": "Extreme_Deep_Search_SkipChild",
+          "time_ns": 104.51241158528846,
+          "cpu_ns": 103.44122001027827,
+          "iterations": 202409639,
+          "bytes_per_second": 3847595764.632836,
+          "items_per_second": null
+        },
+        {
+          "name": "FindField_First_InWideObject",
+          "time_ns": 16.915735291755237,
+          "cpu_ns": 16.81222098814722,
+          "iterations": 1244444444,
+          "bytes_per_second": 474238353494.2255,
+          "items_per_second": null
+        },
+        {
+          "name": "FindField_Middle_InWideObject",
+          "time_ns": 3329.712421875115,
+          "cpu_ns": 3308.10546875,
+          "iterations": 6400000,
+          "bytes_per_second": 2410140811.808118,
+          "items_per_second": null
+        },
+        {
+          "name": "FindField_Last_InWideObject",
+          "time_ns": 6957.2382862574,
+          "cpu_ns": 6918.713672753962,
+          "iterations": 3125581,
+          "bytes_per_second": 1152381841.0635839,
+          "items_per_second": null
+        },
+        {
+          "name": "GetString_PlainPayload",
+          "time_ns": 22.540112404380746,
+          "cpu_ns": 22.37699962464628,
+          "iterations": 939860140,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "GetString_EscapedPayload",
+          "time_ns": 23.8797372109091,
+          "cpu_ns": 23.64397322272999,
+          "iterations": 884210526,
+          "bytes_per_second": null,
+          "items_per_second": null
+        }
+      ]
+    },
+    {
+      "group": "scanner_benchmark",
+      "hash": "26c8330",
+      "executable": "build\\native-release\\benchmarks\\scanner_benchmark.exe",
+      "report": "out/results/benchmark/scanner_benchmark_native-release_26c8330.json",
+      "host_name": "ZUU",
+      "cpus": "2096 MHz × 12 core",
+      "library_version": "v1.9.5",
+      "build_type": "release",
+      "context_date": "2026-10-23T00:18:06+07:00",
+      "benchmarks": [
+        {
+          "name": "BM_Scanner8_Tiny",
+          "time_ns": 135.90042269710787,
+          "cpu_ns": 135.1009114161143,
+          "iterations": 158677686,
+          "bytes_per_second": 1184299930.495627,
+          "items_per_second": null
+        },
+        {
+          "name": "BM_Scanner8_Literal",
+          "time_ns": 285.98473794585755,
+          "cpu_ns": 283.5286452426487,
+          "iterations": 73846154,
+          "bytes_per_second": 1449588981.20597,
+          "items_per_second": null
+        },
+        {
+          "name": "BM_Scanner8_GithubEvents",
+          "time_ns": 259217.86219124176,
+          "cpu_ns": 256804.18792975394,
+          "iterations": 83478,
+          "bytes_per_second": 1258659380.1516035,
+          "items_per_second": null
+        },
+        {
+          "name": "BM_Scanner8_UpdateCenter",
+          "time_ns": 3039831.4187245485,
+          "cpu_ns": 3017752.0103388857,
+          "iterations": 6964,
+          "bytes_per_second": 1090409347.3308551,
+          "items_per_second": null
+        },
+        {
+          "name": "BM_Scanner8_Jeopardy",
+          "time_ns": 48896812.873562306,
+          "cpu_ns": 48527298.85057471,
+          "iterations": 435,
+          "bytes_per_second": 1144811813.4715025,
+          "items_per_second": null
+        },
+        {
+          "name": "BM_Scanner64_Tiny",
+          "time_ns": 116.1730672772026,
+          "cpu_ns": 115.229957034643,
+          "iterations": 180888291,
+          "bytes_per_second": 1388527810.9745128,
+          "items_per_second": null
+        },
+        {
+          "name": "BM_Scanner64_Literal",
+          "time_ns": 267.35848860612253,
+          "cpu_ns": 265.4854919998377,
+          "iterations": 77687861,
+          "bytes_per_second": 1548107193.7454545,
+          "items_per_second": null
+        },
+        {
+          "name": "BM_Scanner64_GithubEvents",
+          "time_ns": 185245.98595727122,
+          "cpu_ns": 183585.8988321336,
+          "iterations": 112941,
+          "bytes_per_second": 1760641759.8311982,
+          "items_per_second": null
+        },
+        {
+          "name": "BM_Scanner64_UpdateCenter",
+          "time_ns": 2182680.1530667804,
+          "cpu_ns": 2160577.6191953667,
+          "iterations": 9669,
+          "bytes_per_second": 1523011703.3358264,
+          "items_per_second": null
+        },
+        {
+          "name": "BM_Scanner64_Jeopardy",
+          "time_ns": 37648418.58407305,
+          "cpu_ns": 37223451.32743363,
+          "iterations": 565,
+          "bytes_per_second": 1492463031.203566,
+          "items_per_second": null
+        },
+        {
+          "name": "BM_Scanner8_Synth",
+          "time_ns": 218700.17684338396,
+          "cpu_ns": 216921.60289587502,
+          "iterations": 192826,
+          "bytes_per_second": 1208496509.800523,
+          "items_per_second": null
+        },
+        {
+          "name": "BM_Scanner64_Synth",
+          "time_ns": 191236.61371422117,
+          "cpu_ns": 189695.31710698674,
+          "iterations": 222149,
+          "bytes_per_second": 1381947662.166852,
+          "items_per_second": null
+        }
+      ]
+    },
+    {
+      "group": "session_benchmark",
+      "hash": "26c8330",
+      "executable": "build\\native-release\\benchmarks\\session_benchmark.exe",
+      "report": "out/results/benchmark/session_benchmark_native-release_26c8330.json",
+      "host_name": "ZUU",
+      "cpus": "2096 MHz × 12 core",
+      "library_version": "v1.9.5",
+      "build_type": "release",
+      "context_date": "2026-10-23T00:26:38+07:00",
+      "benchmarks": [
+        {
+          "name": "CreateSession_Pipeline",
+          "time_ns": 198.85846912202288,
+          "cpu_ns": 197.05636160714286,
+          "iterations": 107520000,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "FindRead_SingleField",
+          "time_ns": 258.1774828778391,
+          "cpu_ns": 256.9905594942856,
+          "iterations": 83478261,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "FindRead_ThreeFields",
+          "time_ns": 299.5614432505953,
+          "cpu_ns": 296.4390352157956,
+          "iterations": 70366492,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "ArrayRead_AllElements",
+          "time_ns": 346.43450433038697,
+          "cpu_ns": 343.3512362638516,
+          "iterations": 61935484,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "PathQuery_Flat",
+          "time_ns": 29.639382784945926,
+          "cpu_ns": 29.488699778979814,
+          "iterations": 707368421,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "PathQuery_Nested",
+          "time_ns": 89.71968029505047,
+          "cpu_ns": 89.21875015135323,
+          "iterations": 235376532,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "PathQuery_ArrayElement",
+          "time_ns": 121.55237666173922,
+          "cpu_ns": 119.72749273056309,
+          "iterations": 174093264,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "PathQuery_Deep",
+          "time_ns": 144.94928434038118,
+          "cpu_ns": 143.8481213546828,
+          "iterations": 145770065,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "PathQuery_ThreeTypes",
+          "time_ns": 169.67624134177603,
+          "cpu_ns": 167.64322902945867,
+          "iterations": 130485437,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "KiB:0",
+          "time_ns": 810.3911474262427,
+          "cpu_ns": 804.5572899905056,
+          "iterations": 51891892,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "KiB:1",
+          "time_ns": 11969.931782703252,
+          "cpu_ns": 11876.527623315935,
+          "iterations": 3550859,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "KiB:2",
+          "time_ns": 47392.59059280068,
+          "cpu_ns": 47185.21770790945,
+          "iterations": 887129,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "KiB:3",
+          "time_ns": 191631.78395034448,
+          "cpu_ns": 190170.60129593548,
+          "iterations": 220690,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "KiB:4",
+          "time_ns": 394534.92511112505,
+          "cpu_ns": 391164.839577186,
+          "iterations": 107092,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "Idx:2",
+          "time_ns": 55073.94234741308,
+          "cpu_ns": 54662.488381699884,
+          "iterations": 774640,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "Idx:4",
+          "time_ns": 445887.33623533626,
+          "cpu_ns": 443749.47172681935,
+          "iterations": 94648,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "Idx:2",
+          "time_ns": 47615.39313898832,
+          "cpu_ns": 47185.21770790945,
+          "iterations": 887129,
+          "bytes_per_second": null,
+          "items_per_second": null
+        },
+        {
+          "name": "Idx:4",
+          "time_ns": 394343.7593006157,
+          "cpu_ns": 391351.6090029762,
+          "iterations": 107520,
+          "bytes_per_second": null,
+          "items_per_second": null
+        }
+      ]
+    }
+  ],
+  "scanner_speedups": [
+    {
+      "dataset": "Tiny",
+      "scanner8_ns": 135.90042269710787,
+      "scanner64_ns": 116.1730672772026,
+      "speedup": 1.1698100590977207,
+      "scanner8_mbs": 1184.299930495627,
+      "scanner64_mbs": 1388.5278109745127
+    },
+    {
+      "dataset": "Literal",
+      "scanner8_ns": 285.98473794585755,
+      "scanner64_ns": 267.35848860612253,
+      "speedup": 1.0696676938773975,
+      "scanner8_mbs": 1449.58898120597,
+      "scanner64_mbs": 1548.1071937454547
+    },
+    {
+      "dataset": "GithubEvents",
+      "scanner8_ns": 259217.86219124176,
+      "scanner64_ns": 185245.98595727122,
+      "speedup": 1.3993170262325298,
+      "scanner8_mbs": 1258.6593801516035,
+      "scanner64_mbs": 1760.6417598311982
+    },
+    {
+      "dataset": "UpdateCenter",
+      "scanner8_ns": 3039831.4187245485,
+      "scanner64_ns": 2182680.1530667804,
+      "speedup": 1.3927058503983853,
+      "scanner8_mbs": 1090.409347330855,
+      "scanner64_mbs": 1523.0117033358265
+    },
+    {
+      "dataset": "Jeopardy",
+      "scanner8_ns": 48896812.873562306,
+      "scanner64_ns": 37648418.58407305,
+      "speedup": 1.298774681979546,
+      "scanner8_mbs": 1144.8118134715025,
+      "scanner64_mbs": 1492.463031203566
+    },
+    {
+      "dataset": "Synth",
+      "scanner8_ns": 218700.17684338396,
+      "scanner64_ns": 191236.61371422117,
+      "speedup": 1.1436103819020953,
+      "scanner8_mbs": 1208.496509800523,
+      "scanner64_mbs": 1381.947662166852
+    }
+  ]
+}

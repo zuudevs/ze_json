@@ -106,7 +106,13 @@ create_session(
         return nullptr;
     }
 
+#if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
+    // LE 64-bit: pilih scanner64 — pemindaian string SWAR per blok 8 byte,
+    // format tape identik dengan scanner8 (offset uint64 dari awal src).
+    auto scan_res = zuu::scanner::scanner64(
+#else
     auto scan_res = zuu::scanner::scanner8(
+#endif
         src, src_size,
         reinterpret_cast<zuu::types::size_t* const RESTRICT>(tape),
         tape_entries);

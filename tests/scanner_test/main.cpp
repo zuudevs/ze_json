@@ -25,6 +25,25 @@ class ScannerTest : public ::testing::Test {
         tape.resize(count);
         return {true, tape};
     }
+
+    // Helper: jalankan scanner64 dan kembalikan (ok, tape) — hanya tersedia
+    // pada platform LE 64-bit; dipakai asseri kesetaraan dengan scanner8.
+#if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
+    std::pair<bool, std::vector<types::size_t>>
+    run_scanner64(std::string_view json) {
+        std::vector<types::size_t> tape(json.size() + 1);
+        auto res = scanner::scanner64(
+            json.data(), json.size(), tape.data(), tape.size());
+
+        if (!res.has_value()) {
+            return {false, {}};
+        }
+
+        types::size_t count = res.value();
+        tape.resize(count);
+        return {true, tape};
+    }
+#endif
 };
 
 TEST_F(ScannerTest, StandardJsonPayload) {
@@ -117,5 +136,99 @@ TEST_F(ScannerTest, EdgeCasesAndBuffers) {
         json.data(), json.size(), tiny_tape.data(), tiny_tape.size());
     EXPECT_FALSE(overflow_res.has_value());
 }
+
+#if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
+TEST_F(ScannerTest, Scanner64TapeMatchesScanner8) {
+    // Kontrak: scanner64 wajib menghasilkan tape identik dengan scanner8
+    // (offset uint64 dari src) untuk seluruh payload yang lolos, termasuk
+    // tepi blok SWAR 8 byte dan string panjang.
+    const std::string_view corpus[] = {
+        R"({"name":"zuu","age":21,"active":true})",
+        R"({"a":"back\\slash","b":"quote\"inner\"","c":"ctrl \u0001 done"})",
+        R"({"message":"Hello 世界 🌍","status":"ok"})",
+        R"({"d":{"x":[1,{"y":2}]}})",
+        "{}",
+        "[]",
+        R"({"k":1e-5,"j":-0.25,"t":true,"f":false,"n":null})",
+    };
+
+    for (const auto& json : corpus) {
+        auto [ok8, tape8]   = run_scanner(json);
+        auto [ok64, tape64] = run_scanner64(json);
+
+        EXPECT_EQ(ok8, ok64) << "payload: " << json;
+        if (ok8 && ok64) {
+            ASSERT_EQ(tape8.size(), tape64.size()) << "payload: " << json;
+            for (size_t i = 0; i < tape8.size(); ++i) {
+                EXPECT_EQ(tape8[i], tape64[i])
+                    << "entry " << i << ", payload: " << json;
+            }
+        }
+    }
+
+    // Tepi blok SWAR: panjang string mengandung tanda kutip dan backslash
+    // lintas batas 8 byte — semuanya wajib menghasilkan tape yang sama.
+    size_t lens[] = {1, 7, 8, 9, 15, 16, 63, 64, 65, 127, 128, 255, 256, 257};
+    for (auto len : lens) {
+        std::string ascii(len, 'x');
+        std::string plain   = "{\"k\":\"" + ascii + "\"}";
+        std::string escaped = "{\"k\":\"" + ascii + " \\\"mix\\\\\"}";
+
+        for (const std::string& json : {plain, escaped}) {
+            auto [ok8, tape8]   = run_scanner(json);
+            auto [ok64, tape64] = run_scanner64(json);
+            EXPECT_EQ(ok8, ok64) << "len " << len << ": " << json;
+            if (ok8 && ok64) {
+                EXPECT_EQ(tape8, tape64) << "len " << len;
+            }
+        }
+    }
+
+    // Payload besar (profil jauh di atas tepi blok): item objek berulang
+    // dengan nilai ber-escape — 4 ribu item tembus ukuran tape ratusan ribu.
+    std::string besar = R"({"companies":[)";
+    besar.reserve(220000);
+    for (int i = 0; i < 4000; ++i) {
+        besar += R"({"index":)";
+        besar += std::to_string(i);
+        besar += R"(,"name":"ZeJson","score":3.5},)";
+    }
+    besar.pop_back();
+    besar += "]}";
+
+    auto [big_ok8, big_tape8]     = run_scanner(besar);
+    auto [big_ok64, big_tape64]   = run_scanner64(besar);
+    ASSERT_TRUE(big_ok8);
+    ASSERT_TRUE(big_ok64);
+    EXPECT_EQ(big_tape8.size(), big_tape64.size());
+    EXPECT_EQ(big_tape8, big_tape64);
+}
+
+TEST_F(ScannerTest, Scanner64ErrorsMatchScanner8) {
+    // Kontrak kebalikan: payload yang ditolak scanner8 wajib ditolak
+    // scanner64 dengan keputusan yang sama (wajib sama-sama gagal).
+    const std::string_view rejects[] = {
+        R"({"a":"x")",                  // Payload terpotong: kontainer buka
+        R"({"a":{"b":1}}})",            // Tutup berlebihan tanpa pembuka
+        R"({"key":"unclosed)",                // Tanda kutip tanpa penutup
+        R"({"back":"ends with \")",           // Backslash menjadikan kutip terakhir ter-escape
+        R"({"nested":{"open":[{"tight":1))",  // Kontainer gagal sepihak
+    };
+
+    for (const auto& json : rejects) {
+        auto [ok8, _8]     = run_scanner(json);
+        auto [ok64, _64]   = run_scanner64(json);
+        EXPECT_FALSE(ok8) << "scanner8 malah lolos: " << json;
+        EXPECT_EQ(ok8, ok64) << "payload: " << json;
+    }
+
+    // Payload UTF-8 rusak: kedua scanner wajib menolak (validator sama).
+    std::string invalid_utf8 = "{\"key\":\"\xFF\xFF\"}";
+    auto [u_ok8, _]          = run_scanner(invalid_utf8);
+    auto [u_ok64, _2]        = run_scanner64(invalid_utf8);
+    EXPECT_FALSE(u_ok8);
+    EXPECT_EQ(u_ok8, u_ok64);
+}
+#endif // __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
 
 } // namespace zuu::testing
