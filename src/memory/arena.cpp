@@ -1,6 +1,6 @@
-#include <ze_json/core/arena.hpp>
+#include <ze_json/memory/arena.hpp>
 
-namespace zuu::core {
+namespace zuu::memory {
 
 Arena::Arena(void* buffer, types::size_t capacity) NOEXCEPT
     : buffer_(static_cast<types::uint8_t*>(buffer)),
@@ -69,39 +69,4 @@ Arena::get_used_space() const NOEXCEPT {
     return offset_;
 }
 
-} // namespace zuu::core
-
-EXTERN_C_BEGIN
-zuu::core::Arena*
-create_arena(void* memory_ptr, zuu::types::size_t total_capacity) NOEXCEPT {
-    if (!memory_ptr || total_capacity <= sizeof(zuu::core::Arena))
-        [[unlikely]] {
-        return nullptr;
-    }
-
-    void* buffer_start = static_cast<zuu::types::uint8_t*>(memory_ptr) +
-                         sizeof(zuu::core::Arena);
-    zuu::types::size_t buffer_capacity =
-        total_capacity - sizeof(zuu::core::Arena);
-    return new (memory_ptr) zuu::core::Arena(buffer_start, buffer_capacity);
-}
-
-void
-reset_arena(zuu::core::Arena* arena) NOEXCEPT {
-    if (arena) [[likely]] {
-        arena->reset();
-    }
-}
-
-void
-destroy_arena(zuu::core::Arena* arena) NOEXCEPT {
-    if (arena) [[likely]] {
-        arena->~Arena();
-    }
-}
-
-zuu::types::size_t
-get_arena_used_space(zuu::core::Arena* arena) NOEXCEPT {
-    return arena->get_used_space();
-}
-EXTERN_C_END
+} // namespace zuu::memory
