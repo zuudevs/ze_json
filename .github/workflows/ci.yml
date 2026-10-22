@@ -1,32 +1,50 @@
-name: C++ CI Build
+name: C++ CI Build & Test
 
 on:
   push:
-    branches: [ main]
+    branches: [main]
   pull_request:
-    branches: [ main]
+    branches: [main]
 
 jobs:
-  build:
-    name: Build & Test (${{ matrix.os }} - ${{ matrix.build_type }})
+  build-and-test:
+    name: Build & Test (${{ matrix.os }} / ${{ matrix.preset }})
     runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        build_type: [Release, Debug]
+        # macos not yet included: the C++23 presets are only validated on
+        # clang (LLVM) native Windows/Linux toolchains
+        os: [ubuntu-latest, windows-latest]
+        preset: [native-debug, native-release]
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-    - name: Configure CMake
-      shell: bash
-      run: |
-        cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+      # The project requires CMake >= 3.40 (see the top-level CMakeLists).
+      # Runner defaults are still at 3.31, so we install the version
+      # explicitly (= 3.40.2, bundled with matching Ninja).
+      - name: Install CMake >= 3.40 + Ninja
+        uses: lukka/get-cmake@latest
+        with:
+          cmakeVersion: "3.40.2"
+          ninjaVersion: "1.12.1"
 
-    - name: Build Project
-      shell: bash
-      run: |
-        cmake --build build --config ${{ matrix.build_type }}
+      # Configure via a project preset: the `native-*` preset is bound to the
+      # vcpkg toolchain ($VCPKG_ROOT), so gtest + benchmark are pulled in as
+      # vcpkg.json manifest dependencies (that's why `cmake -B build` did fail
+      # to find the GTest config before).
+      - name: Configure CMake (preset ${{ matrix.preset }})
+        shell: bash
+        env:
+          VCPKG_ROOT: ${{ runner.os == 'Windows' && 'C:\vcpkg' || '/usr/local/share/vcpkg' }}
+        run: cmake --preset ${{ matrix.preset }}
+
+      - name: Build
+        run: cmake --build build/${{ matrix.preset }}
+
+      # gtest_discover_tests() registers each group as ctest entries.
+      - name: Run Tests (ctest)
+        run: ctest --test-dir build/${{ matrix.preset }} --output-on-failure

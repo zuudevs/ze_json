@@ -26,7 +26,8 @@ else()
 		-Wsign-conversion 
 		-Wunused-variable
 	)
-	if(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "X86" OR ${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "x64")
+	# x86/x64: SIMD-related flags (AVX2/SSE2) — don't clutter other architectures.
+	if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|x64|x86|i386|i686)")
 		add_compile_options(
 			-mavx2
 			-msse2

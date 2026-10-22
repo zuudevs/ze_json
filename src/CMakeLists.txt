@@ -1,4 +1,6 @@
-if(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "wasm32" OR ${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "wasm64")
+# Target WASM (wasm32/64): CMAKE_SYSTEM_PROCESSOR diset preset ku; ambungkan
+# stub compiler-rt (untuk __multi3) di kejurungan wasm.
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
     add_executable(${LIBRARY_OUTPUT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/memory/arena.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ondemand/document.cpp
@@ -27,7 +29,7 @@ if(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "wasm32" OR ${CMAKE_C_COMPILER_A
 		PROPERTIES
         	SUFFIX ".wasm"
     )
-elseif(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "X86" OR ${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "x64")
+	elseif(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
 	add_library(${LIBRARY_OUTPUT_NAME}
 		${CMAKE_CURRENT_SOURCE_DIR}/memory/arena.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ondemand/document.cpp

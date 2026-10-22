@@ -1,4 +1,6 @@
-if(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "X86" OR ${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "x64")
+# Uji hanya untuk target native (di luar wasm32/64) — lintas-OS:
+# CMAKE_SYSTEM_PROCESSOR = wasm64/wasm32 bila sesuai preset WASM.
+if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
 	enable_testing()
 	function(RunAndExportTestReport name executable_name)
 		set(FILENAME_POSTFIX_ "")

@@ -1,4 +1,6 @@
-if(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "X86" OR ${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "x64")
+# Benchmark hanya untuk target native (di luar wasm32/64) — lintas-OS;
+# google-benchmark di-ambil via toolchain vcpkg dari preset native-*.
+if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
 	function(RunAndExportBenchmarkReport name executable_name)
 		set(FILENAME_POSTFIX_ "")
 		if(NOT GIT_COMMIT_HASH STREQUAL "unknown_hash")
