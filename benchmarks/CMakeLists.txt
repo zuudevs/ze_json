@@ -50,4 +50,8 @@ if(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "X86" OR ${CMAKE_C_COMPILER_ARCH
 	add_comprehensive_benchmark_target(parser_benchmark
 		"${CMAKE_CURRENT_SOURCE_DIR}/parser_benchmark/main.cpp"
 	)
+
+	add_comprehensive_benchmark_target(session_benchmark
+		"${CMAKE_CURRENT_SOURCE_DIR}/session_benchmark/main.cpp"
+	)
 endif()
