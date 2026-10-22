@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-10-22T15:25:31.040Z",
+  "node": "v24.19.0",
+  "platform": "win32",
+  "rev": "4aead05",
+  "results": [
+    {
+      "dataset": "tiny (163 B)",
+      "jsonParse": 1118963.1979982825,
+      "zeScan": 883682.2010745615,
+      "zeScanFind": 492154.3241374357
+    },
+    {
+      "dataset": "mesh.json (335 KB)",
+      "jsonParse": 643.066185524776,
+      "zeScan": 1615.4568239879275,
+      "zeScanFind": 1643.6836566673371
+    },
+    {
+      "dataset": "twitter.json (632 KB)",
+      "jsonParse": 598.8236138147258,
+      "zeScan": 400.31660079812593,
+      "zeScanFind": 377.8586637924177
+    }
+  ]
+}

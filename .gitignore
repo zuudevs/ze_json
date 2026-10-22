@@ -28,6 +28,9 @@ vcpkg.log
 # npm pack hasil prepack — binary .wasm disalin ke js/ saat publish
 js/ze_json_core.wasm
 
+# Node — devDependency benchmark.js (hanya dipakai js/benchmark; bukan runtime)
+node_modules/
+
 # IDE & Editor files
 .vs/
 .vscode/

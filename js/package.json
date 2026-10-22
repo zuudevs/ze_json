@@ -14,6 +14,8 @@
   "scripts": {
     "example": "node ../examples/js/example.mjs",
     "test": "node test/main.mjs",
+    "bench": "node benchmark/parse.mjs",
+    "bench:save": "node benchmark/parse.mjs --save",
     "build:wasm": "cd .. && cmake --preset wasm64-release && cmake --build build/wasm64-release",
     "prepack": "node -e \"require('node:fs').copyFileSync('../build/wasm64-release/src/ze_json_core.wasm','ze_json_core.wasm')\""
   },
@@ -36,5 +38,8 @@
     "on-demand",
     "zero-copy",
     "swar"
-  ]
+  ],
+  "devDependencies": {
+    "benchmark": "^2.1.4"
+  }
 }
