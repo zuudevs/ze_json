@@ -83,7 +83,7 @@ message("Project Version       : ${PROJECT_VERSION}")
 message("Build Type            : ${CMAKE_BUILD_TYPE}")
 message("C++ Standard          : ${CMAKE_CXX_STANDARD}")
 message("C++ Compiler          : ${CMAKE_CXX_COMPILER}")
-message("COMPILER ARCHITECTURE : ${CMAKE_C_COMPILER_ARCHITECTURE_ID}")
+message("Compiler Architecture : ${CMAKE_C_COMPILER_ARCHITECTURE_ID}")
 message("CMake Generator       : ${CMAKE_GENERATOR}")
 message("Git Commit Hash       : ${GIT_COMMIT_HASH}")
 

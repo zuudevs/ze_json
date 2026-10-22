@@ -22,9 +22,10 @@ struct StringView {
         return true;
     }
 
-	constexpr operator const char*() const noexcept {
-		return data;
-	}
+    constexpr
+    operator const char*() const noexcept {
+        return data;
+    }
 };
 
 } // namespace zuu::types
