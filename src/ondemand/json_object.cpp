@@ -4,6 +4,16 @@ namespace zuu::ondemand {
 
 JsonValue
 JsonObject::find_field(const types::StringView& target_key) NOEXCEPT {
+    // Delegasi ke varian checked; hasil tak-ditemukan mengembalikan JsonValue
+    // di posisi terminator (perilaku lama tetap terjaga).
+    JsonValue result(iter_);
+    find_field_checked(target_key, &result);
+    return result;
+}
+
+bool
+JsonObject::find_field_checked(
+    const types::StringView& target_key, JsonValue* out) NOEXCEPT {
     while (iter_.peek_char() != '}' && iter_.peek_char() != '\0') {
         if (iter_.peek_char() == ',') {
             iter_.advance();
@@ -18,12 +28,13 @@ JsonObject::find_field(const types::StringView& target_key) NOEXCEPT {
 
         JsonValue val(iter_);
         if (current_key == target_key) {
-            return val;
+            *out = val;
+            return true;
         } else {
             iter_.skip_child();
         }
     }
-    return JsonValue(iter_);
+    return false;
 }
 
 } // namespace zuu::ondemand

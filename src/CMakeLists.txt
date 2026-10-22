@@ -1,12 +1,14 @@
 if(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "wasm32" OR ${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "wasm64")
     add_executable(${LIBRARY_OUTPUT_NAME}
-        ${CMAKE_CURRENT_SOURCE_DIR}/core/arena.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/memory/arena.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ondemand/document.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/ondemand/json_object.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ondemand/json_value.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/scanner/scanner.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/ze_json.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/align.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/alloc.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/utils/compiler_rt.cpp
     )
 
 	target_include_directories(${LIBRARY_OUTPUT_NAME}
@@ -26,11 +28,12 @@ if(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "wasm32" OR ${CMAKE_C_COMPILER_A
     )
 elseif(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "X86" OR ${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "x64")
 	add_library(${LIBRARY_OUTPUT_NAME}
-		${CMAKE_CURRENT_SOURCE_DIR}/core/arena.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/memory/arena.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ondemand/document.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/ondemand/json_object.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ondemand/json_value.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/scanner/scanner.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/ze_json.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/align.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/alloc.cpp
 	)

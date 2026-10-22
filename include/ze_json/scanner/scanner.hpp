@@ -29,31 +29,3 @@ scanner32(
 #endif // __LITTLE_ENDIAN__ == 1
 
 } // namespace zuu::scanner
-
-EXTERN_C_BEGIN
-EXPORT_NAME(scanner8)
-void
-scanner8(
-    const char* const RESTRICT src, zuu::types::size_t src_size,
-    zuu::types::size_t* RESTRICT dst, zuu::types::size_t dst_size,
-    zuu::types::size_t& result, zuu::types::int32_t& error) NOEXCEPT;
-
-#if __LITTLE_ENDIAN__ == 1
-#if __IS_64_BIT__ == 1
-EXPORT_NAME(scanner64)
-void
-scanner64(
-    const char* const RESTRICT src, zuu::types::size_t src_size,
-    zuu::types::size_t* RESTRICT dst, zuu::types::size_t dst_size,
-    zuu::types::size_t& result, zuu::types::int32_t& error) NOEXCEPT;
-#elif __IS_64_BIT__ == 0
-#else
-EXPORT_NAME(scanner32)
-void
-scanner32(
-    const char* const RESTRICT src, zuu::types::size_t src_size,
-    zuu::types::size_t* RESTRICT dst, zuu::types::size_t dst_size,
-    zuu::types::size_t& result, zuu::types::int32_t& error) NOEXCEPT;
-#endif // __IS_64_BIT
-#endif // __LITTLE_ENDIAN__ == 1
-EXTERN_C_END

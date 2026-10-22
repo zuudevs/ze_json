@@ -264,39 +264,3 @@ scanner32(
 #endif // __LITTLE_ENDIAN__ == 1
 
 } // namespace zuu::scanner
-
-EXTERN_C_BEGIN
-void
-scanner8(
-    const char* const RESTRICT src, zuu::types::size_t src_size,
-    zuu::types::size_t* RESTRICT dst, zuu::types::size_t dst_size,
-    zuu::types::size_t& result, zuu::types::int32_t& error) NOEXCEPT {
-    auto [res, err] = zuu::scanner::scanner8(src, src_size, dst, dst_size);
-    error           = static_cast<zuu::types::int32_t>(*err);
-    result          = *res;
-}
-#if __LITTLE_ENDIAN__ == 1
-#if __IS_64_BIT__ == 1
-void
-scanner64(
-    const char* const RESTRICT src, zuu::types::size_t src_size,
-    zuu::types::size_t* RESTRICT dst, zuu::types::size_t dst_size,
-    zuu::types::size_t& result, zuu::types::int32_t& error) NOEXCEPT {
-    auto [res, err] = zuu::scanner::scanner64(src, src_size, dst, dst_size);
-    error           = static_cast<zuu::types::int32_t>(*err);
-    result          = *res;
-}
-#elif __IS_64_BIT__ == 0
-#else
-void
-scanner32(
-    const char* const RESTRICT src, zuu::types::size_t src_size,
-    zuu::types::size_t* RESTRICT dst, zuu::types::size_t dst_size,
-    zuu::types::size_t& result, zuu::types::int32_t& error) NOEXCEPT {
-    auto [res, err] = zuu::scanner::scanner32(src, src_size, dst, dst_size);
-    error           = static_cast<zuu::types::int32_t>(*err);
-    result          = *res;
-}
-#endif // __IS_64_BIT
-#endif // __LITTLE_ENDIAN__ == 1
-EXTERN_C_END
