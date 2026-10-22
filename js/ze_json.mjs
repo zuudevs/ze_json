@@ -26,11 +26,17 @@ import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const DEFAULT_WASM = join(
-  PACKAGE_ROOT,
-  "build/wasm64-release/src/ze_json_core.wasm",
-);
+const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
+const PACKAGE_ROOT = resolve(MODULE_DIR, "..");
+
+// Kandidat default ze_json_core.wasm, berurutan:
+//   1. bersebelahan dengan modul — bentuk paket npm ter-publish
+//      (dibawa "files" js/package.json oleh prepack)
+//   2. build/wasm64-release/... — pengembangan di dalam repo
+const WASM_CANDIDATES = [
+  join(MODULE_DIR, "ze_json_core.wasm"),
+  join(PACKAGE_ROOT, "build/wasm64-release/src/ze_json_core.wasm"),
+];
 
 // ---------------------------------------------------------------------------
 //  KONSTANTA ABI — sinkron dengan include/ze_json/ze_json.hpp (diekspor agar
@@ -103,22 +109,26 @@ export class ZeJson {
    * Muat ze_json_core.wasm dan bangun wrapper + region memori tetap.
    *
    * @param {object} [options]
-   * @param {string} [options.wasmPath]    — path file .wasm
-   *     (default: build/wasm64-release/src/ze_json_core.wasm)
+   * @param {string} [options.wasmPath]    — path file .wasm kustom;
+   *     default: kandidat bersebelahan modul, lalu build/wasm64-release
    * @param {Uint8Array} [options.binary]  — binary .wasm jadi (browser /
    *     pemakai bundler); mengabaikan wasmPath bila diisi
    * @returns {Promise<ZeJson>}
    */
-  static async load({ wasmPath = DEFAULT_WASM, binary } = {}) {
-    let bytes;
-    if (binary) {
-      bytes = binary;
-    } else {
-      try {
-        bytes = readFileSync(wasmPath);
-      } catch {
+  static async load({ wasmPath, binary } = {}) {
+    let bytes = binary ?? null;
+    if (!bytes) {
+      for (const path of wasmPath ? [wasmPath] : WASM_CANDIDATES) {
+        try {
+          bytes = readFileSync(path);
+          break;
+        } catch {
+          // kandidat berikutnya
+        }
+      }
+      if (!bytes) {
         throw new Error(
-          `${wasmPath} tidak ditemukan — build dulu:\n` +
+          "ze_json_core.wasm tidak ditemukan — build dulu:\n" +
             "    cmake --preset wasm64-release\n" +
             "    cmake --build build/wasm64-release",
         );

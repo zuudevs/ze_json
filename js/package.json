@@ -1,0 +1,33 @@
+{
+  "name": "@zuudevs/ze-json",
+  "version": "0.1.0",
+  "description": "Binding JavaScript Raw WebAssembly (memory64, tanpa Emscripten) untuk ze_json — parser JSON on-demand berbasis scanner SWAR/tape",
+  "type": "module",
+  "main": "ze_json.mjs",
+  "exports": {
+    ".": "./ze_json.mjs"
+  },
+  "files": [
+    "ze_json.mjs",
+    "ze_json_core.wasm"
+  ],
+  "scripts": {
+    "example": "node ../examples/js/example.mjs",
+    "test": "node test/main.mjs",
+    "build:wasm": "cd .. && cmake --preset wasm64-release && cmake --build build/wasm64-release",
+    "prepack": "node -e \"require('node:fs').copyFileSync('../build/wasm64-release/src/ze_json_core.wasm','ze_json_core.wasm')\""
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "keywords": [
+    "json",
+    "parser",
+    "webassembly",
+    "wasm64",
+    "memory64",
+    "on-demand",
+    "zero-copy",
+    "swar"
+  ]
+}

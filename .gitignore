@@ -25,6 +25,9 @@ __pycache__/
 /vcpkg_installed/
 vcpkg.log
 
+# npm pack hasil prepack — binary .wasm disalin ke js/ saat publish
+js/ze_json_core.wasm
+
 # IDE & Editor files
 .vs/
 .vscode/
