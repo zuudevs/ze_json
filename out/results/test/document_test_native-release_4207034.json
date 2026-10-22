@@ -1,0 +1,42 @@
+{
+  "tests": 2,
+  "failures": 0,
+  "disabled": 0,
+  "errors": 0,
+  "timestamp": "2026-10-22T16:50:34Z",
+  "time": "0.002s",
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "Memory",
+      "tests": 2,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "timestamp": "2026-10-22T16:50:34Z",
+      "time": "0.002s",
+      "testsuite": [
+        {
+          "name": "ScanValidPayload",
+          "file": "D:\/kuliah_\/7_semester\/skripsi\/v3\/src\/ze_json\/tests\/document_test\/main.cpp",
+          "line": 26,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-22T16:50:34Z",
+          "time": "0s",
+          "classname": "Memory"
+        },
+        {
+          "name": "ParseAndFindFields",
+          "file": "D:\/kuliah_\/7_semester\/skripsi\/v3\/src\/ze_json\/tests\/document_test\/main.cpp",
+          "line": 59,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2026-10-22T16:50:34Z",
+          "time": "0.002s",
+          "classname": "Memory"
+        }
+      ]
+    }
+  ]
+}

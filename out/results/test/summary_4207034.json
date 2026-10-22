@@ -1,0 +1,721 @@
+{
+  "hash": "4207034",
+  "generated_at": "2026-10-22T09:50:34.321Z",
+  "presets": [
+    "native-debug",
+    "native-release"
+  ],
+  "totals": {
+    "tests": 58,
+    "failures": 0,
+    "disabled": 0,
+    "errors": 0,
+    "time_ms": 49
+  },
+  "groups": [
+    {
+      "group": "array_test",
+      "preset": "native-debug",
+      "hash": "4207034",
+      "command": "D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\build\\native-debug\\tests\\array_test.exe --gtest_output=json:D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\out\\results\\test\\array_test_native-debug_4207034.json",
+      "executable": "build\\native-debug\\tests\\array_test.exe",
+      "report": "out/results/test/array_test_native-debug_4207034.json",
+      "status": "PASSED",
+      "tests": 3,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "time_ms": 5,
+      "detail": [
+        {
+          "suite": "ArrayTest",
+          "test": "TraversalMixedElements",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 1
+        },
+        {
+          "suite": "ArrayTest",
+          "test": "AmbiguousTapeCases",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 1
+        },
+        {
+          "suite": "ArrayTest",
+          "test": "DrainContractAndForgiveness",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 1
+        }
+      ]
+    },
+    {
+      "group": "document_test",
+      "preset": "native-debug",
+      "hash": "4207034",
+      "command": "D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\build\\native-debug\\tests\\document_test.exe --gtest_output=json:D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\out\\results\\test\\document_test_native-debug_4207034.json",
+      "executable": "build\\native-debug\\tests\\document_test.exe",
+      "report": "out/results/test/document_test_native-debug_4207034.json",
+      "status": "PASSED",
+      "tests": 2,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "time_ms": 6,
+      "detail": [
+        {
+          "suite": "Memory",
+          "test": "ScanValidPayload",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 2
+        },
+        {
+          "suite": "Memory",
+          "test": "ParseAndFindFields",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 3
+        }
+      ]
+    },
+    {
+      "group": "number_test",
+      "preset": "native-debug",
+      "hash": "4207034",
+      "command": "D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\build\\native-debug\\tests\\number_test.exe --gtest_output=json:D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\out\\results\\test\\number_test_native-debug_4207034.json",
+      "executable": "build\\native-debug\\tests\\number_test.exe",
+      "report": "out/results/test/number_test_native-debug_4207034.json",
+      "status": "PASSED",
+      "tests": 3,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "time_ms": 4,
+      "detail": [
+        {
+          "suite": "NumberTest",
+          "test": "LemireBasicForms",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 1
+        },
+        {
+          "suite": "NumberTest",
+          "test": "IntegerBeyondDoublePrecision",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 1
+        },
+        {
+          "suite": "NumberTest",
+          "test": "ExponentBoundaries",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 1
+        }
+      ]
+    },
+    {
+      "group": "object_test",
+      "preset": "native-debug",
+      "hash": "4207034",
+      "command": "D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\build\\native-debug\\tests\\object_test.exe --gtest_output=json:D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\out\\results\\test\\object_test_native-debug_4207034.json",
+      "executable": "build\\native-debug\\tests\\object_test.exe",
+      "report": "out/results/test/object_test_native-debug_4207034.json",
+      "status": "PASSED",
+      "tests": 5,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "time_ms": 10,
+      "detail": [
+        {
+          "suite": "ObjectTest",
+          "test": "RootTypes",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 2
+        },
+        {
+          "suite": "ObjectTest",
+          "test": "FieldLookupAndLiteralValues",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 2
+        },
+        {
+          "suite": "ObjectTest",
+          "test": "MissedFindIsReported",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 1
+        },
+        {
+          "suite": "ObjectTest",
+          "test": "SkipNestedStructures",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 1
+        },
+        {
+          "suite": "ObjectTest",
+          "test": "EscapedStringsAreUnescaped",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 2
+        }
+      ]
+    },
+    {
+      "group": "path_test",
+      "preset": "native-debug",
+      "hash": "4207034",
+      "command": "D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\build\\native-debug\\tests\\path_test.exe --gtest_output=json:D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\out\\results\\test\\path_test_native-debug_4207034.json",
+      "executable": "build\\native-debug\\tests\\path_test.exe",
+      "report": "out/results/test/path_test_native-debug_4207034.json",
+      "status": "PASSED",
+      "tests": 6,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "time_ms": 10,
+      "detail": [
+        {
+          "suite": "PathTest",
+          "test": "MixedQueriesAcrossTapeOrder",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 1
+        },
+        {
+          "suite": "PathTest",
+          "test": "ThreeLevelsDeep",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 1
+        },
+        {
+          "suite": "PathTest",
+          "test": "ObjectInsideArray",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 1
+        },
+        {
+          "suite": "PathTest",
+          "test": "NullValueIsTypeMismatch",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 1
+        },
+        {
+          "suite": "PathTest",
+          "test": "IndexOverflowIsInvalidPath",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 1
+        },
+        {
+          "suite": "PathTest",
+          "test": "RepeatedQueriesAreIndependent",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 1
+        }
+      ]
+    },
+    {
+      "group": "scanner_test",
+      "preset": "native-debug",
+      "hash": "4207034",
+      "command": "D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\build\\native-debug\\tests\\scanner_test.exe --gtest_output=json:D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\out\\results\\test\\scanner_test_native-debug_4207034.json",
+      "executable": "build\\native-debug\\tests\\scanner_test.exe",
+      "report": "out/results/test/scanner_test_native-debug_4207034.json",
+      "status": "PASSED",
+      "tests": 6,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "time_ms": 1,
+      "detail": [
+        {
+          "suite": "ScannerTest",
+          "test": "StandardJsonPayload",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "ScannerTest",
+          "test": "EmptyContainers",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "ScannerTest",
+          "test": "BracketDepthMustBalance",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "ScannerTest",
+          "test": "ValidUtf8Multibyte",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "ScannerTest",
+          "test": "RejectsInvalidUtf8",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "ScannerTest",
+          "test": "EdgeCasesAndBuffers",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        }
+      ]
+    },
+    {
+      "group": "session_test",
+      "preset": "native-debug",
+      "hash": "4207034",
+      "command": "D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\build\\native-debug\\tests\\session_test.exe --gtest_output=json:D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\out\\results\\test\\session_test_native-debug_4207034.json",
+      "executable": "build\\native-debug\\tests\\session_test.exe",
+      "report": "out/results/test/session_test_native-debug_4207034.json",
+      "status": "PASSED",
+      "tests": 4,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "time_ms": 7,
+      "detail": [
+        {
+          "suite": "SessionTest",
+          "test": "CreateSessionAndCursorDefault",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 1
+        },
+        {
+          "suite": "SessionTest",
+          "test": "FindJumpsAndReadsAllTypes",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 1
+        },
+        {
+          "suite": "SessionTest",
+          "test": "MissedFindReturnsZero",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 1
+        },
+        {
+          "suite": "SessionTest",
+          "test": "RejectsBadPayloads",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 1
+        }
+      ]
+    },
+    {
+      "group": "array_test",
+      "preset": "native-release",
+      "hash": "4207034",
+      "command": "D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\build\\native-release\\tests\\array_test.exe --gtest_output=json:D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\out\\results\\test\\array_test_native-release_4207034.json",
+      "executable": "build\\native-release\\tests\\array_test.exe",
+      "report": "out/results/test/array_test_native-release_4207034.json",
+      "status": "PASSED",
+      "tests": 3,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "time_ms": 0,
+      "detail": [
+        {
+          "suite": "ArrayTest",
+          "test": "TraversalMixedElements",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "ArrayTest",
+          "test": "AmbiguousTapeCases",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "ArrayTest",
+          "test": "DrainContractAndForgiveness",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        }
+      ]
+    },
+    {
+      "group": "document_test",
+      "preset": "native-release",
+      "hash": "4207034",
+      "command": "D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\build\\native-release\\tests\\document_test.exe --gtest_output=json:D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\out\\results\\test\\document_test_native-release_4207034.json",
+      "executable": "build\\native-release\\tests\\document_test.exe",
+      "report": "out/results/test/document_test_native-release_4207034.json",
+      "status": "PASSED",
+      "tests": 2,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "time_ms": 2,
+      "detail": [
+        {
+          "suite": "Memory",
+          "test": "ScanValidPayload",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "Memory",
+          "test": "ParseAndFindFields",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 2
+        }
+      ]
+    },
+    {
+      "group": "number_test",
+      "preset": "native-release",
+      "hash": "4207034",
+      "command": "D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\build\\native-release\\tests\\number_test.exe --gtest_output=json:D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\out\\results\\test\\number_test_native-release_4207034.json",
+      "executable": "build\\native-release\\tests\\number_test.exe",
+      "report": "out/results/test/number_test_native-release_4207034.json",
+      "status": "PASSED",
+      "tests": 3,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "time_ms": 0,
+      "detail": [
+        {
+          "suite": "NumberTest",
+          "test": "LemireBasicForms",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "NumberTest",
+          "test": "IntegerBeyondDoublePrecision",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "NumberTest",
+          "test": "ExponentBoundaries",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        }
+      ]
+    },
+    {
+      "group": "object_test",
+      "preset": "native-release",
+      "hash": "4207034",
+      "command": "D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\build\\native-release\\tests\\object_test.exe --gtest_output=json:D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\out\\results\\test\\object_test_native-release_4207034.json",
+      "executable": "build\\native-release\\tests\\object_test.exe",
+      "report": "out/results/test/object_test_native-release_4207034.json",
+      "status": "PASSED",
+      "tests": 5,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "time_ms": 1,
+      "detail": [
+        {
+          "suite": "ObjectTest",
+          "test": "RootTypes",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "ObjectTest",
+          "test": "FieldLookupAndLiteralValues",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "ObjectTest",
+          "test": "MissedFindIsReported",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "ObjectTest",
+          "test": "SkipNestedStructures",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "ObjectTest",
+          "test": "EscapedStringsAreUnescaped",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        }
+      ]
+    },
+    {
+      "group": "path_test",
+      "preset": "native-release",
+      "hash": "4207034",
+      "command": "D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\build\\native-release\\tests\\path_test.exe --gtest_output=json:D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\out\\results\\test\\path_test_native-release_4207034.json",
+      "executable": "build\\native-release\\tests\\path_test.exe",
+      "report": "out/results/test/path_test_native-release_4207034.json",
+      "status": "PASSED",
+      "tests": 6,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "time_ms": 2,
+      "detail": [
+        {
+          "suite": "PathTest",
+          "test": "MixedQueriesAcrossTapeOrder",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "PathTest",
+          "test": "ThreeLevelsDeep",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "PathTest",
+          "test": "ObjectInsideArray",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "PathTest",
+          "test": "NullValueIsTypeMismatch",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "PathTest",
+          "test": "IndexOverflowIsInvalidPath",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "PathTest",
+          "test": "RepeatedQueriesAreIndependent",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        }
+      ]
+    },
+    {
+      "group": "scanner_test",
+      "preset": "native-release",
+      "hash": "4207034",
+      "command": "D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\build\\native-release\\tests\\scanner_test.exe --gtest_output=json:D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\out\\results\\test\\scanner_test_native-release_4207034.json",
+      "executable": "build\\native-release\\tests\\scanner_test.exe",
+      "report": "out/results/test/scanner_test_native-release_4207034.json",
+      "status": "PASSED",
+      "tests": 6,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "time_ms": 0,
+      "detail": [
+        {
+          "suite": "ScannerTest",
+          "test": "StandardJsonPayload",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "ScannerTest",
+          "test": "EmptyContainers",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "ScannerTest",
+          "test": "BracketDepthMustBalance",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "ScannerTest",
+          "test": "ValidUtf8Multibyte",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "ScannerTest",
+          "test": "RejectsInvalidUtf8",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "ScannerTest",
+          "test": "EdgeCasesAndBuffers",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        }
+      ]
+    },
+    {
+      "group": "session_test",
+      "preset": "native-release",
+      "hash": "4207034",
+      "command": "D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\build\\native-release\\tests\\session_test.exe --gtest_output=json:D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\out\\results\\test\\session_test_native-release_4207034.json",
+      "executable": "build\\native-release\\tests\\session_test.exe",
+      "report": "out/results/test/session_test_native-release_4207034.json",
+      "status": "PASSED",
+      "tests": 4,
+      "failures": 0,
+      "disabled": 0,
+      "errors": 0,
+      "time_ms": 1,
+      "detail": [
+        {
+          "suite": "SessionTest",
+          "test": "CreateSessionAndCursorDefault",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "SessionTest",
+          "test": "FindJumpsAndReadsAllTypes",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "SessionTest",
+          "test": "MissedFindReturnsZero",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        },
+        {
+          "suite": "SessionTest",
+          "test": "RejectsBadPayloads",
+          "status": "RUN",
+          "result": "COMPLETED",
+          "time_ms": 0
+        }
+      ]
+    }
+  ],
+  "slowest_tests": [
+    {
+      "group": "document_test",
+      "preset": "native-debug",
+      "suite": "Memory",
+      "test": "ParseAndFindFields",
+      "status": "RUN",
+      "result": "COMPLETED",
+      "time_ms": 3
+    },
+    {
+      "group": "document_test",
+      "preset": "native-debug",
+      "suite": "Memory",
+      "test": "ScanValidPayload",
+      "status": "RUN",
+      "result": "COMPLETED",
+      "time_ms": 2
+    },
+    {
+      "group": "object_test",
+      "preset": "native-debug",
+      "suite": "ObjectTest",
+      "test": "RootTypes",
+      "status": "RUN",
+      "result": "COMPLETED",
+      "time_ms": 2
+    },
+    {
+      "group": "object_test",
+      "preset": "native-debug",
+      "suite": "ObjectTest",
+      "test": "FieldLookupAndLiteralValues",
+      "status": "RUN",
+      "result": "COMPLETED",
+      "time_ms": 2
+    },
+    {
+      "group": "object_test",
+      "preset": "native-debug",
+      "suite": "ObjectTest",
+      "test": "EscapedStringsAreUnescaped",
+      "status": "RUN",
+      "result": "COMPLETED",
+      "time_ms": 2
+    },
+    {
+      "group": "document_test",
+      "preset": "native-release",
+      "suite": "Memory",
+      "test": "ParseAndFindFields",
+      "status": "RUN",
+      "result": "COMPLETED",
+      "time_ms": 2
+    },
+    {
+      "group": "array_test",
+      "preset": "native-debug",
+      "suite": "ArrayTest",
+      "test": "TraversalMixedElements",
+      "status": "RUN",
+      "result": "COMPLETED",
+      "time_ms": 1
+    },
+    {
+      "group": "array_test",
+      "preset": "native-debug",
+      "suite": "ArrayTest",
+      "test": "AmbiguousTapeCases",
+      "status": "RUN",
+      "result": "COMPLETED",
+      "time_ms": 1
+    }
+  ]
+}
