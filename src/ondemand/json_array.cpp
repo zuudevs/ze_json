@@ -12,7 +12,16 @@ JsonArray::count_elements() NOEXCEPT {
     for (;;) {
         char c = iter_.peek_char();
 
-        if (c == '\"') {
+        if (c == ',') {
+            // Angka non-terakhir: kursor menunjuk ',' yang sekaligus menjadi
+            // terminator elemen angka (0 entry). Satu langkah melintasinya
+            // sudah mendarat DI TERMINATOR ELEMEN BERIKUTNYA (',' berikutnya
+            // ATAU bracket/quote elemen non-angka) — tidak ada separator
+            // terpisah untuk di-skip, jadi lanjutkan tanpa langkah bawah.
+            count++;
+            iter_.advance();
+            continue;
+        } else if (c == '\"') {
             // String = tepat 2 entry (quote pembuka & penutup)
             count++;
             iter_.advance();
@@ -25,12 +34,6 @@ JsonArray::count_elements() NOEXCEPT {
             // Kontainer = walk bracket depth sampai pasangan penutupnya
             count++;
             iter_.skip_child();
-        } else if (c == ',') {
-            // Angka non-terakhir: kursor menunjuk ',' yang sekaligus
-            // menjadi terminator elemen angka (0 entry). Satu langkah
-            // melintasinya menuju posisi elemen berikutnya.
-            count++;
-            iter_.advance();
         } else {
             // c == ']' (atau '\0' yang jahat). ']' bisa berarti:
             //   (a) array benar-benar habis, atau
