@@ -2,6 +2,7 @@ if(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "wasm32" OR ${CMAKE_C_COMPILER_A
     add_executable(${LIBRARY_OUTPUT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/memory/arena.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ondemand/document.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/ondemand/json_array.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/ondemand/json_object.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ondemand/json_value.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/scanner/scanner.cpp
@@ -30,6 +31,7 @@ elseif(${CMAKE_C_COMPILER_ARCHITECTURE_ID} STREQUAL "X86" OR ${CMAKE_C_COMPILER_
 	add_library(${LIBRARY_OUTPUT_NAME}
 		${CMAKE_CURRENT_SOURCE_DIR}/memory/arena.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ondemand/document.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/ondemand/json_array.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/ondemand/json_object.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ondemand/json_value.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/scanner/scanner.cpp

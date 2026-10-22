@@ -142,6 +142,16 @@ find_field(
     return session->found() ? 1 : 0;
 }
 
+zuu::types::size_t
+array_size(zuu::api::Session* session) NOEXCEPT {
+    return session ? session->array_size() : 0;
+}
+
+zuu::types::int32_t
+array_next(zuu::api::Session* session) NOEXCEPT {
+    return (session && session->array_next() == 1) ? 1 : 0;
+}
+
 zuu::types::int32_t
 value_type(zuu::api::Session* session) NOEXCEPT {
     if (!session) [[unlikely]] {

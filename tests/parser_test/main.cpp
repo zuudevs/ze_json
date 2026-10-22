@@ -156,4 +156,133 @@ TEST_F(ParserTest, SkipNestedStructures) {
     arena_handle->reset();
 }
 
+TEST_F(ParserTest, SessionArrayTraversal) {
+    // Traversal array via API publik: campuran semua tipe elemen, termasuk
+    // kontainer bersarang yang di-skip dan angka negatif-pecahan (0 entry).
+    alignas(8) constexpr const char payload[] =
+        R"({"colors":[1,"two",true,null,[7,8],{"k":4},-8.5],"after":99})";
+    constexpr auto payload_size = sizeof(payload) - 1;
+
+    types::uint64_t tape[256]{};
+    types::int32_t err = static_cast<types::int32_t>(api::INVALID_JSON);
+    auto* session =
+        create_session(payload, payload_size, tape, 256, arena_handle, err);
+    ASSERT_NE(session, nullptr);
+    ASSERT_EQ(static_cast<api::Status>(err), api::OK);
+
+    ASSERT_EQ(find_field(session, "colors", 6), 1);
+    EXPECT_EQ(static_cast<api::ValueType>(value_type(session)),
+              api::ValueType::Array);
+    EXPECT_EQ(array_size(session), 7u);
+
+    // Elemen 0: angka (0 entry — kursor di terminatornya)
+    EXPECT_EQ(array_next(session), 1);
+    EXPECT_EQ(static_cast<api::ValueType>(value_type(session)),
+              api::ValueType::Number);
+    EXPECT_EQ(get_int(session), 1);
+
+    // Elemen 1: string
+    EXPECT_EQ(array_next(session), 1);
+    EXPECT_EQ(static_cast<api::ValueType>(value_type(session)),
+              api::ValueType::String);
+    const char* str_data = nullptr;
+    types::size_t str_len = 0;
+    get_string(session, str_data, str_len);
+    EXPECT_EQ(std::string_view(str_data, str_len), "two");
+
+    // Elemen 2: boolean (dibaca); elemen 3: null (dikonsumsi via get_bool)
+    EXPECT_EQ(array_next(session), 1);
+    EXPECT_EQ(get_bool(session), 1);
+    EXPECT_EQ(array_next(session), 1);
+    EXPECT_EQ(static_cast<api::ValueType>(value_type(session)),
+              api::ValueType::Null);
+    EXPECT_EQ(get_bool(session), 0); // 'n' != 't' → false, tapi tetap konsumsi
+
+    // Elemen 4: array bersarang — TIDAK dibaca, array_next harus skip
+    EXPECT_EQ(array_next(session), 1);
+    EXPECT_EQ(static_cast<api::ValueType>(value_type(session)),
+              api::ValueType::Array);
+
+    // Elemen 5: object bersarang — juga di-skip
+    EXPECT_EQ(array_next(session), 1);
+    EXPECT_EQ(static_cast<api::ValueType>(value_type(session)),
+              api::ValueType::Object);
+
+    // Elemen 6: angka negatif-pecahan
+    EXPECT_EQ(array_next(session), 1);
+    EXPECT_EQ(static_cast<api::ValueType>(value_type(session)),
+              api::ValueType::Number);
+    EXPECT_NEAR(get_double(session), -8.5, 1e-9);
+
+    // Elemen habis; kursor kembali ke ']' agar object root bisa dilanjutkan
+    EXPECT_EQ(array_next(session), 0);
+    ASSERT_EQ(find_field(session, "after", 5), 1);
+    EXPECT_EQ(static_cast<api::ValueType>(value_type(session)),
+              api::ValueType::Number);
+    EXPECT_EQ(get_int(session), 99);
+
+    arena_handle->reset();
+}
+
+TEST_F(ParserTest, SessionArrayEdgeCases) {
+    // Kasus ambigu 0-entry: '[1]' vs '[]' menghasilkan tape identik,
+    // ditambah elemen angka terakhir dan angka setelah string.
+    alignas(8) constexpr const char payload[] =
+        R"({"empty":[],"one":[1],"nums":[1,2],"mixed":["a",3],"tail":[5],"next":7})";
+    constexpr auto payload_size = sizeof(payload) - 1;
+
+    types::uint64_t tape[256]{};
+    types::int32_t err = static_cast<types::int32_t>(api::INVALID_JSON);
+    auto* session =
+        create_session(payload, payload_size, tape, 256, arena_handle, err);
+    ASSERT_NE(session, nullptr);
+    ASSERT_EQ(static_cast<api::Status>(err), api::OK);
+
+    // empty: size 0, next 0
+    ASSERT_EQ(find_field(session, "empty", 5), 1);
+    EXPECT_EQ(array_size(session), 0u);
+    EXPECT_EQ(array_next(session), 0);
+
+    // one: '[1]' — angka terakhir sebelum ']'
+    ASSERT_EQ(find_field(session, "one", 3), 1);
+    EXPECT_EQ(array_size(session), 1u);
+    EXPECT_EQ(array_next(session), 1);
+    EXPECT_EQ(get_int(session), 1);
+    EXPECT_EQ(array_next(session), 0);
+
+    // nums: dua angka beruntun (0 entry semuanya)
+    ASSERT_EQ(find_field(session, "nums", 4), 1);
+    EXPECT_EQ(array_size(session), 2u);
+    EXPECT_EQ(array_next(session), 1);
+    EXPECT_EQ(get_int(session), 1);
+    // Elemen kedua tidak dibaca → di-skip otomatis
+    EXPECT_EQ(array_next(session), 1);
+    EXPECT_NEAR(get_double(session), 2.0, 1e-12);
+    EXPECT_EQ(array_next(session), 0);
+
+    // mixed: string lalu angka terakhir (terminator = ']')
+    ASSERT_EQ(find_field(session, "mixed", 5), 1);
+    EXPECT_EQ(array_size(session), 2u);
+    EXPECT_EQ(array_next(session), 1);
+    const char* str_data = nullptr;
+    types::size_t str_len = 0;
+    get_string(session, str_data, str_len);
+    EXPECT_EQ(std::string_view(str_data, str_len), "a");
+    EXPECT_EQ(array_next(session), 1);
+    EXPECT_EQ(get_int(session), 3);
+    EXPECT_EQ(array_next(session), 0);
+
+    // tail: '[5]' — elemen kedua tidak dibaca lalu habis
+    ASSERT_EQ(find_field(session, "tail", 4), 1);
+    EXPECT_EQ(array_size(session), 1u);
+    EXPECT_EQ(array_next(session), 1);
+    EXPECT_EQ(array_next(session), 0);
+    EXPECT_EQ(array_next(session), 0); // panggilan ganda tetap 0
+
+    ASSERT_EQ(find_field(session, "next", 4), 1);
+    EXPECT_EQ(get_int(session), 7);
+
+    arena_handle->reset();
+}
+
 } // namespace zuu::testing

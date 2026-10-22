@@ -85,26 +85,44 @@ enum class ValueType : types::int32_t {
 //        case ValueType::Number :  i64 v = get_int(session); break; ...
 //    }
 //
-//  1 Session = 1 root OBJECT (API minimal: traversal object top-level saja;
-//    traversal array/iterator nested belum dijanjikan di versi ini).
+//  1 Session = 1 root OBJECT (kursor forward-only). Nilai bertipe Array
+//  dapat ditraversi satu level:
+//
+//    n = array_size(session)      // valid saat kursor tepat di '['
+//    while (array_next(session)) {
+//        switch (value_type(session)) { ... }   // nilai elemen sekarang
+//    }
+//
+//  Elemen yang tidak dibaca getter di-skip otomatis oleh array_next.
+//  PENTING (drain): array_next HARUS terus dipanggil sampai mengembalikan
+//  0 — langkah drain terakhir itu yang melewatkan kursor keluar dari ']'
+//  menuju separator root. find() MENGAMPUNI kursor ']' sisa bila elemen
+//  terakhir sudah habis dibaca, tetapi drain tetap disarankan.
 //  Session dialokasikan dari arena — setelah selesai, panggil reset_arena()
 //  untuk mengembalikan seluruh memori arena (termasuk Session) ke nol.
 // ============================================================================
 
 class Session {
   private:
-    memory::Arena* arena_;
     ondemand::Document doc_;
     ondemand::JsonObject root_obj_;
     ondemand::JsonValue value_;
     bool found_;
 
+    // ---- State traversal array (satu kursor forward-only) ----
+    // Sisa elemen yang belum diekspos array_next(); 0 = tidak sedang
+    // berada di dalam array.
+    types::size_t array_remaining_{0};
+    // Elemen yang sedang dipegang kursor BELUM dibaca getter: true berarti
+    // elemen sudah diekspos (array_next) tetapi belum dikonsumsi, sehingga
+    // array_next berikutnya harus me-skip()-nya dulu.
+    bool value_pending_{false};
+
   public:
     Session(
         const char* const RESTRICT src, const types::uint64_t* RESTRICT tape,
         types::size_t tape_len, memory::Arena* arena) NOEXCEPT
-        : arena_(arena),
-          doc_(src, tape, tape_len, arena),
+        : doc_(src, tape, tape_len, arena),
           root_obj_(doc_.get_root().get_object()),
           value_(doc_.get_root()),
           found_(false) {}
@@ -121,7 +139,94 @@ class Session {
     // Cari field; menggeser kursor internal (forward-only).
     void
     find(const types::StringView& key) NOEXCEPT {
-        found_ = root_obj_.find_field_checked(key, &value_);
+        // Pengampunan kursor: kursor ']'-sisa muncul bila array sebelumnya
+        // habis dibaca getter pada elemen terakhir tanpa drain array_next
+        // (yang normalnya melewatkannya). Cukup satu langkah keluar.
+        if (value_.peek_char() == ']') [[unlikely]] {
+            value_.skip();
+        }
+
+        found_         = root_obj_.find_field_checked(key, &value_);
+        value_pending_ = false;
+    }
+
+    // ------------------------------------------------------------------
+    //  Traversal array (satu level, kursor forward-only)
+    // ------------------------------------------------------------------
+
+    // Valid SAAT kursor tepat menunjuk '[' (hasil find_field bertipe
+    // Array dan belum pernah dipanggil untuk array ini). Menghabiskan '[',
+    // menghitung jumlah elemen top-level, dan memposisikan kursor di
+    // elemen pertama. Kursor bisa dihitung ulang karena penghitungan
+    // bersifat inspeksi (snapshot & restore).
+    [[nodiscard]] types::size_t
+    array_size() NOEXCEPT {
+        if (value_.peek_char() != '[') [[unlikely]] {
+            array_remaining_ = 0;
+            return 0;
+        }
+
+        ondemand::JsonArray arr = value_.get_array();
+        array_remaining_        = arr.count_elements();
+        value_pending_                = false;
+        return array_remaining_;
+    }
+
+    // Maju ke elemen berikutnya dan menuntun kursor di atasnya.
+    // Mengembalikan 1 saat elemen tersedia (nilai siap dibaca lewat
+    // value_type/get_*), 0 saat array habis (kursor kembali di irama
+    // object root: ',' / '}' — find_field tetap valid). Elemen yang tidak
+    // dibaca getter di-skip otomatis oleh array_next.
+    [[nodiscard]] types::int32_t
+    array_next() NOEXCEPT {
+        if (array_remaining_ == 0) {
+            value_pending_ = false;
+
+            // Grand kursor kembali ke ritme object root:
+            //   ']'   → array kosong ATAU elemen terakhir sudah dibaca
+            //           hingga terminatornya → satu langkah keluar.
+            //   lain  → elemen terakhir belum dibaca → habiskan elemen,
+            //           lalu keluar dari ']' bila berhenti di sana.
+            //   '\0'  → kursor sudah melampaui ']' — tidak perlu apa-apa.
+            char c = value_.peek_char();
+            if (c == ']') {
+                value_.skip();
+            } else if (c != '\0') {
+                value_.skip();
+                if (value_.peek_char() == ']') {
+                    value_.skip();
+                }
+            }
+            return 0;
+        }
+
+        array_remaining_--;
+
+        if (value_pending_) {
+            // Elemen sebelumnya diekspos tetapi tidak dibaca → habiskan.
+            char c = value_.peek_char();
+            if (c == ',') {
+                // Angka: kursor sudah di terminator sekaligus separator —
+                // satu langkah tepat ke posisi elemen berikutnya.
+                value_.skip();
+            } else if (c != ']' && c != '\0') {
+                value_.skip(); // string/literal/kontainer
+                if (value_.peek_char() == ',') {
+                    value_.skip(); // lewati separator
+                }
+            }
+        } else if (value_.peek_char() == ',') {
+            // ',' pada kursor bisa berarti (a) terminator elemen ANGKA yang
+            // sedang ter-expose (angka 0 entry), atau (b) separator sisa
+            // konsumsi elemen non-angka — yang harus dilintasi. Gap teks
+            // berawalan digit/tanda = kasus (a); gap "rue"/"" = kasus (b).
+            if (!value_.has_inline_number()) {
+                value_.skip();
+            }
+        }
+
+        value_pending_ = true;
+        return 1;
     }
 
     // Tipe nilai yang SEDANG dipegang kursor. Nilai angka tidak direkam tape,
@@ -148,22 +253,30 @@ class Session {
 
     [[nodiscard]] types::int64_t
     get_int() NOEXCEPT {
-        return value_.get_int();
+        const auto result = value_.get_int();
+        value_pending_    = false;
+        return result;
     }
 
     [[nodiscard]] double
     get_double() NOEXCEPT {
-        return value_.get_double();
+        const auto result = value_.get_double();
+        value_pending_    = false;
+        return result;
     }
 
     [[nodiscard]] types::StringView
     get_string() NOEXCEPT {
-        return value_.get_string();
+        const auto result = value_.get_string();
+        value_pending_    = false;
+        return result;
     }
 
     [[nodiscard]] bool
     get_bool() NOEXCEPT {
-        return value_.get_bool();
+        const auto result = value_.get_bool();
+        value_pending_    = false;
+        return result;
     }
 };
 
@@ -246,6 +359,22 @@ EXPORT_NAME(find_field)
 find_field(
     zuu::api::Session* session, const char* const RESTRICT key,
     zuu::types::size_t key_len) NOEXCEPT;
+
+// Hitung jumlah elemen top-level array pada nilai kursor. Valid HANYA
+// saat value_type == Array (kursor tepat di '[') dan belum pernah
+// array_size dipanggil untuk array ini. Kursor kemudian berada di posisi
+// elemen pertama — array_size tidak bisa dipanggil ulang.
+EXPORT_NAME(array_size)
+[[nodiscard]] zuu::types::size_t
+array_size(zuu::api::Session* session) NOEXCEPT;
+
+// Maju ke elemen array berikutnya: 1 = elemen tersedia (kursor di
+// posisi elemen, nilai bisa dibaca lewat value_type/get_*); 0 = habis
+// (kursor di ']') — find_field berikutnya tetap valid. Elemen yang tidak
+// dibaca getter di-skip otomatis.
+EXPORT_NAME(array_next)
+[[nodiscard]] zuu::types::int32_t
+array_next(zuu::api::Session* session) NOEXCEPT;
 
 // Tipe nilai pada kursor saat ini (hasil zuu::api::ValueType).
 EXPORT_NAME(value_type)

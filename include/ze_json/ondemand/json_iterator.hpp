@@ -60,6 +60,49 @@ class JsonIterator {
         return current_idx_ == 0 ? 0 : tape_[current_idx_ - 1];
     }
 
+    // True bila teks payload di antara entry tape SEBELUMNYA dan entry saat
+    // ini memuat minimal satu karakter non-whitespace. Dipakai untuk
+    // membedakan elemen angka (0 entry tape; kursor berada di terminatornya)
+    // dari sekadar entry separator ','.
+    constexpr bool
+    has_inline_text() const NOEXCEPT {
+        if (current_idx_ == 0) {
+            return false;
+        }
+
+        const types::uint64_t prev_pos = tape_[current_idx_ - 1];
+        const types::uint64_t cur_pos  = tape_[current_idx_];
+        for (const char* p = src_ + prev_pos + 1; p < src_ + cur_pos; ++p) {
+            if (*p != ' ' && *p != '\t' && *p != '\n' && *p != '\r') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Varian yang HANYA true bila teks di antara dua entry berawalan
+    // karakter angka / tanda ('0'..'9', '-', '+', '.'). Dipakai traversal
+    // array: separator ',' setelah elemen literal ('true' menyisakan gap
+    // "rue") TIDAK boleh dianggap terminator angka.
+    constexpr bool
+    has_inline_number() const NOEXCEPT {
+        if (current_idx_ == 0) {
+            return false;
+        }
+
+        const types::uint64_t prev_pos = tape_[current_idx_ - 1];
+        const types::uint64_t cur_pos  = tape_[current_idx_];
+        for (const char* p = src_ + prev_pos + 1; p < src_ + cur_pos; ++p) {
+            if (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') {
+                continue;
+            }
+            const char c = *p;
+            return c == '-' || c == '+' || c == '.' ||
+                   (c >= '0' && c <= '9');
+        }
+        return false;
+    }
+
     constexpr void
     skip_child() NOEXCEPT {
         char c     = peek_char();

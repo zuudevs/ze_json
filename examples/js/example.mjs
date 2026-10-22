@@ -116,8 +116,8 @@ class ZeJson {
   constructor(ex) {
     for (const name of [
       "create_arena", "reset_arena", "get_arena_used_space",
-      "create_session", "find_field", "value_type",
-      "get_int", "get_double", "get_bool", "get_string",
+      "create_session", "find_field", "array_size", "array_next",
+      "value_type", "get_int", "get_double", "get_bool", "get_string",
     ]) {
       if (typeof ex[name] !== "function") {
         throw new Error(
@@ -225,6 +225,19 @@ class ZeJson {
     return this.ex.get_bool(doc.session) === 1;
   }
 
+  // ------------------------------------------------------------------
+  //  Traversal array: array_size (sekali, saat kursor di '[') lalu
+  //  loop array_next — elemen yang tidak dibaca di-skip otomatis.
+  // ------------------------------------------------------------------
+  arraySize(doc) {
+    return Number(this.ex.array_size(doc.session)); // size_t → BigInt
+  }
+
+  arrayNext(doc) {
+    // array_next mengembalikan i32 → Number (0/1), bukan BigInt
+    return this.ex.array_next(doc.session) === 1;
+  }
+
   // String ZERO-COPY: data menunjuk langsung ke payload / arena.
   // JS WAJIB menyalin (decode) SEBELUM resetArena() dipanggil lagi.
   stringOf(doc) {
@@ -266,7 +279,7 @@ function demoTiny(ze) {
   console.log("[1] openDocument(dataset/tiny.json)");
   const doc = ze.openDocument(tiny);
 
-  for (const key of ["username", "age", "active", "status", "colors"]) {
+  for (const key of ["username", "age", "active", "status"]) {
     const hit = doc.find(key);
     if (!hit.found) {
       console.log(`  ${key.padEnd(9)}: NOT FOUND`);
@@ -286,14 +299,39 @@ function demoTiny(ze) {
         value = null;
         break;
       default:
-        // Array: tipe terdeteksi, tapi nilai tidak bisa di-"consume" pada
-        // API minimal (traversal nested belum tersedia — lihat ze_json.hpp).
-        // Karena itu "colors" HARUS field TERAKHIR yang dicari di demo ini
-        // (pencarian forward-only berhenti di sini).
-        value = `<${hit.type} — traversal nested belum tersedia>`;
+        value = `<${hit.type}>`;
     }
     console.log(`  ${key.padEnd(9)}: ${hit.type.padEnd(8)} ${value}`);
   }
+
+  // SEBELUMNYA: nilai array tidak bisa di-consume sehingga find_field
+  // berikutnya mati. Kini traversal array tersedia lewat array_size +
+  // array_next — dan setelah habis, kursor kembali ke irama root object.
+  const colors = doc.find("colors");
+  if (colors.found && colors.type === "Array") {
+    const size = ze.arraySize(doc);
+    console.log(`  colors   : Array, ${size} elemen:`);
+    for (let i = 0; i < size; i++) {
+      if (ze.arrayNext(doc)) {
+        const v = ze.typeOf(doc) === "String"
+          ? JSON.stringify(doc.asString())
+          : `<${ze.typeOf(doc)}>`;
+        console.log(`    [${i}] ${v}`);
+      }
+    }
+    // DRAIN: panggil array_next sekali lagi hingga 0 — langkah ini yang
+    // melewatkan kursor keluar ']' kembali ke irama root object.
+    ze.arrayNext(doc);
+  }
+
+  // Lanjutkan root object setelah array habis (bukti kursor rapi kembali)
+  const position = doc.find("position");
+  if (position.found) {
+    console.log(
+      `  position : ${position.type}` +
+      ` (nested object — traversal dalam belum tersedia)`);
+  }
+
   console.log(`  arena terpakai: ${ze.arenaUsed()} byte`);
 }
 
