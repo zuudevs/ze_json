@@ -17,6 +17,14 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # Node 24 dulu — smoke test di bawah meng-instantiate wasm memory64
+      # (node bawaan runner lebih tua dan menolak tabel 64-bit).
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+
       # NOTE: there is no 3.40.x release - CMake jumped 3.31 -> 4.0, so
       # install 4.4.4 (satisfies the project's 3.40 minimum) from the
       # official Kitware binary.
@@ -60,12 +68,6 @@ jobs:
       # The `.wasm` path is now real: build/wasm64-release/src/ze_json_core.wasm
       - name: Smoke test the public API
         run: node js/test/main.mjs
-
-      - name: Setup Node 24
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          registry-url: "https://registry.npmjs.org"
 
       # `npm publish` runs the `prepack` script, which copies the freshly
       # built ze_json_core.wasm next to ze_json.mjs inside the tarball.
