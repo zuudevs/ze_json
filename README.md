@@ -50,7 +50,7 @@ google-benchmark v1.9.5, Node v24.19.0) — lihat tabel lengkap di
 | Scanner64 vs Scanner8 | **1,11–1,34× lebih cepat** pada file besar (`UpdateCenter` 1,34×, `Jeopardy` 1,17×) |
 | Pipeline C++ per dokumen kecil | create (scan + Session) **~200 ns** · find×3 + getter **411 ns** |
 | Path query C++ (root kecil) | **41 ns** (flat) — **208 ns** untuk 3 kueri berbeda tipe |
-| Hot loop JS (demo 4) | per-langkah **0,75 µs/dok** vs path **0,92 µs/dok** untuk kunci top-level berurutan — path tetap **1 panggilan wasm** untuk kedalaman apa pun |
+| Sapuan ukuran JS (vs `JSON.parse`) | ze menang mulai **268 B** (scan murni) / **1 KiB** (baca 2 field) — di 256 KiB **~2,7× lebih cepat**; rezim mungil (≲300 B) kalah oleh overhead tetap wasm — lihat `js/benchmark/sizes.mjs` |
 
 ### Optimasi bottleneck — 4 tahap (semua dibuktikan benchmark before/after)
 

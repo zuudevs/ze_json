@@ -59,12 +59,34 @@ Traversal array mengenal dua pola sejak v0.1.2 — kontrak **counted** lama (`ar
 
 ## Benchmark
 
-`JSON.parse` vs ze_json (benchmark.js · Node 24 · win32 — mesh.json 335 KB korpus simdjson):
+**Sapuan ukuran bertahap** — `js/benchmark/sizes.mjs` (payload sintetis
+deterministik, satu proses, 6 workload × 7 ukuran; Node 24 · win32 ·
+wasm64; artefak di `out/results/benchmark/js_sizes_*.md`). µs/op —
+**lebih kecil = lebih cepat**:
 
-| Teknik | ops/sec |
-|---|---|
-| `JSON.parse` | 651 ops/s |
-| ze_json scan+find | ≈ 1,69 kops/s (≈ **2,6×** lebih cepat) |
+| ukuran | JSON.parse | ze scan | baca 2 field: JSON | ze | iterasi penuh: JSON | ze |
+|---|---|---|---|---|---|---|
+| 95 B | 1,7 | 2,4 | 1,6 | 6,9 | 1,6 | 5,7 |
+| 268 B | 3,8 | 2,9 | 3,6 | 8,2 | 4,3 | 21,1 |
+| 1 KiB | 20,1 | 7,9 | 13,2 | **12,2** | 15,0 | 88,9 |
+| 4 KiB | 38,6 | 14,2 | 31,9 | **16,7** | 36,4 | 204,8 |
+| 16 KiB | 141,8 | 48,7 | 148,5 | **69,8** | 168,0 | 1217,3 |
+| 64 KiB | 726,1 | 251,2 | 592,5 | **257,2** | 632,9 | 3955,6 |
+| 256 KiB | 2640,4 | 944,4 | 2574,0 | **961,8** | 2703,1 | 15606,1 |
+
+Cara membaca:
+
+- **Rezim mungil (≲300 B): ze_json kalah** — overhead tetap (panggilan
+  wasm + salin payload ke region memori tetap) belum teramortisasi;
+  `JSON.parse` V8 memang tercepat di kelas ini.
+- **Titik impas terukur**: scan murni menang mulai **268 B**; pola
+  "parse + baca 2 field" menang mulai **1 KiB**, dan pada 256 KiB ze_json
+  **~2,7× lebih cepat** (0,96 ms vs 2,57 ms).
+- **Konsumsi penuh** (baca SEMUA item): `JSON.parse` menang di semua
+  ukuran — ze_json parser *on-demand*; memmaterialisasi seluruh dokumen
+  lewat path query per-item bukan medannya.
+
+Benchmark korpus simdjson (mesh.json) tetap tersedia lewat `npm run bench`.
 
 ## Kontrak memori (untuk pemain wasm mentah)
 
