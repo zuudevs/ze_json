@@ -461,4 +461,303 @@ TEST_F(PathTest, RootWideIndexEscapeKeyUnchanged) {
     destroy_arena(arena);
 }
 
+TEST_F(PathTest, ArrayIndexPathQueries) {
+    // Indeks elemen array lazy: array LEBAR (128 elemen string) + kueri
+    // [index] berulang. Kebijakan mirror indeks root: kueri berat pertama
+    // sekuensial murni, kedua membangun tabel posisi, berikutnya O(1).
+    std::string json = "{\"items\":[";
+    for (int n = 0; n < 128; ++n) {
+        if (n != 0) json += ",";
+        char label[8];
+        std::snprintf(label, sizeof(label), "v%04d", n);
+        json += std::string("\"") + label + "\"";
+    }
+    json += "],\"after\":9}";
+
+    alignas(8) std::vector<types::uint8_t> buffer(1024 * 1024);
+    memory::Arena* arena = create_arena(buffer.data(), buffer.size());
+    ASSERT_NE(arena, nullptr);
+    std::vector<types::uint64_t> wide_tape(json.size());
+
+    types::int32_t err = api::OK;
+    auto* session = create_session(
+        json.data(), json.size(), wide_tape.data(), wide_tape.size(), arena,
+        err);
+    ASSERT_NE(session, nullptr);
+    ASSERT_EQ(static_cast<api::Status>(err), api::OK);
+
+    const char* data  = nullptr;
+    types::size_t len = 0;
+    types::int32_t st = api::OK;
+
+    // Berat-1 (belum ada tabel): kunci tengah tetap ketemu.
+    st = api::OK;
+    get_string_at(session, "items[64]", 9, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "v0064");
+
+    // Berat-2: pembangunan tabel terjadi di sini.
+    st = api::OK;
+    get_string_at(session, "items[65]", 9, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "v0065");
+
+    // Semua arah kini lompatan: depan, tengah, belakang.
+    st = api::OK;
+    get_string_at(session, "items[0]", 8, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "v0000");
+
+    st = api::OK;
+    get_string_at(session, "items[64]", 9, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "v0064");
+
+    st = api::OK;
+    get_string_at(session, "items[127]", 10, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "v0127");
+
+    // Indeks luar jangkauan: NOT_FOUND; sesi tetap hidup.
+    st = api::OK;
+    get_string_at(session, "items[128]", 10, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::NOT_FOUND);
+
+    st = api::OK;
+    get_string_at(session, "items[9999]", 11, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::NOT_FOUND);
+
+    st = api::OK;
+    get_string_at(session, "items[21]", 9, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "v0021");
+
+    // Kueri root lain pasca-indeks: rewind + indeks root tetap benar.
+    st = api::OK;
+    EXPECT_EQ(get_int_at(session, "after", 5, st), 9);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+
+    destroy_arena(arena);
+}
+
+TEST_F(PathTest, ArrayIndexMixedTypesAndNumbers) {
+    // Array campuran tipe > kuota: lompatan per elemen wajib meninggalkan
+    // kursor PERSIS seperti hasil sekuensial — termasuk angka 0-entry
+    // (kursor di terminator ',') dan angka TERAKHIR (kursor di ']' +
+    // gap angka). Pola 7 elemen diulang 8× (indeks 0..55).
+    std::string json = "{\"mix\":[";
+    for (int b = 0; b < 8; ++b) {
+        if (b != 0) json += ",";
+        json += R"(1,"two",true,null,[7,8],{"k":4},-8.5)";
+    }
+    json += "],\"after\":5}";
+
+    alignas(8) std::vector<types::uint8_t> buffer(1024 * 1024);
+    memory::Arena* arena = create_arena(buffer.data(), buffer.size());
+    std::vector<types::uint64_t> wide_tape(json.size());
+
+    types::int32_t err = api::OK;
+    auto* session = create_session(
+        json.data(), json.size(), wide_tape.data(), wide_tape.size(), arena,
+        err);
+    ASSERT_NE(session, nullptr);
+    ASSERT_EQ(static_cast<api::Status>(err), api::OK);
+
+    const char* data  = nullptr;
+    types::size_t len = 0;
+    types::int32_t st = api::OK;
+
+    // Berat-1: angka (pattern index 0) di posisi 49.
+    st = api::OK;
+    EXPECT_EQ(get_int_at(session, "mix[49]", 7, st), 1);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+
+    // Berat-2 (tabel dibangun): string di posisi 50 (pattern index 1).
+    st = api::OK;
+    get_string_at(session, "mix[50]", 7, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "two");
+
+    // Boolean (pattern 2) & null (pattern 3).
+    st = api::OK;
+    EXPECT_EQ(get_bool_at(session, "mix[51]", 7, st), 1);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+
+    st = api::OK;
+    EXPECT_EQ(get_int_at(session, "mix[52]", 7, st), 0);
+    EXPECT_EQ(static_cast<api::Status>(st), api::TYPE_MISMATCH); // null
+
+    // Array bersarang (pattern 4): segmen [index] LANJUTAN pasca-lompatan.
+    st = api::OK;
+    EXPECT_EQ(get_int_at(session, "mix[53][1]", 10, st), 8);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+
+    // Object bersarang (pattern 5): segmen key LANJUTAN pasca-lompatan.
+    st = api::OK;
+    EXPECT_EQ(get_int_at(session, "mix[54].k", 9, st), 4);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+
+    // Angka TERAKHIR (pattern 6, index 55): kursor ']' + gap angka.
+    st = api::OK;
+    EXPECT_EQ(get_double_at(session, "mix[55]", 7, st), -8.5);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+
+    // Angka di tengah (pattern 0, index 28): kursor terminator ','.
+    st = api::OK;
+    EXPECT_EQ(get_int_at(session, "mix[28]", 7, st), 1);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+
+    // Out-of-range pasca-tabel.
+    st = api::OK;
+    EXPECT_EQ(get_int_at(session, "mix[56]", 7, st), 0);
+    EXPECT_EQ(static_cast<api::Status>(st), api::NOT_FOUND);
+
+    destroy_arena(arena);
+}
+
+TEST_F(PathTest, ArrayIndexSwitchArrays) {
+    // Tabel terikat identitas array: kueri lintas array memicu rebuild
+    // (blok arena dipakai ulang) — hasil tidak pernah nyasar antar array.
+    std::string json = "{\"a\":[";
+    for (int n = 0; n < 40; ++n) {
+        if (n != 0) json += ",";
+        char label[8];
+        std::snprintf(label, sizeof(label), "v%04d", n);
+        json += std::string("\"") + label + "\"";
+    }
+    json += "],\"b\":[";
+    for (int n = 0; n < 40; ++n) {
+        if (n != 0) json += ",";
+        char label[8];
+        std::snprintf(label, sizeof(label), "w%04d", n);
+        json += std::string("\"") + label + "\"";
+    }
+    json += "],\"after\":7}";
+
+    alignas(8) std::vector<types::uint8_t> buffer(1024 * 1024);
+    memory::Arena* arena = create_arena(buffer.data(), buffer.size());
+    std::vector<types::uint64_t> wide_tape(json.size());
+
+    types::int32_t err = api::OK;
+    auto* session = create_session(
+        json.data(), json.size(), wide_tape.data(), wide_tape.size(), arena,
+        err);
+    ASSERT_NE(session, nullptr);
+    ASSERT_EQ(static_cast<api::Status>(err), api::OK);
+
+    const char* data  = nullptr;
+    types::size_t len = 0;
+    types::int32_t st = api::OK;
+
+    // Bangun tabel untuk array "a" (dua kueri berat).
+    get_string_at(session, "a[30]", 5, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "v0030");
+
+    st = api::OK;
+    get_string_at(session, "a[31]", 5, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "v0031");
+
+    // Pindah ke array "b": tabel a tidak boleh bocor.
+    st = api::OK;
+    get_string_at(session, "b[30]", 5, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "w0030");
+
+    st = api::OK;
+    get_string_at(session, "b[39]", 5, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "w0039");
+
+    // Kembali ke "a": rebuild — hasil tetap benar.
+    st = api::OK;
+    get_string_at(session, "a[39]", 5, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "v0039");
+
+    st = api::OK;
+    get_string_at(session, "b[0]", 4, data, len, st);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(std::string_view(data, len), "w0000");
+
+    destroy_arena(arena);
+}
+
+TEST_F(PathTest, ArrayIndexNumberOnlyAndAmbiguity) {
+    // Array full angka + kasus ambigu '[7]' vs '[]' pada tape serupa.
+    // Array kecil (≤ kuota) TIDAK membangun tabel — kontrak sekuensial
+    // lama utuh; array besar angka mengetes seek terminator 0-entry
+    // termasuk elemen TERAKHIR (']' + gap angka).
+    alignas(8) constexpr const char payload[] =
+        R"({"nums":[1,2,3],"one":[7],"empty":[],"after":5})";
+    constexpr auto payload_size = sizeof(payload) - 1;
+
+    types::int32_t err = api::OK;
+    auto* session      = make_session(payload, payload_size, err);
+    ASSERT_NE(session, nullptr);
+    ASSERT_EQ(static_cast<api::Status>(err), api::OK);
+
+    types::int32_t st = api::OK;
+    EXPECT_EQ(get_int_at(session, "nums[0]", 7, st), 1);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(get_int_at(session, "nums[2]", 7, st), 3);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(get_int_at(session, "nums[3]", 7, st), 0);
+    EXPECT_EQ(static_cast<api::Status>(st), api::NOT_FOUND);
+
+    st = api::OK;
+    EXPECT_EQ(get_int_at(session, "one[0]", 6, st), 7);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+    EXPECT_EQ(get_int_at(session, "one[1]", 6, st), 0);
+    EXPECT_EQ(static_cast<api::Status>(st), api::NOT_FOUND);
+
+    st = api::OK;
+    EXPECT_EQ(get_int_at(session, "empty[0]", 8, st), 0);
+    EXPECT_EQ(static_cast<api::Status>(st), api::NOT_FOUND);
+    arena_handle->reset();
+
+    // Array besar full angka: dua kueri berat membangun tabel; seluruh
+    // arah + elemen terakhir (']' + gap angka) wajib benar.
+    std::string json = "{\"big\":[";
+    for (int n = 0; n < 100; ++n) {
+        if (n != 0) json += ",";
+        json += std::to_string(n);
+    }
+    json += "],\"after\":5}";
+
+    alignas(8) std::vector<types::uint8_t> buffer(1024 * 1024);
+    memory::Arena* arena = create_arena(buffer.data(), buffer.size());
+    std::vector<types::uint64_t> wide_tape(json.size());
+
+    err = api::OK;
+    session = create_session(
+        json.data(), json.size(), wide_tape.data(), wide_tape.size(), arena,
+        err);
+    ASSERT_NE(session, nullptr);
+    ASSERT_EQ(static_cast<api::Status>(err), api::OK);
+
+    st = api::OK;
+    EXPECT_EQ(get_int_at(session, "big[90]", 7, st), 90);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+
+    st = api::OK;
+    EXPECT_EQ(get_int_at(session, "big[91]", 7, st), 91);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+
+    st = api::OK;
+    EXPECT_EQ(get_int_at(session, "big[99]", 7, st), 99);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+
+    st = api::OK;
+    EXPECT_EQ(get_int_at(session, "big[0]", 6, st), 0);
+    EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+
+    st = api::OK;
+    EXPECT_EQ(get_int_at(session, "big[100]", 8, st), 0);
+    EXPECT_EQ(static_cast<api::Status>(st), api::NOT_FOUND);
+
+    destroy_arena(arena);
+}
+
 } // namespace zuu::testing

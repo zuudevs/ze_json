@@ -169,6 +169,24 @@ class Session {
     // hasil unescape — teks mentah tidak ekuivalen). Bila ada kandidatnya,
     // miss indeks wajib jatuh ke sekuensial agar semantik tidak berubah.
     bool idx_has_escape_keys_{false};
+
+    // ---- Indeks elemen array (lazy) — segmen [index] path query --------
+    // Hukum yang sama dengan indeks root: position_at_index menyapu O(index)
+    // elemen PER kueri (find_path me-rewind dari root). Kebijakan identik:
+    // kueri berat pertama sekuensial murni, kueri berat KEDUA membangun
+    // tabel posisi (dense: elemen ke-i → tape idx kursor nilainya, identik
+    // dengan hasil position_at_index), kueri berikutnya lompat O(1). Tabel
+    // terikat identitas array (tape idx '['); array lain memicu rebuild
+    // (blok arena dipakai ulang selama kapasitas cukup).
+    static constexpr types::size_t kArrIdxQuota = 24;
+
+    types::size_t* arr_elem_idx_{nullptr}; // dense: elemen → tape idx
+    types::size_t arr_elem_count_{0};      // jumlah elemen terindeks
+    types::size_t arr_elem_capacity_{0};   // kapasitas blok (entri)
+    types::size_t arr_elem_source_{0};     // identitas array (idx '[')
+    types::uint64_t arr_heavy_queries_{0};
+    bool arr_idx_present_{false};  // tabel berlaku utk arr_elem_source_
+    bool arr_idx_disabled_{false};
     memory::Arena* arena_{nullptr};
 
   public:
@@ -438,6 +456,137 @@ class Session {
         doc_.get_root().get_object();
     }
 
+    // ------------------------------------------------------------------
+    //  INDEKS ELEMEN ARRAY (LAZY) — layanan segmen [index] path query
+    // ------------------------------------------------------------------
+    // Layan idx pada array ber-identitas arr_id: lompatan O(1) bila tabel
+    // terbangun untuk array INI, sekuensial murni + penghitung berat bila
+    // belum (kebijakan mirror resolve_root_key).
+    [[nodiscard]] bool
+    resolve_array_index(
+        types::size_t arr_id, types::size_t idx) NOEXCEPT {
+        if (arr_idx_present_ && arr_elem_source_ == arr_id) [[likely]] {
+            if (idx >= arr_elem_count_) {
+                return false;
+            }
+            doc_.iter().seek(arr_elem_idx_[idx]);
+            return true;
+        }
+
+        if (arr_idx_disabled_) [[unlikely]] {
+            // Arena penuh: jalur murni lama tanpa bookkeeping berat.
+            value_.get_array(); // habiskan '[' → kursor di elemen pertama
+            return position_at_index(idx);
+        }
+
+        // Fallback sekuensial seperti kode lama, PLUS penghitung berat
+        // (panjang sapuan ≈ idx).
+        value_.get_array(); // habiskan '[' → kursor di elemen pertama
+        const bool hit = position_at_index(idx);
+
+        if (idx <= kArrIdxQuota || ++arr_heavy_queries_ < 2) [[likely]] {
+            return hit;
+        }
+
+        // Kueri berat kedua: bangun tabel untuk array ini. Bila sukses,
+        // layan ulang kueri lewat lompatan (kursor identik hasil
+        // sekuensial — lanjutan segmen path tak terdampak).
+        build_array_index(arr_id);
+        if (arr_idx_present_ && arr_elem_source_ == arr_id &&
+            idx < arr_elem_count_) {
+            doc_.iter().seek(arr_elem_idx_[idx]);
+            return true;
+        }
+
+        // Gagal membangun (arena penuh) / anomali: pulihkan kursor ke
+        // array lalu ulangi sekuensial murni.
+        doc_.iter().seek(arr_id);
+        value_.get_array();
+        return position_at_index(idx);
+    }
+
+    void
+    build_array_index(types::size_t arr_id) NOEXCEPT {
+        if (!arena_ || arr_idx_disabled_) [[unlikely]] {
+            arr_idx_disabled_ = true;
+            return;
+        }
+
+        // Pass 1: hitung elemen (kursor dari '[').
+        doc_.iter().seek(arr_id);
+        value_.get_array();
+        const types::size_t count = walk_array_elements<false>();
+
+        // Alokasi / daur-pakai blok: kapasitas power-of-two ≥ jumlah
+        // elemen; array lain yang lebih kecil memakai blok yang sama.
+        if (!arr_elem_idx_ || arr_elem_capacity_ < count) {
+            types::size_t capacity = 32;
+            while (capacity < count) {
+                capacity <<= 1;
+            }
+            void* mem = arena_->allocate(
+                capacity * sizeof(types::size_t), alignof(types::size_t));
+            if (!mem) [[unlikely]] {
+                arr_idx_disabled_ = true; // arena penuh: sekuensial saja.
+                return;
+            }
+            arr_elem_idx_      = static_cast<types::size_t*>(mem);
+            arr_elem_capacity_ = capacity;
+        }
+
+        // Pass 2: isi posisi kursor nilai per elemen.
+        doc_.iter().seek(arr_id);
+        value_.get_array();
+        walk_array_elements<true>();
+
+        arr_elem_source_   = arr_id;
+        arr_elem_count_     = count;
+        arr_idx_present_   = true;
+        arr_heavy_queries_ = 0;
+    }
+
+    // Telusuri seluruh elemen array dalam SATU jalan (kursor wajib
+    // pasca-'['). kFill=false: hitung saja; kFill=true: catat tape idx
+    // kursor nilai tiap elemen — POSISI PERSIS tempat position_at_index
+    // mengembalikan true untuk elemen tersebut.
+    template <bool kFill>
+    types::size_t
+    walk_array_elements() NOEXCEPT {
+        ondemand::JsonIterator& it = doc_.iter();
+        types::size_t i = 0;
+        for (;;) {
+            char c = value_.peek_char();
+            if (c == '\0') [[unlikely]] {
+                break;
+            }
+            if (c == ']') {
+                // Terminator elemen ANGKA terakhir, atau array memang habis.
+                if (value_.has_inline_number()) {
+                    if (kFill) {
+                        arr_elem_idx_[i] = it.index();
+                    }
+                    ++i;
+                }
+                break;
+            }
+            if (kFill) {
+                arr_elem_idx_[i] = it.index();
+            }
+            ++i;
+
+            if (c == ',') {
+                // angka: lintas terminator/separator ke elemen berikutnya
+                value_.skip();
+            } else {
+                value_.skip(); // habiskan elemen string/literal/kontainer
+                if (value_.peek_char() == ',') {
+                    value_.skip(); // lewati separator
+                }
+            }
+        }
+        return i;
+    }
+
   public:
 
     // ------------------------------------------------------------------
@@ -491,8 +640,9 @@ class Session {
                 if (value_.peek_char() != '[') {
                     return NOT_FOUND;
                 }
-                value_.get_array(); // habiskan '[' → kursor di elemen pertama
-                if (!position_at_index(idx)) {
+                // Identitas array (tape idx '[') ditangkap SEBELUM '['
+                // dikonsumsi; layanan lewat indeks elemen lazy.
+                if (!resolve_array_index(doc_.iter().index(), idx)) {
                     return NOT_FOUND;
                 }
             } else {

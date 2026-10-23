@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <ze_json/scanner/scanner.hpp>
+#include <ze_json/utils/utf8_validator.hpp>
 #include <ze_json/ze_json.hpp>
 
 namespace {
@@ -716,5 +717,283 @@ BENCHMARK(BM_ArrayRead_Streaming)
     ->Arg(0)
     ->Arg(1)
     ->Arg(2);
+
+// --- Path query [index] array panjang: biaya position_at_index O(index) -----
+// Hukum serupa root-wide (Tahap 2): elemen ke-1023 menyapu 1023 elemen TIAP
+// kueri karena find_path me-rewind dari root. Satu session lintas iterasi.
+
+namespace {
+constexpr int kItemsWidth = 3;
+const size_t kItemsLen[kItemsWidth] = {16, 128, 1024};
+
+std::string
+make_item_label(size_t index) {
+    // Kunci lebar-tetap 4 digit — konsisten lintas ukuran.
+    std::string label = std::to_string(index);
+    while (label.size() < 4) {
+        label.insert(label.begin(), '0');
+    }
+    return "v" + label;
+}
+
+struct ItemsCase {
+    std::string json;
+    std::vector<uint64_t> tape;
+    std::vector<zuu::types::uint8_t> arena_storage;
+    zuu::memory::Arena* arena{nullptr};
+    zuu::api::Session* session{nullptr};
+
+    void
+    resize_for(size_t elements) {
+        json = "{\"items\":[";
+        for (size_t i = 0; i < elements; ++i) {
+            if (i != 0) json += ",";
+            json += "\"" + make_item_label(i) + "\"";
+        }
+        json += "]}";
+
+        // Kasus terburuk tape: setiap byte payload jadi entry.
+        tape.assign(json.size(), 0);
+        arena_storage.assign(512 * 1024, 0);
+        arena = create_arena(arena_storage.data(), arena_storage.size());
+
+        int32_t err = static_cast<int32_t>(zuu::api::INVALID_JSON);
+        session     = create_session(
+            json.data(), json.size(), tape.data(), tape.size(), arena, err);
+    }
+};
+
+ItemsCase&
+get_items_case(int width_index) {
+    static ItemsCase cases[kItemsWidth];
+    ItemsCase& cs = cases[width_index];
+    if (!cs.session) {
+        cs.resize_for(kItemsLen[width_index]);
+    }
+    return cs;
+}
+
+void
+BM_ArrayIndex_PathQuery(benchmark::State& state) {
+    // Argumen = widthIdx*3 + caseIdx — 0:first, 1:mid, 2:last.
+    const int id          = static_cast<int>(state.range(0));
+    const int width_index = id / 3;
+    const int case_index  = id % 3;
+
+    const size_t width = kItemsLen[width_index];
+    const size_t target
+        = case_index == 0 ? 0 : (case_index == 1 ? width / 2 : width - 1);
+
+    ItemsCase& cs = get_items_case(width_index);
+    if (!cs.session) {
+        state.SkipWithError("session items gagal dibuat.");
+        return;
+    }
+
+    const std::string path     = "items[" + std::to_string(target) + "]";
+    const std::string expected = make_item_label(target);
+
+    for (auto _ : state) {
+        int32_t err      = static_cast<int32_t>(zuu::api::OK);
+        const char* data = nullptr;
+        size_t len       = 0;
+        get_string_at(
+            cs.session, path.data(), path.size(), data, len, err);
+        if (err != static_cast<int32_t>(zuu::api::OK)) {
+            state.SkipWithError("get_string_at items[K] gagal.");
+            return;
+        }
+        benchmark::DoNotOptimize(data);
+        benchmark::DoNotOptimize(len);
+    }
+}
+} // namespace
+
+BENCHMARK(BM_ArrayIndex_PathQuery)
+    ->Unit(benchmark::kNanosecond)
+    ->MinTime(30)
+    ->MinWarmUpTime(3)
+    ->ArgName("WxK")
+    ->Arg(0)
+    ->Arg(1)
+    ->Arg(2)
+    ->Arg(3)
+    ->Arg(4)
+    ->Arg(5)
+    ->Arg(6)
+    ->Arg(7)
+    ->Arg(8);
+
+// --- Pipeline create_session pada payload UTF-8 PADAT ------------------------
+// Body string didominasi karakter multibyte (2-byte latin + 3-byte CJK) —
+// regime DFA non-ASCII. Membuktikan validasi terintegrasi TIDAK melambat
+// dibanding pass validasi terpisah pada konten non-ASCII murni.
+
+namespace {
+std::string
+make_synth_json_utf8(size_t target_bytes) {
+    // Label non-ASCII: ~60% body string multibyte — menekan jalur DFA.
+    std::string json = "{\"widgets\":[";
+    size_t index     = 0;
+    while (json.size() < target_bytes) {
+        json += "{\"index\":";
+        json += std::to_string(index++);
+        json += ",\"label\":\"éàüöñ 中文 テスト\"},";
+    }
+    json.pop_back(); // Buang koma terakhir sebelum ']'.
+    json += "]}";
+    return json;
+}
+
+constexpr int kUtf8SizeCount = 2;
+const size_t kUtf8SizesKib[kUtf8SizeCount] = {16, 64};
+
+struct Utf8Case {
+    std::string json;
+    std::vector<uint64_t> tape;
+    std::vector<zuu::types::uint8_t> arena_storage;
+    zuu::memory::Arena* arena{nullptr};
+
+    void
+    resize_for(size_t target_bytes) {
+        json = make_synth_json_utf8(target_bytes);
+        tape.assign(json.size(), 0);
+        arena_storage.assign(4 * 1024 * 1024, 0);
+        arena = create_arena(arena_storage.data(), arena_storage.size());
+    }
+};
+
+Utf8Case&
+get_utf8_case(int index) {
+    static Utf8Case cases[kUtf8SizeCount];
+    Utf8Case& cs = cases[index];
+    if (!cs.arena) {
+        cs.resize_for(kUtf8SizesKib[index] * 1024);
+    }
+    return cs;
+}
+
+void
+BM_CreateSession_Utf8(benchmark::State& state) {
+    auto& cs = get_utf8_case(static_cast<int>(state.range(0)));
+    if (!cs.arena) {
+        state.SkipWithError("arena utf8 gagal dibuat.");
+        return;
+    }
+
+    // Validasi sekali di luar loop: wajib sukses agar pengukuran tidak
+    // mengukur jalur error.
+    {
+        int32_t err   = static_cast<int32_t>(zuu::api::INVALID_JSON);
+        auto* session = create_session(
+            cs.json.data(), cs.json.size(), cs.tape.data(), cs.tape.size(),
+            cs.arena, err);
+        if (!session || err != static_cast<int32_t>(zuu::api::OK)) {
+            state.SkipWithError("payload utf8 tidak lolos create_session.");
+            return;
+        }
+        reset_arena(cs.arena);
+    }
+
+    for (auto _ : state) {
+        reset_arena(cs.arena);
+        int32_t err   = static_cast<int32_t>(zuu::api::INVALID_JSON);
+        auto* session = create_session(
+            cs.json.data(), cs.json.size(), cs.tape.data(), cs.tape.size(),
+            cs.arena, err);
+        if (!session || err != static_cast<int32_t>(zuu::api::OK)) {
+            state.SkipWithError("create_session utf8 gagal di tengah.");
+            return;
+        }
+        benchmark::DoNotOptimize(session);
+    }
+}
+} // namespace
+
+BENCHMARK(BM_CreateSession_Utf8)
+    ->Unit(benchmark::kNanosecond)
+    ->MinTime(30)
+    ->MinWarmUpTime(3)
+    ->ArgName("KiB")
+    ->Arg(0)
+    ->Arg(1);
+
+// --- Replika pass validasi TERPISAH (baseline interleaved) -------------------
+// Pipeline LAMA = pass utils::Utf8Validator penuh + scanner. Replika menaruh
+// pass validator EKSPLISIT di depan create_session terkini — selisihnya
+// terhadap BM_CreateSession_Pipeline_Scanner64 / BM_CreateSession_Utf8 pada
+// proses + run yang sama = biaya pass validasi terpisah yang dihemat
+// integrasi (perbandingan interleaved tahan noise jam lintas-proses).
+
+namespace {
+void
+BM_Pipeline_SeparateValidator(benchmark::State& state) {
+    auto& sized = get_sized_case(static_cast<int>(state.range(0)));
+    if (!sized.arena) {
+        state.SkipWithError("arena sintetis gagal dibuat.");
+        return;
+    }
+
+    for (auto _ : state) {
+        reset_arena(sized.arena);
+        if (!zuu::utils::Utf8Validator(
+                sized.json.data(), sized.json.size())) {
+            state.SkipWithError("validator menolak payload valid.");
+            return;
+        }
+        int32_t err   = static_cast<int32_t>(zuu::api::INVALID_JSON);
+        auto* session = create_session(
+            sized.json.data(), sized.json.size(), sized.tape.data(),
+            sized.tape.size(), sized.arena, err);
+        if (!session || err != static_cast<int32_t>(zuu::api::OK)) {
+            state.SkipWithError("create_session gagal.");
+            return;
+        }
+        benchmark::DoNotOptimize(session);
+    }
+}
+
+void
+BM_Pipeline_Utf8_SeparateValidator(benchmark::State& state) {
+    auto& cs = get_utf8_case(static_cast<int>(state.range(0)));
+    if (!cs.arena) {
+        state.SkipWithError("arena utf8 gagal dibuat.");
+        return;
+    }
+
+    for (auto _ : state) {
+        reset_arena(cs.arena);
+        if (!zuu::utils::Utf8Validator(cs.json.data(), cs.json.size())) {
+            state.SkipWithError("validator menolak payload utf8 valid.");
+            return;
+        }
+        int32_t err   = static_cast<int32_t>(zuu::api::INVALID_JSON);
+        auto* session = create_session(
+            cs.json.data(), cs.json.size(), cs.tape.data(), cs.tape.size(),
+            cs.arena, err);
+        if (!session || err != static_cast<int32_t>(zuu::api::OK)) {
+            state.SkipWithError("create_session utf8 gagal.");
+            return;
+        }
+        benchmark::DoNotOptimize(session);
+    }
+}
+} // namespace
+
+BENCHMARK(BM_Pipeline_SeparateValidator)
+    ->Unit(benchmark::kNanosecond)
+    ->MinTime(30)
+    ->MinWarmUpTime(3)
+    ->ArgName("Idx")
+    ->Arg(2)
+    ->Arg(4);
+
+BENCHMARK(BM_Pipeline_Utf8_SeparateValidator)
+    ->Unit(benchmark::kNanosecond)
+    ->MinTime(30)
+    ->MinWarmUpTime(3)
+    ->ArgName("KiB")
+    ->Arg(0)
+    ->Arg(1);
 
 } // namespace

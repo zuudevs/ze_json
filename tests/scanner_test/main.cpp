@@ -229,6 +229,89 @@ TEST_F(ScannerTest, Scanner64ErrorsMatchScanner8) {
     EXPECT_FALSE(u_ok8);
     EXPECT_EQ(u_ok8, u_ok64);
 }
+
+TEST_F(ScannerTest, MergedUtf8ValidationBlockBoundaries) {
+    // Validasi UTF-8 kini menumpang jalan scanner (bukan pass terpisah).
+    // Sekuens multibyte wajib tetap benar meski TERBELAH di batas blok
+    // SWAR 8 byte: DFA state menyeberangi blok via jalur per-byte.
+    // Body string mulai pada offset payload 6 (setelah {"k":"), sehingga
+    // 7×'a' + sekuens menempatkan byte pertama sekuens di ujung blok 0.
+
+    // (a) 2-byte é terbelah: C3 di body[7] (blok 0), A9 di body[8] (blok 1)
+    std::string straddle2 = "{\"k\":\"";
+    straddle2.append(7, 'a');
+    straddle2 += "\xC3\xA9";
+    straddle2 += "\",\"t\":\"x\"}";
+
+    // (b) 3-byte 中 terbelah: E4 B8 di blok 0, AD di blok 1
+    std::string straddle3 = "{\"k\":\"";
+    straddle3.append(7, 'a');
+    straddle3 += "\xE4\xB8\xAD";
+    straddle3 += "\",\"t\":\"x\"}";
+
+    // (c) 4-byte 🌍 terbelah: F0 di blok 0, 9F 8C 8D di blok 1
+    std::string straddle4 = "{\"k\":\"";
+    straddle4.append(7, 'a');
+    straddle4 += "\xF0\x9F\x8C\x8D";
+    straddle4 += "\",\"t\":\"x\"}";
+
+    for (const auto& json : {straddle2, straddle3, straddle4}) {
+        auto [ok8, tape8]   = run_scanner(json);
+        auto [ok64, tape64] = run_scanner64(json);
+        ASSERT_TRUE(ok8) << "scanner8 menolak: " << json;
+        ASSERT_TRUE(ok64) << "scanner64 menolak: " << json;
+        EXPECT_EQ(tape8, tape64) << "payload: " << json;
+    }
+
+    // (d) Multibyte di GAP antar struktural: valid UTF-8 → tetap lolos
+    //     (scanner memang tidak memvalidasi sintaks nilai — kontrak lama),
+    //     kedua scanner sepakat.
+    std::string gap_mb = "{\"a\":\xC3\xA9}";
+    {
+        auto [ok8, tape8]   = run_scanner(gap_mb);
+        auto [ok64, tape64] = run_scanner64(gap_mb);
+        ASSERT_TRUE(ok8);
+        ASSERT_TRUE(ok64);
+        EXPECT_EQ(tape8, tape64);
+    }
+
+    // (e) Escape disusul multibyte: pasangan escape tetap masuk DFA.
+    std::string esc_mb = "{\"k\":\"a\\\xC3\xA9ok\"}";
+    {
+        auto [ok8, tape8]   = run_scanner(esc_mb);
+        auto [ok64, tape64] = run_scanner64(esc_mb);
+        ASSERT_TRUE(ok8);
+        ASSERT_TRUE(ok64);
+        EXPECT_EQ(tape8, tape64);
+    }
+}
+
+TEST_F(ScannerTest, MergedUtf8ValidationRejectsAcrossBoundaries) {
+    // Penolakan wajib identik scanner8 vs scanner64 untuk sekuens rusak
+    // pada posisi strategis — semua DITOLAK dua-duanya.
+    const std::string rejects[] = {
+        // Kutip penutup di tengah sekuens: C3 lalu '"' → invalid.
+        std::string("{\"k\":\"") + std::string(7, 'a') + "\xC3\"}",
+        // Backslash di tengah sekuens: C3 lalu '\\' → invalid.
+        std::string("{\"k\":\"") + std::string(7, 'a') + "\xC3\\n\"}",
+        // Byte escape kedua ber-high-bit: '\\' + C3 → invalid.
+        std::string("{\"k\":\"a\\\xC3\"}"),
+        // Overlong C0 AF di dalam string, menempel batas blok.
+        std::string("{\"k\":\"") + std::string(6, 'a') + "\xC0\xAF\"}",
+        // Surrogate ED A0 80 (3-byte terlarang).
+        std::string("{\"k\":\"") + std::string(5, 'a') + "\xED\xA0\x80\"}",
+        // Sekuens terpotong di gap antar struktural (bracket tetap seimbang
+        // agar penolakan murni berasal dari DFA, bukan kedalaman).
+        std::string("{\"a\":1 \xC3}"),
+    };
+
+    for (const auto& json : rejects) {
+        auto [ok8, _8]     = run_scanner(json);
+        auto [ok64, _64]   = run_scanner64(json);
+        EXPECT_FALSE(ok8) << "scanner8 malah lolos: " << json;
+        EXPECT_FALSE(ok64) << "scanner64 malah lolos: " << json;
+    }
+}
 #endif // __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
 
 } // namespace zuu::testing
