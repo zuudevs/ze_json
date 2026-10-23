@@ -263,20 +263,37 @@ export class ZeJson {
   /** String ZERO-COPY: data menunjuk langsung ke payload / arena.
    *  WAJIB antara resetArena berikutnya. */
   stringOf(doc) {
+    // v0.1.2: kursor habis / nilai bukan string membuat get_string membaca
+    // span sampah (dahulu melempar RangeError kabur dari TextDecoder).
+    // Tolak bersih dengan status ABI — konsisten dengan kontrak path query.
+    if (this.typeOf(doc) !== "String") {
+      throw new Error("get_string gagal: STATUS=TYPE_MISMATCH");
+    }
     this.ex.get_string(doc.session, DATA_REF, LEN_REF);
     return this.readSpan();
   }
 
-  // Getter berikut hanya valid SETELAH find() sukses dan tipe cocok.
+  // Getter berikut hanya valid SETELAH find() sukses dan tipe cocok —
+  // sebaliknya melempar STATUS=TYPE_MISMATCH (v0.1.2; dahulu memulangkan
+  // nilai sampah secara diam-diam).
   intOf(doc) {
+    if (this.typeOf(doc) !== "Number") {
+      throw new Error("get_int gagal: STATUS=TYPE_MISMATCH");
+    }
     return this.ex.get_int(doc.session); // i64 → BigInt
   }
 
   doubleOf(doc) {
+    if (this.typeOf(doc) !== "Number") {
+      throw new Error("get_double gagal: STATUS=TYPE_MISMATCH");
+    }
     return this.ex.get_double(doc.session); // f64 → number
   }
 
   boolOf(doc) {
+    if (this.typeOf(doc) !== "Boolean") {
+      throw new Error("get_bool gagal: STATUS=TYPE_MISMATCH");
+    }
     return this.ex.get_bool(doc.session) === 1;
   }
 

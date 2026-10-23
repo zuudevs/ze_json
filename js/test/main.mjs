@@ -64,6 +64,42 @@ const ze = await ZeJson.load();
     doc2.find("v").found && doc2.asInt() === 7n);
 }
 
+// --- 1b. Getter menolak tipe salah (v0.1.2) ----------------------------------
+{
+  // Kursor habis (find gagal berjalan sampai akhir): dahulu asString
+  // melempar RangeError kabur (span sampah dari get_string); kini
+  // STATUS=TYPE_MISMATCH bersih. Dokumen terpisah — find() forward-only.
+  const d1 = ze.openDocument('{"id":21,"name":"ze"}');
+  d1.find("missing");
+  check("asString pasca find gagal → TYPE_MISMATCH",
+    throwsWithStatus(() => d1.asString(), "TYPE_MISMATCH"));
+
+  // Tipe salah dengan kursor VALID — bergerak maju sesuai urutan dokumen.
+  const doc = ze.openDocument(
+    '{"id":21,"name":"ze","status":null,"ok":true}',
+  );
+
+  doc.find("id");
+  check("asString pada Number → TYPE_MISMATCH",
+    throwsWithStatus(() => doc.asString(), "TYPE_MISMATCH"));
+
+  doc.find("name");
+  check("asInt pada String → TYPE_MISMATCH",
+    throwsWithStatus(() => doc.asInt(), "TYPE_MISMATCH"));
+
+  doc.find("status");
+  check("asDouble pada Null → TYPE_MISMATCH",
+    throwsWithStatus(() => doc.asDouble(), "TYPE_MISMATCH"));
+  doc.consumeNull();
+
+  doc.find("ok");
+  check("asBoolean pada Boolean tetap benar", doc.asBoolean() === true);
+
+  // Nilai benar tetap terbaca lewat path query (rewind sendiri).
+  check("stringAt(name) tetap 'ze'", doc.stringAt("name").value === "ze");
+  check("intAt(id) tetap 21", doc.intAt("id").value === 21);
+}
+
 // --- 2. Traversal array + drain + drain-tengah terlindungi ------------------
 {
   const doc = ze.openDocument(

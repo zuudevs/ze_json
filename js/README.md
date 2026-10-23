@@ -53,6 +53,10 @@ doc.intAt(".position").status;   // "INVALID_PATH"
 
 Payload rusak melempar `Error` dengan kode status ABI (mis. `INVALID_JSON`, `UNEXPECTED_QUOTE`, `INVALID_UTF8`) — di-normalisasi sebagai pesan `scan gagal: STATUS=...`.
 
+Getter per-field (`asString`/`asInt`/`asDouble`/`asBoolean`) kini **menolak tipe salah** dengan `Error` berstatus `TYPE_MISMATCH` (sejak v0.1.2) — sebelumnya `asString` pada kursor habis melempar `RangeError` kabur dari `TextDecoder`, dan getter numerik memulangkan nilai sampah diam-diam. Gunakan `typeOf()`/`find()` untuk memastikan tipe sebelum membaca; atau pakai path query (`intAt` dll.) yang mengembalikan `status` tanpa melempar.
+
+Traversal array mengenal dua pola sejak v0.1.2 — kontrak **counted** lama (`arraySize()` sekali lalu loop `arrayNext()`) dan **streaming** baru (langsung `while (doc.arrayNext())` tanpa `arraySize()` — satu lintasan, hasil identik): lihat docstring `ze_json.mjs`.
+
 ## Benchmark
 
 `JSON.parse` vs ze_json (benchmark.js · Node 24 · win32 — mesh.json 335 KB korpus simdjson):

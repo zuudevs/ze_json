@@ -48,10 +48,22 @@ google-benchmark v1.9.5, Node v24.19.0) — lihat tabel lengkap di
 |---|---|
 | Throughput scanner | **1,1–1,3 GB/s** di semua dataset (61 MB korpus) |
 | Scanner64 vs Scanner8 | **1,11–1,34× lebih cepat** pada file besar (`UpdateCenter` 1,34×, `Jeopardy` 1,17×) |
-| Pipeline C++ per dokumen kecil | create (scan + Session) **238 ns** · find×3 + getter **411 ns** |
-| Path query C++ | **41 ns** (flat) — **208 ns** untuk 3 kueri berbeda tipe |
-| Pencarian object lebar (512 field) | field pertama **18 ns** vs field terakhir **7,6 µs** (bukti biaya linear forward-only) |
+| Pipeline C++ per dokumen kecil | create (scan + Session) **~200 ns** · find×3 + getter **411 ns** |
+| Path query C++ (root kecil) | **41 ns** (flat) — **208 ns** untuk 3 kueri berbeda tipe |
 | Hot loop JS (demo 4) | per-langkah **0,75 µs/dok** vs path **0,92 µs/dok** untuk kunci top-level berurutan — path tetap **1 panggilan wasm** untuk kedalaman apa pun |
+
+### Optimasi bottleneck — 4 tahap (semua dibuktikan benchmark before/after)
+
+Metode tahan-noise: perbandingan **dalam satu proses** (interleaved) untuk
+pipeline; **rasio dalam-run** untuk kueri berulang lintas iterasi. Artefak
+before/after ter-commit di `out/results/benchmark/`.
+
+| Tahap | Bukti utama (before → after) |
+|---|---|
+| **1** · scanner64 di `create_session` (`e408674`) | E2E pipeline **×1,14–1,21** pada 512/64 KiB (satu proses, stabil dua run) |
+| **2** · indeks root lazy (`23a12ee`) | kunci jauh objek lebar menjadi **O(1)**: 1024 field — tengah **6589 → 34 ns** (×195), akhir **12995 → 36 ns** (×366); objek ≤24 field tak tersentuh |
+| **3** · streaming `array_next` (`47e9cb7`) | pola baca satu-lintasan kini **berfungsi** (dulu `array_next` tanpa `array_size` selalu 0); 1024 elemen **~0,83×** waktu pola counted |
+| **4** · validasi UTF-8 terintegrasi + indeks elemen array (`8e0f3e3`) | payload UTF-8 padat 64 KiB **−42,7%** E2E (DFA tak dijalankan dua kali; interleaved, ASCII tanpa regresi); path `items[K]` jauh: 1024 elemen — tengah **2594 → ~65 ns** (×40), akhir **5289 → ~71 ns** (×75) |
 
 ## Struktur repository
 

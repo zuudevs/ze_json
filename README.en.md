@@ -48,10 +48,22 @@ tables in [`out/results/benchmark/summary_*.md`](out/results/benchmark) and
 |---|---|
 | Scanner throughput | **1.1–1.3 GB/s** across all datasets (61 MB corpus) |
 | Scanner64 vs Scanner8 | **1.11–1.34× faster** on large files (`UpdateCenter` 1.34×, `Jeopardy` 1.17×) |
-| C++ pipeline per small document | create (scan + Session) **238 ns** · find×3 + getters **411 ns** |
-| Path query in C++ | **41 ns** (flat) — **208 ns** for 3 type-mixed queries |
-| Wide-object search (512 fields) | first field **18 ns** vs last field **7.6 µs** (evidence of linear forward-only cost) |
+| C++ pipeline per small document | create (scan + Session) **~200 ns** · find×3 + getters **411 ns** |
+| Path query in C++ (small root) | **41 ns** (flat) — **208 ns** for 3 type-mixed queries |
 | JS hot loop (demo 4) | step-by-step **0.75 µs/doc** vs path **0.92 µs/doc** for sequential top-level keys — path stays **1 wasm call** at any depth |
+
+### Bottleneck optimizations — 4 stages (each proven with before/after benchmarks)
+
+Noise-resistant methodology: **same-process** (interleaved) comparisons for
+the pipeline; **within-run ratios** for repeated queries. Before/after
+artifacts are committed under `out/results/benchmark/`.
+
+| Stage | Headline evidence (before → after) |
+|---|---|
+| **1** · scanner64 in `create_session` (`e408674`) | E2E pipeline **×1.14–1.21** at 512/64 KiB (one process, stable across two runs) |
+| **2** · lazy root index (`23a12ee`) | far keys of wide objects become **O(1)**: 1024 fields — middle **6589 → 34 ns** (×195), last **12995 → 36 ns** (×366); objects ≤24 fields untouched |
+| **3** · streaming `array_next` (`47e9cb7`) | the single-pass read pattern now **works** (previously `array_next` without `array_size` always returned 0); 1024 elements **~0.83×** the counted-pattern time |
+| **4** · integrated UTF-8 validation + array element index (`8e0f3e3`) | UTF-8-dense 64 KiB payload **−42.7%** E2E (DFA no longer runs twice; interleaved, ASCII unregressed); far `items[K]` paths: 1024 elements — middle **2594 → ~65 ns** (×40), last **5289 → ~71 ns** (×75) |
 
 ## Repository layout
 
