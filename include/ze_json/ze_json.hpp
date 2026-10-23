@@ -91,11 +91,17 @@ enum class ValueType : types::int32_t {
 //    }
 //
 //  1 Session = 1 root OBJECT (kursor forward-only). Nilai bertipe Array
-//  dapat ditraversi satu level:
+//  dapat ditraversi satu level — DUA pola:
 //
+//  (a) Counted (kontrak lama):
 //    n = array_size(session)      // valid saat kursor tepat di '['
 //    while (array_next(session)) {
 //        switch (value_type(session)) { ... }   // nilai elemen sekarang
+//    }
+//
+//  (b) Streaming (tanpa array_size — satu lintasan, tanpa pass ganda):
+//    while (array_next(session)) {
+//        switch (value_type(session)) { ... }
 //    }
 //
 //  Elemen yang tidak dibaca getter di-skip otomatis oleh array_next.
@@ -115,9 +121,25 @@ class Session {
     bool found_;
 
     // ---- State traversal array (satu kursor forward-only) ----
+    // Mode mesin iterasi array: Counted = kontrak lama (array_size wajib,
+    // counter otoritatif); Streaming = tanpa array_size (array_next satu
+    // lintasan, habis dideteksi dari kursor ']' — tidak ada pass ganda).
+    enum class ArrayIterMode : types::uint8_t {
+        None,
+        Counted,
+        Streaming,
+    };
+
     // Sisa elemen yang belum diekspos array_next(); 0 = tidak sedang
-    // berada di dalam array.
+    // berada di dalam array (hanya bermakna pada mode Counted).
     types::size_t array_remaining_{0};
+    ArrayIterMode array_mode_{ArrayIterMode::None};
+    // True saat elemen ANGKA TERAKHIR sudah diekspos (mode streaming):
+    // getter angka memindahkan kursor MELAMPAUI ']' sebelum array_next
+    // berikutnya tiba, sehingga tanpa penanda ini kursor tidak bisa
+    // dibedakan dari ritme object root (fantom elemen). Dipaksa hanya pada
+    // cabang streaming.
+    bool array_final_number_{false};
     // Elemen yang sedang dipegang kursor BELUM dibaca getter: true berarti
     // elemen sudah diekspos (array_next) tetapi belum dikonsumsi, sehingga
     // array_next berikutnya harus me-skip()-nya dulu.
@@ -432,14 +454,16 @@ class Session {
     // Setiap panggilan ME-REWIND kursor ke root lalu menelusuri dari awal —
     // kueri independen, biaya O(panjang path). Hasil: kursor tepat
     // di nilai terpilih dan SIAP dibaca lewat value_type/get_*.
-    // CATATAN: setelah find_path, array_next/array_size TIDAK berlanjut
-    // (penghitung array tidak relevan) — buat session baru atau pakai path
-    // lebih spesifik untuk menjangkau elemen lain.
+    // CATATAN: setelah find_path, counter array TIDAK diwarisi (mode mesin
+    // array di-reset). Bila hasilnya array: array_size() menghitung ulang,
+    // atau array_next() tanpa array_size langsung streaming satu lintasan.
     [[nodiscard]] types::int32_t
     find_path(const char* const path, types::size_t len) NOEXCEPT {
         doc_.rewind();
-        value_pending_   = false;
+        value_pending_ = false;
         array_remaining_ = 0;
+        array_mode_      = ArrayIterMode::None;
+        array_final_number_ = false;
 
         if (!path || len == 0) [[unlikely]] {
             return INVALID_PATH;
@@ -570,13 +594,16 @@ class Session {
     // tepat ke posisi elemen pertama.
     [[nodiscard]] types::size_t
     array_size() NOEXCEPT {
+        array_final_number_ = false;
         if (value_.peek_char() != '[') [[unlikely]] {
             array_remaining_ = 0;
+            array_mode_      = ArrayIterMode::None;
             return 0;
         }
 
         ondemand::JsonArray arr = value_.get_array();
         array_remaining_        = arr.count_elements();
+        array_mode_             = ArrayIterMode::Counted;
         value_pending_          = false;
         return array_remaining_;
     }
@@ -586,18 +613,18 @@ class Session {
     // value_type/get_*), 0 saat array habis (kursor kembali ke ritme
     // object root: ',' / '}' — find_field tetap valid). Elemen yang tidak
     // dibaca getter di-skip otomatis oleh array_next.
+    //
+    // Dua pola pemakaian (mesin ArrayIterMode):
+    //  - Counted: array_size() dulu (kontrak lama, counter otoritatif).
+    //  - Streaming: langsung array_next() saat kursor tepat '[' — satu
+    //    lintasan, tidak ada penghitungan inspektif dua kali jalan.
     [[nodiscard]] types::int32_t
     array_next() NOEXCEPT {
-        if (array_remaining_ == 0) {
+        if (array_mode_ == ArrayIterMode::Counted && array_remaining_ == 0) {
+            // Mode Counted habis: tuntun kursor ke ritme object root lalu
+            // nonaktifkan mesin (array_next berikutnya dijawab None).
             value_pending_ = false;
-
-            // Menuntun kursor kembali ke ritme object root:
-            //   ']'   → array kosong ATAU elemen terakhir sudah dibaca
-            //           hingga terminatornya → satu langkah keluar.
-            //   lain  → elemen terakhir belum dibaca → habiskan elemen,
-            //           lalu keluar dari ']' bila berhenti di sana.
-            //   '\0'  → kursor sudah melampaui ']' — tidak perlu apa-apa.
-            char c = value_.peek_char();
+            char c         = value_.peek_char();
             if (c == ']') {
                 value_.skip();
             } else if (c != '\0') {
@@ -606,34 +633,148 @@ class Session {
                     value_.skip();
                 }
             }
+            array_mode_ = ArrayIterMode::None;
             return 0;
         }
 
-        array_remaining_--;
+        if (array_mode_ == ArrayIterMode::None) {
+            // Tanpa array_size(): kursor TEPAT '[' → masuk streaming.
+            // (value_pending_ dari find_path/find hanyalah "nilai siap
+            // dibaca" — bukan elemen array; gerbang cukup dari kursor.)
+            // Pemanggilan lain (kursor bukan '[') tetap proteksi lama: 0.
+            if (value_.peek_char() != '[') {
+                value_pending_ = false;
+                return 0;
+            }
 
-        if (value_pending_) {
-            // Elemen sebelumnya diekspos tetapi tidak dibaca → habiskan.
-            char c = value_.peek_char();
-            if (c == ',') {
-                // Angka: kursor sudah di terminator sekaligus separator —
-                // satu langkah tepat ke posisi elemen berikutnya.
-                value_.skip();
-            } else if (c != ']' && c != '\0') {
-                value_.skip(); // string/literal/kontainer
-                if (value_.peek_char() == ',') {
-                    value_.skip(); // lewati separator
-                }
-            }
-        } else if (value_.peek_char() == ',') {
-            // ',' pada kursor bisa berarti (a) terminator elemen ANGKA yang
-            // sedang ter-expose (angka 0 entry), atau (b) separator sisa
-            // konsumsi elemen non-angka — yang harus dilintasi. Gap teks
-            // berawalan digit/tanda = kasus (a); gap "rue"/"" = kasus (b).
-            if (!value_.has_inline_number()) {
-                value_.skip();
-            }
+            ondemand::JsonArray arr = value_.get_array(); // habiskan '['
+            (void)arr;
+            array_mode_         = ArrayIterMode::Streaming;
+            array_final_number_ = false;
+            value_pending_      = false;
         }
 
+        if (array_mode_ == ArrayIterMode::Counted) {
+            // --- Kontrak lama: counter otoritatif ---------------------
+            array_remaining_--;
+
+            if (value_pending_) {
+                // Elemen sebelumnya diekspos tetapi tidak dibaca → habiskan.
+                char c = value_.peek_char();
+                if (c == ',') {
+                    // Angka: kursor sudah di terminator sekaligus
+                    // separator — satu langkah ke elemen berikutnya.
+                    value_.skip();
+                } else if (c != ']' && c != '\0') {
+                    value_.skip(); // string/literal/kontainer
+                    if (value_.peek_char() == ',') {
+                        value_.skip(); // lewati separator
+                    }
+                }
+            } else if (value_.peek_char() == ',') {
+                // ',' pada kursor bisa berarti (a) terminator elemen ANGKA
+                // yang sedang ter-expose (angka 0 entry), atau (b) separator
+                // sisa konsumsi elemen non-angka — yang harus dilintasi.
+                // Gap teks berawalan digit/tanda = kasus (a); gap lain =
+                // kasus (b).
+                if (!value_.has_inline_number()) {
+                    value_.skip();
+                }
+            }
+
+            value_pending_ = true;
+            return 1;
+        }
+
+        // --- Streaming: habis dideteksi dari kursor, counter tidak ada ---
+        if (array_final_number_) {
+            // Elemen angka TERAKHIR telah diekspos panggilan sebelumnya.
+            // Panggilan ini WAJIB menutup array — tanpa ekspos baru.
+            if (value_pending_) {
+                // Belum dibaca getter: kursor masih di terminator elemen
+                // (',' atau ']'). Lintasi keduanya sampai melewati ']'.
+                if (value_.peek_char() == ',') {
+                    value_.skip();
+                }
+                if (value_.peek_char() == ']') {
+                    value_.skip();
+                }
+            }
+            // Sudah dibaca getter: kursor sudah melampaui ']' — tidak ada
+            // yang perlu dilangkahi, cukup nonaktifkan mesin.
+            array_final_number_ = false;
+            array_mode_         = ArrayIterMode::None;
+            value_pending_      = false;
+            return 0;
+        }
+
+        if (value_pending_) {
+            // Elemen sebelumnya diekspos tetapi tidak dibaca → habiskan
+            // (logika identik dengan cabang Counted).
+            char c = value_.peek_char();
+            if (c == ',') {
+                value_.skip();
+            } else if (c != ']' && c != '\0') {
+                value_.skip();
+                if (value_.peek_char() == ',') {
+                    value_.skip();
+                }
+            }
+        } else if (value_.peek_char() == ',' && !value_.has_inline_number()) {
+            // Separator sisa elemen non-angka yang sudah dikonsumsi getter.
+            value_.skip();
+        }
+
+        char c = value_.peek_char();
+        if (c == ',') {
+            // Terminator elemen ANGKA (0 entry) — bila gap berawalan
+            // digit/tanda, elemen angka masih tersisa untuk diekspos.
+            if (value_.has_inline_number()) {
+                // Terminalitas via lookahead: ',..' bisa menyatukan
+                // terminator elemen angka ini dengan separator elemen
+                // berikut (0 entry — tape melompat langsung ke entry
+                // penerus). Entry penerus:
+                //   '"'/"t"/dsb → elemen lain menyusul (bukan final).
+                //   ']' + gap kosong → array tamat di elemen INI.
+                //   ']' + gap angka → elemen ini non-final (ada angka
+                //                   terakhir menyusul; ditangani call
+                //                   berikutnya lewat cabang ']').
+                ondemand::JsonIterator& it = doc_.iter();
+                const types::size_t nxt = it.index() + 1;
+                if (it.peek_char_at(nxt) == ']' && !it.has_inline_number_at(nxt)) {
+                    array_final_number_ = true;
+                }
+                value_pending_ = true;
+                return 1;
+            }
+            value_.skip(); // separator biasa — lintasi
+            c = value_.peek_char();
+        }
+
+        if (c == ']') {
+            if (value_.has_inline_number()) {
+                // Angka TERAKHIR belum terbaca: kursor sudah di ']' namun
+                // gap sebelumnya memuat angka — ekspos tanpa melangkah.
+                array_final_number_ = true;
+                value_pending_      = true;
+                return 1;
+            }
+            value_.skip(); // keluar array
+            array_mode_    = ArrayIterMode::None;
+            value_pending_ = false;
+            return 0;
+        }
+
+        if (c == '\0' || c == '}') [[unlikely]] {
+            // Payload berakhir / ritme rusak: tamatkan dengan aman tanpa
+            // menggeser kursor lebih jauh.
+            array_mode_    = ArrayIterMode::None;
+            value_pending_ = false;
+            return 0;
+        }
+
+        // Elemen top-level berikutnya ('"' / 't' / 'f' / 'n' / '[' / '{'
+        // atau terminator angka yang sudah dilintasi di atas) — delegasi.
         value_pending_ = true;
         return 1;
     }

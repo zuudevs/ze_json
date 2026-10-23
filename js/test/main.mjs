@@ -83,6 +83,41 @@ const ze = await ZeJson.load();
     doc.find("tail").found && doc.asInt() === 9n);
 }
 
+// --- 2b. Streaming array: TANPA arraySize (satu lintasan) -------------------
+{
+  const doc = ze.openDocument(
+    '{"colors":["white","black","red"],"tail":9}',
+  );
+  const hit = doc.find("colors");
+  check("streaming typeOf → Array", hit.type === "Array");
+
+  const got = [];
+  while (doc.arrayNext()) { // pola streaming: arraySize dilewati
+    if (doc.typeOf() === "String") got.push(doc.asString());
+  }
+  check("streaming semua elemen terbaca",
+    got.join(",") === "white,black,red");
+
+  check("streaming: find setelah drain → 'tail':9",
+    doc.find("tail").found && doc.asInt() === 9n);
+
+  // Campuran pola pada DOKUMEN BARU: streaming "a" drain penuh, lalu field
+  // lain diiterasi dengan kontrak counted (arraySize + arrayNext).
+  const doc2 = ze.openDocument('{"a":[1,2,3],"b":["p","q"]}');
+  doc2.find("a");
+  let countA = 0;
+  while (doc2.arrayNext()) countA++;
+  check("streaming a → 3 elemen", countA === 3);
+
+  doc2.find("b");
+  check("counted arraySize(b) → 2", doc2.arraySize() === 2);
+  const gotB = [];
+  while (doc2.arrayNext()) {
+    if (doc2.typeOf() === "String") gotB.push(doc2.asString());
+  }
+  check("counted b terbaca", gotB.join(",") === "p,q");
+}
+
 // --- 3. Path query: flat / nested / array / dalam / miss / type-mismatch ----
 {
   const doc = ze.openDocument(

@@ -587,4 +587,134 @@ BENCHMARK(BM_RootWide_PathQuery)
     ->Arg(7)
     ->Arg(8);
 
+// --- Traversal array: biaya pola COUNTED vs STREAMING per ukuran -----------
+// Pola counted: array_size() (traversal inspektif penuh) lalu loop
+// array_next — total 2 lintasan. Pola streaming: loop array_next tanpa
+// array_size (1 lintasan) — pada kode SEBELUM optimasi tidak berfungsi
+// (array_next selalu return 0 bila belum dihitung); benchmark membuktikan.
+
+namespace {
+constexpr int kArrCount = 3;
+const size_t kArrayLen[kArrCount] = {8, 128, 1024};
+
+struct ArrayCase {
+    std::string json;
+    std::vector<uint64_t> tape;
+    std::vector<zuu::types::uint8_t> arena_storage;
+    zuu::memory::Arena* arena{nullptr};
+    zuu::api::Session* session{nullptr};
+
+    void
+    resize_for(size_t elements) {
+        json = "{\"colors\":[";
+        for (size_t i = 0; i < elements; ++i) {
+            if (i != 0) json += ",";
+            json += "\"v-" + std::to_string(i) + "\"";
+        }
+        json += "]}";
+
+        // Kasus terburuk tape: setiap byte payload jadi entry.
+        tape.assign(json.size(), 0);
+        arena_storage.assign(2 * 1024 * 1024, 0);
+        arena = create_arena(arena_storage.data(), arena_storage.size());
+
+        int32_t err = static_cast<int32_t>(zuu::api::INVALID_JSON);
+        session     = create_session(
+            json.data(), json.size(), tape.data(), tape.size(), arena, err);
+    }
+};
+
+ArrayCase&
+get_array_case(int size_index) {
+    static ArrayCase cases[kArrCount];
+    ArrayCase& cs = cases[size_index];
+    if (!cs.session) {
+        cs.resize_for(kArrayLen[size_index]);
+    }
+    return cs;
+}
+
+// Satu lintasan pembacaan semua elemen string; mengembalikan jumlah elemen
+// yang benar-benar diekspose array_next (bahan validasi pola streaming).
+size_t
+read_all_string_elements(zuu::api::Session* session) {
+    size_t count = 0;
+    while (array_next(session) == 1) {
+        const char* data = nullptr;
+        size_t len       = 0;
+        get_string(session, data, len);
+        count++;
+        benchmark::DoNotOptimize(len);
+    }
+    return count;
+}
+
+void
+array_read_common(benchmark::State& state, bool streamed) {
+    const int size_index = static_cast<int>(state.range(0));
+    ArrayCase& cs        = get_array_case(size_index);
+    if (!cs.session) {
+        state.SkipWithError("session array gagal dibuat.");
+        return;
+    }
+
+    const size_t expected = kArrayLen[size_index];
+    for (auto _ : state) {
+        // Rewind via find_path per iterasi (me-rewind sendiri, murni
+        // memposisikan kursor pada nilai '['); indeks root lazy
+        // menjadikannya O(1) pasca-warmup.
+        const int32_t st
+            = static_cast<int32_t>(find_path(cs.session, "colors", 6));
+        if (st != static_cast<int32_t>(zuu::api::OK)) {
+            state.SkipWithError("find_path colors gagal.");
+            return;
+        }
+
+        if (!streamed) {
+            // Pola counted: ukur dulu, baru iterasi — kontrak lama.
+            if (array_size(cs.session) != expected) {
+                state.SkipWithError("array_size tak sesuai.");
+                return;
+            }
+        }
+
+        const size_t got = read_all_string_elements(cs.session);
+        if (got != expected) {
+            state.SkipWithError(
+                "jumlah elemen salah — streaming tidak terkontrak?");
+            return;
+        }
+        benchmark::DoNotOptimize(got);
+    }
+}
+
+void
+BM_ArrayRead_Counted(benchmark::State& state) {
+    array_read_common(state, false);
+}
+
+void
+BM_ArrayRead_Streaming(benchmark::State& state) {
+    array_read_common(state, true);
+}
+} // namespace
+
+BENCHMARK(BM_ArrayRead_Counted)
+    ->Unit(benchmark::kNanosecond)
+    ->MinTime(30)
+    ->MinWarmUpTime(3)
+    ->ArgName("Idx")
+    ->Arg(0)
+    ->Arg(1)
+    ->Arg(2);
+
+BENCHMARK(BM_ArrayRead_Streaming)
+    ->Unit(benchmark::kNanosecond)
+    ->MinTime(30)
+    ->MinWarmUpTime(3)
+    ->ArgName("Idx")
+    ->Arg(0)
+    ->Arg(1)
+    ->Arg(2);
+
 } // namespace

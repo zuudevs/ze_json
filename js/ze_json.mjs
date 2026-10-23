@@ -281,9 +281,12 @@ export class ZeJson {
   }
 
   // ------------------------------------------------------------------
-  //  Traversal array (dua langkah kontraktor C ABI):
-  //  array_size dipanggil SEKALI saat kursor di '[' lalu loop array_next.
-  //  Elemen yang TIDAK dibaca getter di-skip otomatis oleh array_next.
+  //  Traversal array — DUA pola:
+  //  (a) Counted: arraySize() sekali saat kursor di '[' lalu loop
+  //      arrayNext() (kontrak lama).
+  //  (b) Streaming: langsung loop arrayNext() tanpa arraySize() — satu
+  //      lintasan pasar tape; hasil identik.
+  //  Elemen yang TIDAK dibaca getter di-skip otomatis oleh arrayNext.
   // ------------------------------------------------------------------
   arraySize(doc) {
     return Number(this.ex.array_size(doc.session)); // size_t → BigInt

@@ -1,0 +1,131 @@
+{
+  "context": {
+    "date": "2026-10-23T07:32:49+07:00",
+    "host_name": "ZUU",
+    "executable": "build\\native-release\\benchmarks\\session_benchmark.exe",
+    "num_cpus": 12,
+    "mhz_per_cpu": 2096,
+    "caches": [
+      {
+        "type": "Data",
+        "level": 1,
+        "size": 32768,
+        "num_sharing": 2
+      },
+      {
+        "type": "Instruction",
+        "level": 1,
+        "size": 32768,
+        "num_sharing": 2
+      },
+      {
+        "type": "Unified",
+        "level": 2,
+        "size": 524288,
+        "num_sharing": 2
+      },
+      {
+        "type": "Unified",
+        "level": 3,
+        "size": 4194304,
+        "num_sharing": 6
+      }
+    ],
+    "load_avg": [],
+    "library_version": "v1.9.5",
+    "library_build_type": "release",
+    "json_schema_version": 1
+  },
+  "benchmarks": [
+    {
+      "name": "BM_ArrayRead_Counted/Idx:0/min_time:30.000/min_warmup_time:3.000",
+      "family_index": 0,
+      "per_family_instance_index": 0,
+      "run_name": "BM_ArrayRead_Counted/Idx:0/min_time:30.000/min_warmup_time:3.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 235789474,
+      "real_time": 1.7978428163421350e+02,
+      "cpu_time": 1.7759486583357830e+02,
+      "time_unit": "ns"
+    },
+    {
+      "name": "BM_ArrayRead_Counted/Idx:1/min_time:30.000/min_warmup_time:3.000",
+      "family_index": 0,
+      "per_family_instance_index": 1,
+      "run_name": "BM_ArrayRead_Counted/Idx:1/min_time:30.000/min_warmup_time:3.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 18385773,
+      "real_time": 2.2930352724357103e+03,
+      "cpu_time": 2.2724772028894299e+03,
+      "time_unit": "ns"
+    },
+    {
+      "name": "BM_ArrayRead_Counted/Idx:2/min_time:30.000/min_warmup_time:3.000",
+      "family_index": 0,
+      "per_family_instance_index": 2,
+      "run_name": "BM_ArrayRead_Counted/Idx:2/min_time:30.000/min_warmup_time:3.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 2370370,
+      "real_time": 1.7928723827924092e+04,
+      "cpu_time": 1.7718752768555121e+04,
+      "time_unit": "ns"
+    },
+    {
+      "name": "BM_ArrayRead_Streaming/Idx:0/min_time:30.000/min_warmup_time:3.000",
+      "family_index": 1,
+      "per_family_instance_index": 0,
+      "run_name": "BM_ArrayRead_Streaming/Idx:0/min_time:30.000/min_warmup_time:3.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "error_occurred": true,
+      "error_message": "jumlah elemen salah — streaming tidak terkontrak?",
+      "iterations": 1,
+      "real_time": 0.0000000000000000e+00,
+      "cpu_time": 0.0000000000000000e+00,
+      "time_unit": "ns"
+    },
+    {
+      "name": "BM_ArrayRead_Streaming/Idx:1/min_time:30.000/min_warmup_time:3.000",
+      "family_index": 1,
+      "per_family_instance_index": 1,
+      "run_name": "BM_ArrayRead_Streaming/Idx:1/min_time:30.000/min_warmup_time:3.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "error_occurred": true,
+      "error_message": "jumlah elemen salah — streaming tidak terkontrak?",
+      "iterations": 1,
+      "real_time": 0.0000000000000000e+00,
+      "cpu_time": 0.0000000000000000e+00,
+      "time_unit": "ns"
+    },
+    {
+      "name": "BM_ArrayRead_Streaming/Idx:2/min_time:30.000/min_warmup_time:3.000",
+      "family_index": 1,
+      "per_family_instance_index": 2,
+      "run_name": "BM_ArrayRead_Streaming/Idx:2/min_time:30.000/min_warmup_time:3.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "error_occurred": true,
+      "error_message": "jumlah elemen salah — streaming tidak terkontrak?",
+      "iterations": 1,
+      "real_time": 0.0000000000000000e+00,
+      "cpu_time": 0.0000000000000000e+00,
+      "time_unit": "ns"
+    }
+  ]
+}

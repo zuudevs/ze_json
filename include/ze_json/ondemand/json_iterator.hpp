@@ -40,6 +40,34 @@ class JsonIterator {
         return current_idx_ >= tape_len_ ? '\0' : src_[tape_[current_idx_]];
     }
 
+    // Varian peek pada entry tape ARBITRARY (tanpa menggeser kursor) —
+    // dipakai streaming array_next untuk lookahead terminalitas elemen.
+    constexpr char
+    peek_char_at(types::size_t tape_idx) const NOEXCEPT {
+        return tape_idx >= tape_len_ ? '\0' : src_[tape_[tape_idx]];
+    }
+
+    // Varian has_inline_number pada entry ARBITRARY (tanpa menggeser
+    // kursor) — lookahead terminalitas streaming array: ',' terminator
+    // angka bisa diikuti elemen angka TAMBAHAN (gap ',..']' berisi "3"
+    // pada [1,2,3]) atau benar-benar berakhir.
+    constexpr bool
+    has_inline_number_at(types::size_t tape_idx) const NOEXCEPT {
+        if (tape_idx == 0 || tape_idx >= tape_len_) {
+            return false;
+        }
+
+        const types::uint64_t prev_pos = tape_[tape_idx - 1];
+        const types::uint64_t cur_pos  = tape_[tape_idx];
+        for (const char* p = src_ + prev_pos + 1; p < src_ + cur_pos; ++p) {
+            if (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') {
+                continue;
+            }
+            return *p == '-' || *p == '+' || *p == '.' || (*p >= '0' && *p <= '9');
+        }
+        return false;
+    }
+
     constexpr types::uint64_t
     peek_position() const NOEXCEPT {
         return tape_[current_idx_];

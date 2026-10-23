@@ -1,0 +1,125 @@
+{
+  "context": {
+    "date": "2026-10-23T13:02:07+07:00",
+    "host_name": "ZUU",
+    "executable": "build\\native-release\\benchmarks\\session_benchmark.exe",
+    "num_cpus": 12,
+    "mhz_per_cpu": 2096,
+    "caches": [
+      {
+        "type": "Data",
+        "level": 1,
+        "size": 32768,
+        "num_sharing": 2
+      },
+      {
+        "type": "Instruction",
+        "level": 1,
+        "size": 32768,
+        "num_sharing": 2
+      },
+      {
+        "type": "Unified",
+        "level": 2,
+        "size": 524288,
+        "num_sharing": 2
+      },
+      {
+        "type": "Unified",
+        "level": 3,
+        "size": 4194304,
+        "num_sharing": 6
+      }
+    ],
+    "load_avg": [],
+    "library_version": "v1.9.5",
+    "library_build_type": "release",
+    "json_schema_version": 1
+  },
+  "benchmarks": [
+    {
+      "name": "BM_ArrayRead_Counted/Idx:0/min_time:30.000/min_warmup_time:3.000",
+      "family_index": 0,
+      "per_family_instance_index": 0,
+      "run_name": "BM_ArrayRead_Counted/Idx:0/min_time:30.000/min_warmup_time:3.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 190233546,
+      "real_time": 2.1929388100665096e+02,
+      "cpu_time": 2.1659231963220620e+02,
+      "time_unit": "ns"
+    },
+    {
+      "name": "BM_ArrayRead_Counted/Idx:1/min_time:30.000/min_warmup_time:3.000",
+      "family_index": 0,
+      "per_family_instance_index": 1,
+      "run_name": "BM_ArrayRead_Counted/Idx:1/min_time:30.000/min_warmup_time:3.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 15430540,
+      "real_time": 3.4272912030294301e+03,
+      "cpu_time": 3.3719655955008702e+03,
+      "time_unit": "ns"
+    },
+    {
+      "name": "BM_ArrayRead_Counted/Idx:2/min_time:30.000/min_warmup_time:3.000",
+      "family_index": 0,
+      "per_family_instance_index": 2,
+      "run_name": "BM_ArrayRead_Counted/Idx:2/min_time:30.000/min_warmup_time:3.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 1618302,
+      "real_time": 2.6842355691337780e+04,
+      "cpu_time": 2.6455198102702710e+04,
+      "time_unit": "ns"
+    },
+    {
+      "name": "BM_ArrayRead_Streaming/Idx:0/min_time:30.000/min_warmup_time:3.000",
+      "family_index": 1,
+      "per_family_instance_index": 0,
+      "run_name": "BM_ArrayRead_Streaming/Idx:0/min_time:30.000/min_warmup_time:3.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 218359058,
+      "real_time": 2.2383683254396848e+02,
+      "cpu_time": 2.1803251688327032e+02,
+      "time_unit": "ns"
+    },
+    {
+      "name": "BM_ArrayRead_Streaming/Idx:1/min_time:30.000/min_warmup_time:3.000",
+      "family_index": 1,
+      "per_family_instance_index": 1,
+      "run_name": "BM_ArrayRead_Streaming/Idx:1/min_time:30.000/min_warmup_time:3.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 18902954,
+      "real_time": 2.4042315396841645e+03,
+      "cpu_time": 2.3822334858350710e+03,
+      "time_unit": "ns"
+    },
+    {
+      "name": "BM_ArrayRead_Streaming/Idx:2/min_time:30.000/min_warmup_time:3.000",
+      "family_index": 1,
+      "per_family_instance_index": 2,
+      "run_name": "BM_ArrayRead_Streaming/Idx:2/min_time:30.000/min_warmup_time:3.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 2443636,
+      "real_time": 1.7361803640149341e+04,
+      "cpu_time": 1.7200290878019478e+04,
+      "time_unit": "ns"
+    }
+  ]
+}
