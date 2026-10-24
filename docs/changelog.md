@@ -1,0 +1,98 @@
+# Changelog
+
+Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/);
+versi mengikuti [SemVer](https://semver.org/). Rilis npm
+`@zuudevs/ze-json` diterbitkan lewat CI pada tag `v*`.
+
+## [Belum dirilis]
+
+### Ditambahkan
+
+- `js/benchmark/sizes.mjs` — sapuan ukuran bertahap `JSON.parse` vs
+  ze_json (95 B–256 KiB × 6 workload, metrik terisolasi: payload
+  deterministik, SINK anti-DCE, satu proses). Titik impas terukur: scan
+  murni mulai **268 B**, pola baca 2 field mulai **1 KiB** (~2,7× di
+  256 KiB); rezim mungil (≲300 B) kalah oleh overhead tetap wasm.
+- Struktur dokumentasi modular `docs/`: `architecture/*.md`, `api.md`,
+  `changelog.md` (berkas ini) — diagram dalam sintaksis Mermaid.
+
+## [0.1.2] — 2026-10-24
+
+### Performa — empat tahap optimasi bottleneck (semua dibuktikan
+benchmark before/after ter-commit; rincian di
+[architecture/optimizations.md](architecture/optimizations.md))
+
+- **scanner64** dipilih `create_session` pada LE 64-bit — E2E pipeline
+  **×1,14–1,21** (512/64 KiB, satu proses) [`e408674`].
+- **Indeks root lazy** — kunci jauh objek lebar menjadi O(1): 1024 field
+  tengah **×195**, akhir **×366** (6589→34 ns, 12995→36 ns); objek ≤24
+  field tak tersentuh; kunci ber-escape dikecualikan + fallback sekuensial
+  demi semantik identik [`23a12ee`].
+- **Streaming `array_next`** — pola baca satu lintasan kini berfungsi
+  (dahulu tanpa `array_size` selalu 0); mesin `ArrayIterMode`; elemen
+  angka terakhir (0 entri) ditangani penanda final-number + lookahead
+  [`47e9cb7`].
+- **Validasi UTF-8 terintegrasi** ke jalan scanner (menggantikan pass
+  terpisah): payload UTF-8 padat **−42,7%** E2E (interleaved; ASCII tanpa
+  regresi); sekuens multibyte aman terbelah di batas blok SWAR 8 byte.
+  **Indeks elemen array lazy** untuk segmen `[index]`: 1024 elemen
+  tengah **×40**, akhir **×75** [`8e0f3e3`].
+
+### Diperbaiki
+
+- **Getter JS menolak tipe salah** — `asString`/`asInt`/`asDouble`/
+  `asBoolean` kini melempar `Error` berstatus `TYPE_MISMATCH` (dahulu:
+  `asString` pada kursor habas melempar `RangeError` kabur; getter
+  numerik memulangkan nilai sampah diam-diam).
+
+### Dokumentasi
+
+- README (id/en): tabel hasil 4 tahap menggantikan klaim lama "biaya
+  linear object lebar"; `js/README.md`: kontrak getter + pola streaming.
+
+### Uji
+
+- 45 test native per preset (7 grup; +2 scanner, +4 path, +4 array),
+  40 asersi smoke JS. *(Catatan: pesan commit rilis sempat menulis 53 —
+  hitungan aktual per preset 45.)*
+
+## [0.1.1] — 2026-10-22
+
+### Diperbaiki
+
+- **Payload >63,9 KB gagal `INVALID_UTF8` palsu** — stack + `.rodata`
+  wasm menimpa payload; dipindah ke atas layout tetap
+  (`--global-base=3153920`) [`01b129d`], plus regresi payload >64 KiB pada
+  smoke test [`319578a`].
+
+### Infrastruktur
+
+- CI npm-publish memaksa Node 24 sebelum smoke test wasm [`10a4401`].
+- `js/README.md` — halaman paket npm.
+
+## [0.1.0] — 2026-10-22
+
+Rilis perdana.
+
+### Ditambahkan
+
+- **Scanner SWAR + tape struktural**: scanner8/scanner64/scanner32,
+  validasi UTF-8 (DFA Höhrmann + jalur cepat SWAR ASCII), kedalaman
+  bracket, tape posisi struktural; angka 0 entri, literal 1 entri, string
+  2 entri.
+- **Lapis on-demand**: `Document`, `JsonValue`, `JsonObject`, `JsonArray`,
+  `JsonIterator` — kursor forward-only, zero-copy, `skip_child`.
+- **Arena bump-allocator** + `Session` C ABI (`create_session`,
+  `find_field`, getter, `array_size`/`array_next`, path query
+  `find_path`/`get_*_at`).
+- **Binding JS Raw WebAssembly memory64** (tanpa Emscripten): kelas
+  `ZeJson`/`Doc`, layout memori tetap, paket npm `@zuudevs/ze-json`,
+  smoke test lintas ABI, contoh end-to-end.
+- **Uji & benchmark**: 7 grup google-test + 3 grup google-benchmark +
+  skrip agregasi metrik (JSON/Markdown ter-commit di `out/results/`).
+- README bilingual (id/en), lisensi MIT.
+
+[Belum dirilis]: https://github.com/zuudevs/ze_json/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/zuudevs/ze_json/releases/tag/v0.1.2
+[0.1.1]: https://github.com/zuudevs/ze_json/releases/tag/v0.1.1
+[0.1.0]: https://github.com/zuudevs/ze_json/releases/tag/v0.1.0

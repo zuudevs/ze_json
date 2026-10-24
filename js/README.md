@@ -102,7 +102,8 @@ Payload **harus** tak menyentuh di atas `0x100400` — region stack/konstanta su
 
 ## Tautan
 
-- [Dokumentasi repositori](https://github.com/zuudevs/ze_json#readme)
+- [Dokumentasi repositori](https://github.com/zuudevs/ze_json#readme) — arsitektur & referensi API lengkap di [`docs/`](../docs)
+- [Referensi API](https://github.com/zuudevs/ze_json/blob/main/docs/api.md)
 - [Changelog](https://github.com/zuudevs/ze_json/releases)
 
 ## Lisensi
