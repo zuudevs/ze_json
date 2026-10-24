@@ -50,7 +50,7 @@ described in [docs/architecture/optimizations.md](docs/architecture/optimization
 | C++ pipeline per small document | create (scan + Session) **~200 ns** · find×3 + getters **411 ns** |
 | Far keys of wide objects / far array elements | **O(1)** after lazy indexing — ×54–366 / ×40–75 (4-stage optimization) |
 | UTF-8-dense payload | **−42.7%** E2E vs separate validation pass (integrated validation) |
-| JS size sweep (vs `JSON.parse`) | ze wins from **268 B** (pure scan) / **1 KiB** (read 2 fields) — **~2.7× faster** at 256 KiB; the tiny regime (≲300 B) loses to fixed wasm overhead |
+| JS size sweep (vs `JSON.parse`) | pure scan wins at **every tested size** (95 B–256 KiB; 0.57 vs 1.02 µs at 95 B); read-2-fields wins from **1 KiB** — **~3.9× faster** at 256 KiB |
 
 ## Quick start
 

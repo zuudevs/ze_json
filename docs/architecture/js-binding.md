@@ -44,6 +44,9 @@ palsu (bug layout, sudah tertutup regresi payload >64 KiB di smoke test).
 
 - **`openDocument(text)`** — scan + tape + `Session` sekali jalan; melempar
   `Error` berstatus ABI bila payload rusak (`scan gagal: STATUS=…`).
+  Payload dikonversi UTF-8 **langsung ke region memori wasm** lewat
+  `TextEncoder.encodeInto` (satu salinan, tanpa buffer sementara —
+  bukti ×4–×24 pada ASCII di `js_copy_*.json`).
 - **Path query tidak melempar** — mengembalikan `{ status, value }` /
   `{ status, type }` (`OK`, `NOT_FOUND`, `TYPE_MISMATCH`, `INVALID_PATH`).
 - **Getter per-field menolak tipe salah** (sejak v0.1.2): `asString`/

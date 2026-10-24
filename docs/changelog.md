@@ -6,13 +6,23 @@ versi mengikuti [SemVer](https://semver.org/). Rilis npm
 
 ## [Belum dirilis]
 
+### Performa
+
+- **Salin payload `encodeInto`** — `writeText` menulis UTF-8 langsung ke
+  view memori wasm (dahulu `encode()` mengalokasi buffer sementara +
+  `set()` menyalin lagi). Bukti interleaved `js_copy_*.json`: ×4 (11 B)
+  s.d. **×24** (64 KiB ASCII), ×1,4 (UTF-8 padat); E2E sapuan ukuran:
+  ze scan menang di **semua ukuran teruji** (titik impas scan murni
+  turun dari 268 B ke <95 B), baca 2 field di 256 KiB naik ke **~3,9×**
+  (dahulu ~2,7×).
+
 ### Ditambahkan
 
 - `js/benchmark/sizes.mjs` — sapuan ukuran bertahap `JSON.parse` vs
   ze_json (95 B–256 KiB × 6 workload, metrik terisolasi: payload
-  deterministik, SINK anti-DCE, satu proses). Titik impas terukur: scan
-  murni mulai **268 B**, pola baca 2 field mulai **1 KiB** (~2,7× di
-  256 KiB); rezim mungil (≲300 B) kalah oleh overhead tetap wasm.
+  deterministik, SINK anti-DCE, satu proses) dan
+  `js/benchmark/copy.mjs` — micro-benchmark interleaved strategi salin
+  payload ke wasm (encode+set vs encodeInto).
 - Struktur dokumentasi modular `docs/`: `architecture/*.md`, `api.md`,
   `changelog.md` (berkas ini) — diagram dalam sintaksis Mermaid.
 - `docs/development/` — panduan pengembangan: `workflow.md` (siklus,

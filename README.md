@@ -49,7 +49,7 @@ Metrik lengkap ter-commit di
 | Pipeline C++ per dokumen kecil | create (scan + Session) **~200 ns** · find×3 + getter **411 ns** |
 | Kunci jauh objek lebar / elemen array jauh | **O(1)** pasca indeks lazy — ×54–366 / ×40–75 (4 tahap optimasi) |
 | Payload UTF-8 padat | **−42,7%** E2E vs pass validasi terpisah (validasi terintegrasi) |
-| Sapuan ukuran JS (vs `JSON.parse`) | ze menang mulai **268 B** (scan murni) / **1 KiB** (baca 2 field) — di 256 KiB **~2,7× lebih cepat**; rezim mungil (≲300 B) kalah oleh overhead tetap wasm |
+| Sapuan ukuran JS (vs `JSON.parse`) | scan murni menang di **semua ukuran teruji** (95 B–256 KiB; 0,57 vs 1,02 µs di 95 B); pola baca 2 field menang mulai **1 KiB** — di 256 KiB **~3,9× lebih cepat** |
 
 **Empat tahap optimasi** (semua dengan benchmark before/after):
 `e408674` scanner64 → `23a12ee` indeks root lazy → `47e9cb7` streaming

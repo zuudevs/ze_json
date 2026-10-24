@@ -1,0 +1,93 @@
+{
+  "timestamp": "2026-10-24T02:08:01.265Z",
+  "node": "v24.19.0",
+  "platform": "win32",
+  "rev": "073fc0f",
+  "unit": "µs/op (turunan dari hz benchmark.js)",
+  "results": [
+    {
+      "label": "95 B",
+      "bytes": 95,
+      "us": {
+        "JSON.parse": 1.017,
+        "ze scan": 0.567,
+        "JSON+baca": 1.066,
+        "ze baca": 2.428,
+        "JSON+iter": 1.201,
+        "ze iter": 2.293
+      }
+    },
+    {
+      "label": "268 B",
+      "bytes": 268,
+      "us": {
+        "JSON.parse": 3.354,
+        "ze scan": 1.063,
+        "JSON+baca": 2.58,
+        "ze baca": 2.91,
+        "JSON+iter": 3.201,
+        "ze iter": 9.173
+      }
+    },
+    {
+      "label": "1 KiB",
+      "bytes": 1026,
+      "us": {
+        "JSON.parse": 11.339,
+        "ze scan": 3.084,
+        "JSON+baca": 9.411,
+        "ze baca": 5.703,
+        "JSON+iter": 8.655,
+        "ze iter": 36.449
+      }
+    },
+    {
+      "label": "4 KiB",
+      "bytes": 4114,
+      "us": {
+        "JSON.parse": 34.656,
+        "ze scan": 9.667,
+        "JSON+baca": 31.437,
+        "ze baca": 11.317,
+        "JSON+iter": 31.331,
+        "ze iter": 108.337
+      }
+    },
+    {
+      "label": "16 KiB",
+      "bytes": 16396,
+      "us": {
+        "JSON.parse": 127.562,
+        "ze scan": 36.824,
+        "JSON+baca": 118.188,
+        "ze baca": 38.661,
+        "JSON+iter": 137.834,
+        "ze iter": 561.542
+      }
+    },
+    {
+      "label": "64 KiB",
+      "bytes": 65557,
+      "us": {
+        "JSON.parse": 714.53,
+        "ze scan": 184.695,
+        "JSON+baca": 529.886,
+        "ze baca": 163.428,
+        "JSON+iter": 534.026,
+        "ze iter": 1851.389
+      }
+    },
+    {
+      "label": "256 KiB",
+      "bytes": 262144,
+      "us": {
+        "JSON.parse": 2026.66,
+        "ze scan": 595.767,
+        "JSON+baca": 2339.97,
+        "ze baca": 599.264,
+        "JSON+iter": 2431.688,
+        "ze iter": 6722.005
+      }
+    }
+  ]
+}

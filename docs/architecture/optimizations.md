@@ -58,28 +58,58 @@ cukup).
 
 `js/benchmark/sizes.mjs` — payload sintetis deterministik, satu proses,
 isolasi metrik (payload & warm-up di luar pengukuran, SINK anti-DCE,
-pasangan bersebelahan minTime identik). µs/op — **kecil = cepat**:
+pasangan bersebelahan minTime identik). µs/op — **kecil = cepat**.
+(angka di bawah PASCA optimisasi salin payload `encodeInto` — lihat
+subbab berikutnya; artefak before di `js_sizes_ec34ee5.*`, after di
+`js_sizes_073fc0f.*`)
 
 | ukuran | JSON.parse | ze scan | baca 2 field: JSON | ze | iterasi penuh: JSON | ze |
 |---|---|---|---|---|---|---|
-| 95 B | **1,7** | 2,4 | **1,6** | 6,9 | **1,6** | 5,7 |
-| 268 B | 3,8 | **2,9** | 3,6 | 8,2 | **4,3** | 21,1 |
-| 1 KiB | 20,1 | **7,9** | 13,2 | **12,2** | **15,0** | 88,9 |
-| 4 KiB | 38,6 | **14,2** | 31,9 | **16,7** | **36,4** | 204,8 |
-| 16 KiB | 141,8 | **48,7** | 148,5 | **69,8** | **168,0** | 1217 |
-| 64 KiB | 726,1 | **251,2** | 592,5 | **257,2** | **632,9** | 3956 |
-| 256 KiB | 2640,4 | **944,4** | 2574,0 | **961,8** | **2703,1** | 15606 |
+| 95 B | 1,0 | **0,6** | **1,1** | 2,4 | **1,2** | 2,3 |
+| 268 B | 3,4 | **1,1** | **2,6** | 2,9 | **3,2** | 9,2 |
+| 1 KiB | 11,3 | **3,1** | 9,4 | **5,7** | **8,7** | 36,5 |
+| 4 KiB | 34,7 | **9,7** | 31,4 | **11,3** | **31,3** | 108,3 |
+| 16 KiB | 127,6 | **36,8** | 118,2 | **38,7** | **137,8** | 561,5 |
+| 64 KiB | 714,5 | **184,7** | 529,9 | **163,4** | **534,0** | 1851,4 |
+| 256 KiB | 2026,7 | **595,8** | 2340,0 | **599,3** | **2431,7** | 6722,0 |
 
 Pembacaan hasil:
 
-- **Rezim mungil (≲300 B) ze_json kalah** — overhead tetap wasm (panggilan
-  ABI + salin payload ke region) belum teramortisasi; ini kekalahan
-  struktural, bukan bug.
-- **Titik impas**: scan murni menang mulai **268 B**; pola "parse + baca 2
-  field" menang mulai **1 KiB**; pada 256 KiB **~2,7× lebih cepat**.
-- **Konsumsi penuh** (baca SEMUA item): `JSON.parse` menang di semua ukuran
-  — ze_json parser on-demand; materialisasi penuh lewat path query per-item
-  bukan medannya.
+- **Scan murni menang di semua ukuran teruji** — termasuk rezim mungil
+  (95 B: 0,57 vs 1,02 µs) sejak salin payload memakai `encodeInto`.
+- **Pola "baca 2 field"**: rezim mungil (≲300 B) masih kalah — dua path
+  query per op membawa overhead panggilan wasm; menang mulai **1 KiB**;
+  pada 256 KiB **~3,9× lebih cepat**.
+- **Konsumsi penuh** (baca SEMUA item): `JSON.parse` menang di semua
+  ukuran — ze_json parser on-demand; materialisasi penuh lewat path
+  query per-item bukan medannya.
+
+## Optimisasi lanjutan: salin payload `encodeInto` (binding JS)
+
+Di luar empat tahap C++, pengukuran sapuan mengungkap salinan payload JS
+mendominasi E2E: `writeText` dulu memakai `TextEncoder.encode()`
+(mengalokasi `Uint8Array` sementara) lalu `u8.set()` ke memori wasm —
+**dua salinan + satu alokasi per dokumen**. `TextEncoder.encodeInto()`
+menulis langsung ke view memori wasm (V8 punya jalur cepat khusus untuk
+tujuan wasm memory) — satu salinan, nol alokasi sementara.
+
+Bukti interleaved satu proses (`js/benchmark/copy.mjs` → artefak
+`js_copy_*.json`; kedua strategi memuat biaya view + byte pengaman + cek
+kontrak):
+
+| teks | encode+set | encodeInto | rasio |
+|---|---:|---:|---:|
+| 11 B (skala key) | 0,84 µs | 0,20 µs | **×0,24** |
+| 4 KiB | 4,68 µs | 0,28 µs | **×0,06** |
+| 64 KiB | 53,55 µs | 2,25 µs | **×0,04** (24× lebih cepat) |
+| 256 KiB | 147,74 µs | 11,43 µs | **×0,08** |
+| 64 KiB UTF-8 padat | 239,08 µs | 174,07 µs | ×0,73 (encoding multibyte dominan) |
+
+Efek E2E (sizes.mjs): ze scan 256 KiB **944 → 596 µs**, throughput
+**~280 → ~440 MB/s**; titik impas scan murni turun ke **di bawah 95 B**
+(dahulu 268 B); pola baca 2 field di 256 KiB naik ke **~3,9×** (dahulu
+~2,7×). Regresi: smoke JS 40/40 (termasuk payload 66 KB ber-UTF-8 yang
+kini lewat jalur `encodeInto`).
 
 ## Regresi menjaga tiap tahap
 

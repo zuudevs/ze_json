@@ -66,22 +66,22 @@ wasm64; artefak di `out/results/benchmark/js_sizes_*.md`). µs/op —
 
 | ukuran | JSON.parse | ze scan | baca 2 field: JSON | ze | iterasi penuh: JSON | ze |
 |---|---|---|---|---|---|---|
-| 95 B | 1,7 | 2,4 | 1,6 | 6,9 | 1,6 | 5,7 |
-| 268 B | 3,8 | 2,9 | 3,6 | 8,2 | 4,3 | 21,1 |
-| 1 KiB | 20,1 | 7,9 | 13,2 | **12,2** | 15,0 | 88,9 |
-| 4 KiB | 38,6 | 14,2 | 31,9 | **16,7** | 36,4 | 204,8 |
-| 16 KiB | 141,8 | 48,7 | 148,5 | **69,8** | 168,0 | 1217,3 |
-| 64 KiB | 726,1 | 251,2 | 592,5 | **257,2** | 632,9 | 3955,6 |
-| 256 KiB | 2640,4 | 944,4 | 2574,0 | **961,8** | 2703,1 | 15606,1 |
+| 95 B | 1,0 | **0,6** | **1,1** | 2,4 | **1,2** | 2,3 |
+| 268 B | 3,4 | **1,1** | **2,6** | 2,9 | **3,2** | 9,2 |
+| 1 KiB | 11,3 | **3,1** | 9,4 | **5,7** | **8,7** | 36,5 |
+| 4 KiB | 34,7 | **9,7** | 31,4 | **11,3** | **31,3** | 108,3 |
+| 16 KiB | 127,6 | **36,8** | 118,2 | **38,7** | **137,8** | 561,5 |
+| 64 KiB | 714,5 | **184,7** | 529,9 | **163,4** | **534,0** | 1851,4 |
+| 256 KiB | 2026,7 | **595,8** | 2340,0 | **599,3** | **2431,7** | 6722,0 |
 
 Cara membaca:
 
-- **Rezim mungil (≲300 B): ze_json kalah** — overhead tetap (panggilan
-  wasm + salin payload ke region memori tetap) belum teramortisasi;
-  `JSON.parse` V8 memang tercepat di kelas ini.
-- **Titik impas terukur**: scan murni menang mulai **268 B**; pola
-  "parse + baca 2 field" menang mulai **1 KiB**, dan pada 256 KiB ze_json
-  **~2,7× lebih cepat** (0,96 ms vs 2,57 ms).
+- **Scan murni menang di semua ukuran teruji** (sejak salin payload
+  memakai `TextEncoder.encodeInto` langsung ke memori wasm — tanpa buffer
+  sementara; lihat *js_copy_\** di `out/results/benchmark/`).
+- **Pola "parse + baca 2 field"**: rezim mungil (≲300 B) masih kalah —
+  dua path query per op membawa overhead panggilan wasm; menang mulai
+  **1 KiB**, dan pada 256 KiB **~3,9× lebih cepat** (0,60 ms vs 2,34 ms).
 - **Konsumsi penuh** (baca SEMUA item): `JSON.parse` menang di semua
   ukuran — ze_json parser *on-demand*; memmaterialisasi seluruh dokumen
   lewat path query per-item bukan medannya.

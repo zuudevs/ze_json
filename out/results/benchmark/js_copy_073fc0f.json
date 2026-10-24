@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-10-24T02:03:30.868Z",
+  "node": "v24.19.0",
+  "platform": "win32",
+  "rev": "073fc0f",
+  "note": "interleaved satu proses; kedua strategi memuat biaya view + byte pengaman + cek kontrak",
+  "results": [
+    {
+      "label": "11 B (skala key)",
+      "bytes": 10,
+      "us_encode_set": 0.649,
+      "us_encode_into": 0.136,
+      "ratio": 0.209
+    },
+    {
+      "label": "63 B",
+      "bytes": 80,
+      "us_encode_set": 0.757,
+      "us_encode_into": 0.2,
+      "ratio": 0.264
+    },
+    {
+      "label": "4 KiB",
+      "bytes": 4103,
+      "us_encode_set": 5.385,
+      "us_encode_into": 0.269,
+      "ratio": 0.05
+    },
+    {
+      "label": "64 KiB",
+      "bytes": 65547,
+      "us_encode_set": 46.314,
+      "us_encode_into": 1.981,
+      "ratio": 0.043
+    },
+    {
+      "label": "256 KiB",
+      "bytes": 262175,
+      "us_encode_set": 145.979,
+      "us_encode_into": 8.155,
+      "ratio": 0.056
+    },
+    {
+      "label": "64 KiB UTF-8",
+      "bytes": 65542,
+      "us_encode_set": 136.42,
+      "us_encode_into": 94.269,
+      "ratio": 0.691
+    }
+  ]
+}

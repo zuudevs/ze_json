@@ -243,8 +243,27 @@ export class ZeJson {
     return [base, BigInt(bytes.length)];
   }
 
+  /** Tulis teks UTF-8 ke region; mengembalikan (ptr, size) BigInt.
+   *  TextEncoder.encodeInto menulis LANGSUNG ke view memori wasm — tanpa
+   *  buffer sementara & tanpa salinan kedua (dulu: encode() mengalokasi
+   *  Uint8Array lalu u8.set() menyalin lagi; V8 punya jalur cepat khusus
+   *  untuk tujuan view memori wasm). Bukti interleaved: js_copy_*.json —
+   *  ×4 pada 11 B sampai ×24 pada 64 KiB ASCII, ×1,4 pada teks UTF-8 padat.
+   *  Satu byte 0 disisipkan SETELAH teks sebagai pengaman agar parser
+   *  angka tidak membaca melewati batas region ketika teks bersebelahan. */
   writeText(base, cap, text) {
-    return this.writeRegion(base, cap, encoder.encode(text));
+    const baseNumber = Number(base);
+    const capNumber  = Number(cap);
+    const view       = new Uint8Array(this.buffer(), baseNumber, capNumber);
+    const { read, written } = encoder.encodeInto(text, view);
+    if (read !== text.length || written + 1 > capNumber) {
+      // read < length = encoding terpotong di ujung region.
+      throw new Error(
+        `region terlalu kecil: teks ${text.length} unit tidak muat ` +
+        `(tertulis ${written} byte, cap ${capNumber - 1})`);
+    }
+    view[written] = 0;
+    return [base, BigInt(written)];
   }
 
   // --- API find-on-demand ------------------------------------------------
