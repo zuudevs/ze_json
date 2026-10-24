@@ -6,6 +6,8 @@ versi mengikuti [SemVer](https://semver.org/). Rilis npm
 
 ## [Belum dirilis]
 
+## [0.1.3] — 2026-10-24
+
 ### Performa
 
 - **Salin payload `encodeInto`** — `writeText` menulis UTF-8 langsung ke
@@ -116,7 +118,8 @@ Rilis perdana.
   skrip agregasi metrik (JSON/Markdown ter-commit di `out/results/`).
 - README bilingual (id/en), lisensi MIT.
 
-[Belum dirilis]: https://github.com/zuudevs/ze_json/compare/v0.1.2...HEAD
+[Belum dirilis]: https://github.com/zuudevs/ze_json/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/zuudevs/ze_json/releases/tag/v0.1.3
 [0.1.2]: https://github.com/zuudevs/ze_json/releases/tag/v0.1.2
 [0.1.1]: https://github.com/zuudevs/ze_json/releases/tag/v0.1.1
 [0.1.0]: https://github.com/zuudevs/ze_json/releases/tag/v0.1.0
