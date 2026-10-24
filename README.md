@@ -102,6 +102,10 @@ doc.stringAt("colors[1]"); // → { status: "OK", value: "black" }
 ## Pengujian & benchmark
 
 ```bash
+# Korpus benchmark: submodule samples/ (simdjson ~61 MB)
+git clone --recurse-submodules https://github.com/zuudevs/ze_json.git
+git submodule update --init --recursive   # bila sudah clone tanpa submodule
+
 # 45 test per preset × 2 preset (7 grup, 1 kelompok = 1 folder)
 node scripts/test_metrics.js native-debug native-release
 
@@ -112,6 +116,10 @@ node scripts/benchmark_metrics.js native-release        # → out/results/benchm
 cd js && npm test
 node benchmark/sizes.mjs        # sapuan ukuran vs JSON.parse
 ```
+
+Analisis artefak (`out/results/`) tersedia via notebook
+[`scripts/results_analysis.py`](scripts/results_analysis.py) — lihat
+[docs/development/benchmarking.md](docs/development/benchmarking.md).
 
 Disiplin lengkap (workflow, konvensi penamaan, cara menambah uji,
 metodologi pengukuran tahan-noise) ada di

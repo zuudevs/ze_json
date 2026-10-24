@@ -45,7 +45,7 @@ Dua pola yang sahih:
   dibangun sekali, session hidup lintas iterasi bila semantiknya
   mengizinkan.
 - **Payload sintetis deterministik** (generator di dalam benchmark) —
-  tidak bergantung `dataset/` yang tidak masuk git; generator bentuk
+  tidak bergantung `samples/` (submodule) yang berat; generator bentuk
   dokumen konstan, hanya lebar yang menskalakan.
 - **`SkipWithError` untuk setiap validasi** — jangan pernah mengukur jalur
   galat; `DoNotOptimize` untuk hasil yang dipakai.
@@ -77,7 +77,25 @@ validasi di dalam loop gagal. Jangan pernah mencatat angka ini.
 | Berkas | Peran |
 |---|---|
 | [`js/benchmark/sizes.mjs`](../../js/benchmark/sizes.mjs) | sapuan ukuran `JSON.parse` vs ze_json (95 B–256 KiB × 6 workload) |
-| [`js/benchmark/parse.mjs`](../../js/benchmark/parse.mjs) | perbandingan pada korpus simdjson (`dataset/` lokal) |
+| [`js/benchmark/copy.mjs`](../../js/benchmark/copy.mjs) | strategi salin payload ke wasm (encode+set vs encodeInto, interleaved) |
+| [`js/benchmark/parse.mjs`](../../js/benchmark/parse.mjs) | perbandingan pada korpus simdjson (`samples/` — submodule) |
+
+## Analisis artefak (opsional)
+
+[`scripts/results_analysis.py`](../../scripts/results_analysis.py) —
+notebook (`# %%` cells; bisa dijalankan headless atau di VS Code/Jupyter)
+yang membaca seluruh `out/results/` lalu menginventory, mengklasifikasi
+skema, dan membandingkan: pasangan Scanner8/64 **dalam run yang sama**,
+before/after per artefak, sapuan JS, dan laporan test. Hormati hukum
+pertama di atas — grafik tren lintas file bersifat deskriptif, bukan bukti
+kausal. Tabel hasil diekspor ke `out/analysis/` (ter-ignore — turunan
+artefak, regenerable).
+
+```bash
+python -m venv .venv
+.venv\Scripts\pip install -r scripts\requirements.txt
+.venv\Scripts\python scripts\results_analysis.py   # MPLBACKEND=Agg di shell non-interaktif
+```
 
 Isolasi metrik `sizes.mjs` (pola untuk benchmark JS baru):
 

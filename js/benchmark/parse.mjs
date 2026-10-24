@@ -31,7 +31,7 @@ import { ZeJson } from "../ze_json.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "..", "..");
-const DATASET = join(REPO, "dataset");
+const DATASET = join(REPO, "samples");
 const OUT_DIR = join(REPO, "out", "results", "benchmark");
 const SAVE = process.argv.includes("--save");
 
@@ -67,7 +67,7 @@ for (const [file, key] of [
   try {
     raw = readFileSync(join(DATASET, file), "utf8");
   } catch {
-    console.warn(`(skip) dataset/${file} tidak ada`);
+    console.warn(`(skip) samples/${file} tidak ada`);
     continue;
   }
   const root = JSON.parse(raw); // SEKALI di startup — di luar pengukuran

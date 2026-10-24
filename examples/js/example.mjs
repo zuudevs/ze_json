@@ -39,13 +39,13 @@ const ROOT = resolve(HERE, "../..");
 const encoder = new TextEncoder();
 
 // ---------------------------------------------------------------------------
-//  DEMO 1: semua tipe value dari dataset/tiny.json
+//  DEMO 1: semua tipe value dari samples/tiny.json
 // ---------------------------------------------------------------------------
 
 function demoTiny(ze) {
-  const tiny = readFileSync(join(ROOT, "dataset/tiny.json"), "utf8");
+  const tiny = readFileSync(join(ROOT, "samples/tiny.json"), "utf8");
 
-  console.log("[1] openDocument(dataset/tiny.json)");
+  console.log("[1] openDocument(samples/tiny.json)");
   const doc = ze.openDocument(tiny);
 
   for (const key of ["username", "age", "active", "status"]) {

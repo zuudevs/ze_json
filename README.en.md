@@ -90,11 +90,18 @@ The detailed documentation set lives under [`docs/`](docs)
 ## Testing & benchmarks
 
 ```bash
+# Benchmark corpus: samples/ submodule (simdjson ~61 MB)
+git clone --recurse-submodules https://github.com/zuudevs/ze_json.git
+
 node scripts/test_metrics.js native-debug native-release   # 45 tests × 2 presets
 node scripts/benchmark_metrics.js native-release           # 3 groups, 69 benchmarks
 cd js && npm test                                          # 40 smoke assertions
 node benchmark/sizes.mjs                                   # size sweep vs JSON.parse
 ```
+
+Artifact analysis (`out/results/`) is available via the notebook
+[`scripts/results_analysis.py`](scripts/results_analysis.py) — see
+[docs/development/benchmarking.md](docs/development/benchmarking.md).
 
 ## License
 

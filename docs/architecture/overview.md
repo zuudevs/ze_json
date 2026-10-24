@@ -57,17 +57,19 @@ ze_json/
 ├── tests/                  7 grup uji google-test (1 kelompok = 1 folder):
 │                           scanner, document, object, number, session, array, path
 ├── benchmarks/             3 grup google-benchmark (1 kelompok = 1 folder):
-│                           scanner (dataset), parser (Document), session (C ABI)
+│                           scanner (samples), parser (Document), session (C ABI)
 ├── js/                     PUBLIC API JavaScript (@zuudevs/ze-json)
 │   ├── ze_json.mjs         binding wasm64 + konstanta layout + kelas ZeJson/Doc
-│   ├── benchmark/          parse.mjs (korpus), sizes.mjs (sapuan ukuran)
+│   ├── benchmark/          parse.mjs (korpus), sizes.mjs (sapuan ukuran), copy.mjs
 │   └── test/main.mjs       40 asersi smoke lintas ABI
 ├── docs/                   dokumentasi modular (berkas ini)
 ├── examples/js/example.mjs demo end-to-end di JS
 ├── scripts/                agregator metrik: test_metrics.js, benchmark_metrics.js
+│                           + results_analysis.py (notebook analisis artefak)
 ├── cmake/                  preset CMake (C++23, LLVM/clang, helper vcpkg)
 ├── out/results/            artefak metrik ter-commit (JSON + Markdown)
-└── dataset/                korpus 61 MB — tidak masuk git (distribusi terpisah)
+└── samples/                SUBMODULE — korpus simdjson ~61 MB (gitlink;
+                            https://github.com/zuudevs/ze_json_sample)
 ```
 
 ## Prinsip desain

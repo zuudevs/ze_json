@@ -18,6 +18,16 @@ versi mengikuti [SemVer](https://semver.org/). Rilis npm
 
 ### Ditambahkan
 
+- **Submodule `samples/`** menggantikan `dataset/` (semula dideklarasikan
+  dengan URL salah-ketik `zuudevs/zuu_json_sample` dan tak pernah
+  ter-commit; kini gitlink resmi ke
+  `https://github.com/zuudevs/ze_json_sample.git`) — korpus simdjson
+  ~61 MB kini tampil di repository; klon dengan `--recurse-submodules`.
+- `scripts/results_analysis.py` — notebook analisis artefak
+  `out/results/` (inventaris & klasifikasi skema, pasangan Scanner8/64
+  dalam-run, before/after eksploratif, sapuan JS, laporan test) +
+  `scripts/requirements.txt` (venv); ekspor tabel ke `out/analysis/`
+  (ter-ignore — turunan artefak).
 - `js/benchmark/sizes.mjs` — sapuan ukuran bertahap `JSON.parse` vs
   ze_json (95 B–256 KiB × 6 workload, metrik terisolasi: payload
   deterministik, SINK anti-DCE, satu proses) dan

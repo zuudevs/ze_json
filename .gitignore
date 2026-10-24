@@ -1,6 +1,6 @@
-# Large golden datasets (benchmark & roundtrip corpora, ~61 MB) -- kept out
-# of git; regenerated / distributed separately
-/dataset/
+# Submodule samples (korpus benchmark & roundtrip ~61 MB) — distribusi
+# terpisah via https://github.com/zuudevs/ze_json_sample ; konten submodule
+# TIDAK di-ignore (terlacak sebagai gitlink).
 
 # Build output directories
 /build/
@@ -47,6 +47,12 @@ node_modules/
 *.gcda
 *.gcno
 /coverage/
+
+# Python — venv lokal untuk scripts/results_analysis.py
+.venv/
+
+# Hasil analisis (scripts/results_analysis.py) — turunan artefak, regenerable
+/out/analysis/
 
 # OS & Temporary files
 .DS_Store
