@@ -82,7 +82,7 @@ validasi di dalam loop gagal. Jangan pernah mencatat angka ini.
 
 ## Analisis artefak (opsional)
 
-[`scripts/results_analysis.py`](../../scripts/results_analysis.py) —
+[`scripts/analyze_result/main.py`](../../scripts/analyze_result/main.py) —
 notebook (`# %%` cells; bisa dijalankan headless atau di VS Code/Jupyter)
 yang membaca seluruh `out/results/` lalu menginventory, mengklasifikasi
 skema, dan membandingkan: pasangan Scanner8/64 **dalam run yang sama**,
@@ -93,8 +93,8 @@ artefak, regenerable).
 
 ```bash
 python -m venv .venv
-.venv\Scripts\pip install -r scripts\requirements.txt
-.venv\Scripts\python scripts\results_analysis.py   # MPLBACKEND=Agg di shell non-interaktif
+.venv\Scripts\pip install -r scripts\analyze_result\requirements.txt
+.venv\Scripts\python scripts\analyze_result/main.py   # MPLBACKEND=Agg di shell non-interaktif
 ```
 
 Isolasi metrik `sizes.mjs` (pola untuk benchmark JS baru):

@@ -1,10 +1,10 @@
-# Dependensi scripts/results_analysis.py — notebook analisis artefak
+# Dependensi scripts/analyze_result/main.py — notebook analisis artefak
 # out/results/ (benchmark & test) ze_json.
 #
 # Pemakaian:
 #   python -m venv .venv
 #   .venv\Scripts\pip install -r scripts\requirements.txt   # Windows
-#   .venv\Scripts\python scripts\results_analysis.py        # jalur headless
+#   .venv\Scripts\python scripts\analyze_result/main.py        # jalur headless
 #   # atau buka sebagai notebook Jupyter (VS Code / jupytext dsb.)
 
 numpy

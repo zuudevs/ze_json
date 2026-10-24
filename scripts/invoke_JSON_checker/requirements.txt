@@ -1,0 +1,10 @@
+# Dependensi scripts/invoke_JSON_checker/main.py — pengunduh korpus
+# JSON_checker resmi (json.org) + sumber reference C ke
+# tests/JSON_checker_test/ (sekali jalan; hasilnya ter-commit).
+#
+# Pemakaian:
+#   python -m venv .venv
+#   .venv\Scripts\pip install -r scripts\invoke_JSON_checker\requirements.txt
+#   .venv\Scripts\python scripts\invoke_JSON_checker\main.py
+
+urllib3

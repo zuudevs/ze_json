@@ -34,7 +34,7 @@ pd.set_option("display.width", 220)
 # root tersebut. Jika perlu, isi `REPO_ROOT_OVERRIDE` secara manual.
 
 # %%
-REPO_ROOT_OVERRIDE = Path(__file__).resolve().parents[1]
+REPO_ROOT_OVERRIDE = Path(__file__).resolve().parents[2]
 
 
 def find_repo_root(start: Path | None = None) -> Path:

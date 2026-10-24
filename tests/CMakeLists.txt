@@ -73,4 +73,11 @@ if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
 		"${CMAKE_CURRENT_SOURCE_DIR}/path_test/main.cpp"
 	)
 
+	add_test_target(json_checker_test
+		"${CMAKE_CURRENT_SOURCE_DIR}/JSON_checker_test/JSON_checker.c"
+		"${CMAKE_CURRENT_SOURCE_DIR}/JSON_checker_test/utf8_to_utf16.c"
+		"${CMAKE_CURRENT_SOURCE_DIR}/JSON_checker_test/utf8_decode.c"
+		"${CMAKE_CURRENT_SOURCE_DIR}/JSON_checker_test/main.cpp"
+	)
+
 endif()

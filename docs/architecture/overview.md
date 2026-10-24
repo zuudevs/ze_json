@@ -54,8 +54,9 @@ ze_json/
 │   ├── core/macros.hpp     makro NOEXCEPT / EXPORT_NAME / RESTRICT
 │   └── memory/arena.hpp    bump allocator
 ├── src/                    implementasi (scanner, ondemand, C ABI, compiler_rt stub)
-├── tests/                  7 grup uji google-test (1 kelompok = 1 folder):
-│                           scanner, document, object, number, session, array, path
+├── tests/                  8 grup uji google-test (1 kelompok = 1 folder):
+│                           scanner, document, object, number, session,
+│                           array, path, JSON_checker (reference json.org)
 ├── benchmarks/             3 grup google-benchmark (1 kelompok = 1 folder):
 │                           scanner (samples), parser (Document), session (C ABI)
 ├── js/                     PUBLIC API JavaScript (@zuudevs/ze-json)
@@ -64,8 +65,9 @@ ze_json/
 │   └── test/main.mjs       40 asersi smoke lintas ABI
 ├── docs/                   dokumentasi modular (berkas ini)
 ├── examples/js/example.mjs demo end-to-end di JS
-├── scripts/                agregator metrik: test_metrics.js, benchmark_metrics.js
-│                           + results_analysis.py (notebook analisis artefak)
+├── scripts/                agregator metrik (test_metrics.js, benchmark_metrics.js)
+│                           + analyze_result/ (notebook analisis artefak)
+│                           + invoke_JSON_checker/ (pengunduh korpus reference)
 ├── cmake/                  preset CMake (C++23, LLVM/clang, helper vcpkg)
 ├── out/results/            artefak metrik ter-commit (JSON + Markdown)
 └── samples/                SUBMODULE — korpus simdjson ~61 MB (gitlink;

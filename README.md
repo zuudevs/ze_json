@@ -6,7 +6,7 @@
 
 ![Lisensi](https://img.shields.io/badge/lisensi-MIT-green)
 ![C++](https://img.shields.io/badge/C%2B%2B-23-blue)
-![Uji](https://img.shields.io/badge/uji-45%2F45%20lolos%20per%20preset-success)
+![Uji](https://img.shields.io/badge/uji-48%2F48%20lolos%20per%20preset-success)
 ![Node](https://img.shields.io/badge/Node-24%2B%20%28memory64%29-brightgreen)
 
 *Dokumen ini tersedia juga dalam [English](README.en.md).*
@@ -94,7 +94,7 @@ doc.stringAt("colors[1]"); // → { status: "OK", value: "black" }
 | [docs/architecture/js-binding.md](docs/architecture/js-binding.md) | layout memori wasm64, kontrak binding, paket npm |
 | [docs/development/workflow.md](docs/development/workflow.md) | siklus kerja, preset build, CI, rilis npm, gotcha harian |
 | [docs/development/naming.md](docs/development/naming.md) | konvensi penamaan & gaya kode, pesan commit, Mermaid |
-| [docs/development/testing.md](docs/development/testing.md) | filosofi uji, peta 7 grup, smoke JS, menambah uji + jebakan |
+| [docs/development/testing.md](docs/development/testing.md) | filosofi uji, peta 8 grup, smoke JS, menambah uji + jebakan |
 | [docs/development/benchmarking.md](docs/development/benchmarking.md) | aturan pengukuran tahan-noise, konvensi & artefak, resep benchmark baru |
 | [docs/api.md](docs/api.md) | referensi lengkap: Status, C ABI, C++, JavaScript |
 | [docs/changelog.md](docs/changelog.md) | riwayat rilis |
@@ -106,7 +106,7 @@ doc.stringAt("colors[1]"); // → { status: "OK", value: "black" }
 git clone --recurse-submodules https://github.com/zuudevs/ze_json.git
 git submodule update --init --recursive   # bila sudah clone tanpa submodule
 
-# 45 test per preset × 2 preset (7 grup, 1 kelompok = 1 folder)
+# 48 test per preset × 2 preset (8 grup, 1 kelompok = 1 folder)
 node scripts/test_metrics.js native-debug native-release
 
 # 3 grup benchmark (scanner 12 · parser 9 · session 48)
@@ -118,7 +118,7 @@ node benchmark/sizes.mjs        # sapuan ukuran vs JSON.parse
 ```
 
 Analisis artefak (`out/results/`) tersedia via notebook
-[`scripts/results_analysis.py`](scripts/results_analysis.py) — lihat
+[`scripts/analyze_result/main.py`](scripts/analyze_result/main.py) — lihat
 [docs/development/benchmarking.md](docs/development/benchmarking.md).
 
 Disiplin lengkap (workflow, konvensi penamaan, cara menambah uji,

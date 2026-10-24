@@ -21,7 +21,7 @@
 4. **Kedua sisi ABI diuji**: native (google-test) dan JS (smoke) —
    keduanya wajib hijau untuk commit perf/rilis.
 
-## Peta grup native (45 test per preset × 2 preset)
+## Peta grup native (48 test per preset × 2 preset)
 
 | Grup | Jumlah | Cakupan |
 |---|---:|---|
@@ -32,6 +32,14 @@
 | `session_test` | 4 | `Session` end-to-end: create, find+getter, drain |
 | `array_test` | 7 | traversal counted, streaming=counted, angka 0-entri, ambigu `'[]'` vs `'[1]'`, over-drain, bauran pola |
 | `path_test` | 14 | sintaks path, tipe-salah, indeks root lazy (4), indeks elemen array (4), kunci escape, dup-key pertama, nested |
+| `json_checker_test` | 3 | pembanding REFERENCE json.org (Crockford) pada korpus resmi pass*/fail*: pass diterima dua validator; fail ditolak reference; scanner hanya wajib menolak subset **struktural** (`fail2/8/32`) — 30 divergensi gramatikal terkunci sebagai batas desain scanner |
+
+Korpus `json_checker_test` + sumber reference C (domain publik) diambil
+SEKALI lewat [`scripts/invoke_JSON_checker/main.py`](../../scripts/invoke_JSON_checker/main.py)
+(json.org) dan **ter-commit** bersama grup — CI tidak butuh unduhan.
+Baca komentar di
+[`tests/JSON_checker_test/main.cpp`](../../tests/JSON_checker_test/main.cpp)
+untuk metodologi ranah struktural vs gramatikal.
 
 ```bash
 # Semua grup, satu preset

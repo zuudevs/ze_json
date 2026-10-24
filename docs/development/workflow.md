@@ -42,7 +42,7 @@ Flag optimasi release dikelola terpusat
 ```mermaid
 flowchart TD
     A["ubah kode C++ / JS"] --> B["build native-release<br/>(+ wasm64 bila menyentuh JS)"]
-    B --> C["45 test native<br/>(7 grup)"]
+    B --> C["48 test native<br/>(8 grup)"]
     C --> D["smoke JS 40 asersi<br/>(salin wasm → js/ dulu!)"]
     D --> E{"perubahan performa?"}
     E -- "ya" --> F["benchmark before/after<br/>(satu proses — lihat benchmarking.md)"]
@@ -74,17 +74,22 @@ hijau sebelum commit.
 
 ```mermaid
 flowchart LR
-    A["perubahan di main<br/>(fitur/fix/perf)"] --> B["bump js/package.json"]
+    A["perubahan di main<br/>(fitur/fix/perf)"] --> B["bump versi:<br/>CMakeLists + vcpkg.json + js/package.json"]
     B --> C["commit release"]
     C --> D["tag v0.1.x + push"]
     D --> E["CI npm-publish:<br/>build wasm64 → smoke → npm publish"]
     E --> F["verifikasi registry +<br/>uji paket ter-install"]
 ```
 
-Aturan rilis (preseden v0.1.1/v0.1.2):
+Aturan rilis (diperbarui sejak v0.1.4-rc — versi kini TERSINKRON di tiga titik):
 
-- Versi rilis hidup di **`js/package.json`** — `VERSION` di
-  `CMakeLists.txt` sengaja tidak disentuh.
+- **Bump versi di tiga tempat** + satu artefak tergenerasi:
+  1. `CMakeLists.txt` — `project(ze_json VERSION x.y.z)`
+  2. `js/package.json` — `version`
+  3. `vcpkg.json` — `version`
+  4. `include/ze_json/version.hpp` — **DIGENERASI otomatis** dari
+     `cmake/templates/version.hpp.in` oleh `cmake/modules/generator.cmake`
+     saat configure (ter-ignore; jangan edit/di-commit manual).
 - Token npm lokal tidak dipakai (403) — publish SELALU lewat CI
   (`.github/workflows/npm-publish.yml`, trigger tag `v*`; CI membangun
   wasm sendiri, menjalankan smoke, lalu `npm publish`; skrip `prepack`

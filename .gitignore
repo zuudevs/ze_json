@@ -48,11 +48,15 @@ node_modules/
 *.gcno
 /coverage/
 
-# Python — venv lokal untuk scripts/results_analysis.py
+# Python — venv lokal untuk scripts/analyze_result/main.py
 .venv/
 
-# Hasil analisis (scripts/results_analysis.py) — turunan artefak, regenerable
+# Hasil analisis (scripts/analyze_result/main.py) — turunan artefak, regenerable
 /out/analysis/
+
+# version.hpp — DIGENERASI cmake/templates/version.hpp.in oleh
+# cmake/modules/generator.cmake saat configure (jangan di-commit)
+include/ze_json/version.hpp
 
 # OS & Temporary files
 .DS_Store

@@ -23,6 +23,7 @@
 //  berupa BigInt; pada wasm32 berupa Number.
 // ============================================================================
 
+#include <ze_json/version.hpp>
 #include <ze_json/core/error.hpp>
 #include <ze_json/core/macros.hpp>
 #include <ze_json/memory/arena.hpp>

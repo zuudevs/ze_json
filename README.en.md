@@ -6,7 +6,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![C++](https://img.shields.io/badge/C%2B%2B-23-blue)
-![Tests](https://img.shields.io/badge/tests-45%2F45%20passing%20per%20preset-success)
+![Tests](https://img.shields.io/badge/tests-48%2F48%20passing%20per%20preset-success)
 ![Node](https://img.shields.io/badge/Node-24%2B%20%28memory64%29-brightgreen)
 
 *This document is also available in [Bahasa Indonesia](README.md).*
@@ -93,14 +93,14 @@ The detailed documentation set lives under [`docs/`](docs)
 # Benchmark corpus: samples/ submodule (simdjson ~61 MB)
 git clone --recurse-submodules https://github.com/zuudevs/ze_json.git
 
-node scripts/test_metrics.js native-debug native-release   # 45 tests × 2 presets
+node scripts/test_metrics.js native-debug native-release   # 48 tests × 2 presets
 node scripts/benchmark_metrics.js native-release           # 3 groups, 69 benchmarks
 cd js && npm test                                          # 40 smoke assertions
 node benchmark/sizes.mjs                                   # size sweep vs JSON.parse
 ```
 
 Artifact analysis (`out/results/`) is available via the notebook
-[`scripts/results_analysis.py`](scripts/results_analysis.py) — see
+[`scripts/analyze_result/main.py`](scripts/analyze_result/main.py) — see
 [docs/development/benchmarking.md](docs/development/benchmarking.md).
 
 ## License

@@ -6,6 +6,28 @@ versi mengikuti [SemVer](https://semver.org/). Rilis npm
 
 ## [Belum dirilis]
 
+### Ditambahkan
+
+- **Metadata versi tersinkron**: `project(VERSION 0.1.3)` di
+  `CMakeLists.txt` + `vcpkg.json` + `js/package.json`;
+  `include/ze_json/version.hpp` DIGENERASI saat configure dari
+  `cmake/templates/version.hpp.in` via `cmake/modules/generator.cmake`
+  (ter-ignore; `ze_json.hpp` meng-include-nya).
+- **`tests/JSON_checker_test/`** — grup uji ke-8: pembanding REFERENCE
+  resmi json.org (implementasi C Douglas Crockford, domain publik,
+  ter-commit) pada korpus klasik pass*/fail*. Metodologi jujur: pass
+  diterima dua validator; fail ditolak reference; scanner hanya wajib
+  menolak subset **struktural** (`fail2/8/32`) — 30 divergensi gramatikal
+  terkunci sebagai batas desain scanner struktural (termasuk
+  `fail33` "tipe bracket tak cocok": depth counter tak bertipe — kandidat
+  perbaikan terdokumentasi).
+- `scripts/invoke_JSON_checker/main.py` — pengunduh korpus + sumber
+  reference dari json.org (sekali jalan; hasil ter-commit) +
+  `requirements.txt`.
+- `scripts/` direorganisasi per kegunaan: `analyze_result/` (notebook
+  analisis artefak + requirements), `invoke_JSON_checker/`; agregator
+  metrik JS tetap di root.
+
 ## [0.1.3] — 2026-10-24
 
 ### Performa
@@ -25,7 +47,7 @@ versi mengikuti [SemVer](https://semver.org/). Rilis npm
   ter-commit; kini gitlink resmi ke
   `https://github.com/zuudevs/ze_json_sample.git`) — korpus simdjson
   ~61 MB kini tampil di repository; klon dengan `--recurse-submodules`.
-- `scripts/results_analysis.py` — notebook analisis artefak
+- `scripts/analyze_result/main.py` — notebook analisis artefak
   `out/results/` (inventaris & klasifikasi skema, pasangan Scanner8/64
   dalam-run, before/after eksploratif, sapuan JS, laporan test) +
   `scripts/requirements.txt` (venv); ekspor tabel ke `out/analysis/`

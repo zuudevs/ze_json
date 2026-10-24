@@ -1,3 +1,4 @@
+include("${CMAKE_SOURCE_DIR}/cmake/modules/generator.cmake")
 # Target WASM (wasm32/64): CMAKE_SYSTEM_PROCESSOR diset preset ku; ambungkan
 # stub compiler-rt (untuk __multi3) di kejurungan wasm.
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
