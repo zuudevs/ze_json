@@ -15,6 +15,10 @@ versi mengikuti [SemVer](https://semver.org/). Rilis npm
   256 KiB); rezim mungil (≲300 B) kalah oleh overhead tetap wasm.
 - Struktur dokumentasi modular `docs/`: `architecture/*.md`, `api.md`,
   `changelog.md` (berkas ini) — diagram dalam sintaksis Mermaid.
+- `docs/development/` — panduan pengembangan: `workflow.md` (siklus,
+  preset, CI, rilis), `naming.md` (konvensi penamaan & gaya kode),
+  `testing.md` (filosofi uji, peta grup, menambah uji + jebakan),
+  `benchmarking.md` (aturan pengukuran tahan-noise, artefak, resep).
 
 ## [0.1.2] — 2026-10-24
 

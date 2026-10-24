@@ -80,6 +80,10 @@ The detailed documentation set lives under [`docs/`](docs)
 | [docs/architecture/session.md](docs/architecture/session.md) | forward-only cursor, array traversal (counted/streaming), path queries |
 | [docs/architecture/optimizations.md](docs/architecture/optimizations.md) | 4-stage optimization + benchmark evidence + JS size sweep |
 | [docs/architecture/js-binding.md](docs/architecture/js-binding.md) | wasm64 memory layout, binding contract, npm package |
+| [docs/development/workflow.md](docs/development/workflow.md) | dev cycle, build presets, CI, npm release, daily gotchas |
+| [docs/development/naming.md](docs/development/naming.md) | naming & code style conventions, commit messages, Mermaid |
+| [docs/development/testing.md](docs/development/testing.md) | testing philosophy, 7-group map, JS smoke, adding tests & pitfalls |
+| [docs/development/benchmarking.md](docs/development/benchmarking.md) | noise-resistant measurement rules, conventions & artifacts, new-benchmark recipe |
 | [docs/api.md](docs/api.md) | full reference: Status, C ABI, C++, JavaScript |
 | [docs/changelog.md](docs/changelog.md) | release history |
 

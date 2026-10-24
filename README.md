@@ -92,6 +92,10 @@ doc.stringAt("colors[1]"); // → { status: "OK", value: "black" }
 | [docs/architecture/session.md](docs/architecture/session.md) | kursor forward-only, traversal array (counted/streaming), path query |
 | [docs/architecture/optimizations.md](docs/architecture/optimizations.md) | 4 tahap optimasi + bukti benchmark + sapuan ukuran JS |
 | [docs/architecture/js-binding.md](docs/architecture/js-binding.md) | layout memori wasm64, kontrak binding, paket npm |
+| [docs/development/workflow.md](docs/development/workflow.md) | siklus kerja, preset build, CI, rilis npm, gotcha harian |
+| [docs/development/naming.md](docs/development/naming.md) | konvensi penamaan & gaya kode, pesan commit, Mermaid |
+| [docs/development/testing.md](docs/development/testing.md) | filosofi uji, peta 7 grup, smoke JS, menambah uji + jebakan |
+| [docs/development/benchmarking.md](docs/development/benchmarking.md) | aturan pengukuran tahan-noise, konvensi & artefak, resep benchmark baru |
 | [docs/api.md](docs/api.md) | referensi lengkap: Status, C ABI, C++, JavaScript |
 | [docs/changelog.md](docs/changelog.md) | riwayat rilis |
 
@@ -108,6 +112,10 @@ node scripts/benchmark_metrics.js native-release        # → out/results/benchm
 cd js && npm test
 node benchmark/sizes.mjs        # sapuan ukuran vs JSON.parse
 ```
+
+Disiplin lengkap (workflow, konvensi penamaan, cara menambah uji,
+metodologi pengukuran tahan-noise) ada di
+[docs/development/](docs/development/workflow.md).
 
 ## Batasan yang dikenal (ringkas)
 

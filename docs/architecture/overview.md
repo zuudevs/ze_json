@@ -101,4 +101,6 @@ ze_json/
 - [session.md](session.md) — kursor, traversal array, path query
 - [optimizations.md](optimizations.md) — 4 tahap optimasi + bukti benchmark
 - [js-binding.md](js-binding.md) — layout memori wasm64 & kontrak binding
-- [api.md](../api.md) — referensi Status, C ABI, C++, dan JavaScript
+- [../api.md](../api.md) — referensi Status, C ABI, C++, dan JavaScript
+- [../development/](../development/workflow.md) — dokumentasi pengembangan:
+  workflow, konvensi penamaan, testing, benchmarking

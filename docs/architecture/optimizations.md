@@ -13,6 +13,8 @@ Pengukuran performa di mesin pengembang ini hanya sah dengan dua disiplin:
 2. **Rasio dalam-run** untuk kueri berulang lintas iterasi — satu session
    dipakai lintas iterasi, rasio last/first yang dibandingkan.
 
+Aturan lengkap, konvensi tooling, dan resep menambah benchmark ada di
+[docs/development/benchmarking.md](../development/benchmarking.md).
 Semua artefak before/after ter-commit di
 [`out/results/benchmark/`](../../out/results/benchmark/).
 
