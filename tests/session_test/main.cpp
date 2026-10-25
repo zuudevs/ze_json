@@ -42,6 +42,58 @@ TEST_F(SessionTest, CreateSessionAndCursorDefault) {
     arena_handle->reset();
 }
 
+TEST_F(SessionTest, ScannerVariantSelectionAndVersion) {
+    // v0.1.5: varian scanner dapat dipilih eksplisit; AUTO = perilaku
+    // create_session lama. Ketiga varian wajib menghasilkan session yang
+    // setara perilakunya (tape identik lintas varian — kontrak scanner).
+    alignas(8) constexpr const char payload[] =
+        R"({"a":1,"b":"x","c":true,"colors":[1,2,3]})";
+    constexpr auto payload_size = sizeof(payload) - 1;
+
+    for (const auto variant : {SCANNER_AUTO, SCANNER_SCALAR, SCANNER_WIDE}) {
+        types::int32_t err = static_cast<types::int32_t>(api::INVALID_JSON);
+        auto* session      = create_session_with_scanner(
+            payload, payload_size, tape_, 256, arena_handle, variant, err);
+        ASSERT_NE(session, nullptr)
+            << "varian " << variant << " gagal dibuat";
+        ASSERT_EQ(static_cast<api::Status>(err), api::OK);
+
+        // Kueri setara lintas varian: skalar + path query + array.
+        ASSERT_EQ(find_field(session, "a", 1), 1);
+        EXPECT_EQ(get_int(session), 1);
+
+        types::int32_t st = static_cast<types::int32_t>(api::OK);
+        EXPECT_EQ(get_int_at(session, "colors[2]", 9, st), 3);
+        EXPECT_EQ(static_cast<api::Status>(st), api::OK);
+
+        arena_handle->reset();
+    }
+
+    // Varian tak dikenal → diperlakukan AUTO (bukan error — kontrak
+    // robust ABI).
+    {
+        types::int32_t err = static_cast<types::int32_t>(api::INVALID_JSON);
+        auto* session      = create_session_with_scanner(
+            payload, payload_size, tape_, 256, arena_handle, 77, err);
+        ASSERT_NE(session, nullptr);
+        ASSERT_EQ(static_cast<api::Status>(err), api::OK);
+        arena_handle->reset();
+    }
+}
+
+#if ZE_JSON_VERSION_NUMBER >= 2026000105
+TEST_F(SessionTest, VersionNumberMatchesMacro) {
+    // Gate kompatibilitas fitur: export get_version() wajib menyamai makro
+    // compile-time (skema 2026_0001_05 = era 2026 + 0.1.5).
+    static_assert(
+        ZE_JSON_VERSION_MAJOR == 0 && ZE_JSON_VERSION_MINOR == 1 &&
+            ZE_JSON_VERSION_PATCH == 5,
+        "versi uji tertaut pada 0.1.5 — perbarui bersama bump versi");
+    EXPECT_EQ(get_version(), ZE_JSON_VERSION_NUMBER);
+    EXPECT_EQ(get_version(), 2026000105);
+}
+#endif
+
 TEST_F(SessionTest, FindJumpsAndReadsAllTypes) {
     alignas(8) constexpr const char payload[] = R"({"a":1,"b":"x","c":true})";
     constexpr auto payload_size               = sizeof(payload) - 1;

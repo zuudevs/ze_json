@@ -1,15 +1,30 @@
+// ============================================================================
+//  scanner/parallel.cpp — ALGORITMA PARALEL (scanner64 / scanner32)
+// ============================================================================
+//  Varian lebar-kata (SWAR blok 8 byte untuk body string). scanner64
+//  memakai validasi UTF-8 TERINTEGRASI ke jalan pemindaian: blok ASCII
+//  murni + DFA ACCEPT cukup satu uji high-bit per blok (jalur cepat SWAR
+//  tetap); blok ber-non-ASCII diproses per byte sehingga sekuens aman
+//  terbelah di batas blok. Biaya integrasi teramortisasi oleh blok —
+//  menang E2E -42% pada payload UTF-8-padat (Tahap 4).
+//  scanner32 (fallback LE 32-bit) memakai pass validator terpisah dan
+//  kini juga membawa kedalaman bertipe (dahulu TANPA validasi bracket
+//  sama sekali — payload terpotong diterima diam-diam di 32-bit).
+//
+//  Pemisahan algoritma dari varian skalar (scalar.cpp) mengikuti filosofi
+//  Langdale & Lemire 2019 / branchfree.org: kerja blok-reguler dan kerja
+//  langkah-demi-langkah adalah dua algoritma berbeda — masing-masing
+//  diberi strategi validasi yang paling cocok.
+// ============================================================================
 #include <ze_json/lookups/utf8_dfa.hpp>
 #include <ze_json/scanner/scanner.hpp>
 #include <ze_json/utils/swar.hpp>
-// scanner32 (fallback 32-bit, tanpa SWAR validasi terintegrasi) masih
-// memakai pass utils::Utf8Validator terpisah.
 #include <ze_json/utils/utf8_validator.hpp>
 
 namespace zuu::scanner {
 
 namespace {
-// Langkah DFA UTF-8 satu byte — validasi menumpang jalan scanner (mengganti
-// pass utils::Utf8Validator TERPISAH di awal yang mewalk payload dua kali).
+// Langkah DFA UTF-8 satu byte — validasi menumpang jalan scanner paralel.
 // Kembali false bila byte melanggar sekuens (state REJECT = 12).
 constexpr bool
 utf8_step(types::uint32_t& state, const char* byte_ptr) NOEXCEPT {
@@ -20,141 +35,6 @@ utf8_step(types::uint32_t& state, const char* byte_ptr) NOEXCEPT {
 }
 } // namespace
 
-types::Result<types::size_t, core::JsonErrc>
-scanner8(
-    const char* const RESTRICT src, types::size_t src_size,
-    types::size_t* RESTRICT dst, types::size_t dst_size) NOEXCEPT {
-    if (!src || src_size <= 1) [[unlikely]] {
-        return types::Unexpected{core::JsonErrc::InvalidJson};
-    }
-
-    if (!dst || dst_size <= 1) [[unlikely]] {
-        return types::Unexpected{core::JsonErrc::InsufficientBuffer};
-    }
-
-    auto ptr              = src;
-    const auto end        = src + src_size;
-    auto cursor           = dst;
-    const auto end_cursor = dst + dst_size;
-
-    // Kedalaman bracket BERTIPE (Langdale & Lemire 2019 §3.2: kontainer
-    // dibuka '{' wajib ditutup '}', '[' wajib ditutup ']'): satu counter
-    // per JENIS bracket — penutupan jenis yang salah terdeteksi SEKETIKA
-    // sebagai underflow jenis, bukan hanya saat akhir payload (dahulu
-    // satu counter agregat membiarkan ["mismatch"} lolos).
-    // Batas desain: saling-silang seperti [{]} tetap lolos — dua counter
-    // tak melacak URUTAN; itu ranah stack scope tahap-2 (paper §3.2).
-    types::int64_t curly_depth  = 0;
-    types::int64_t square_depth = 0;
-
-    // State DFA UTF-8 (0 = ACCEPT) — validasi menumpang jalan scanner.
-    types::uint32_t utf8 = 0;
-
-    while (ptr < end && cursor < end_cursor) {
-        while (ptr < end &&
-               (lookups::kStructural[static_cast<types::uint8_t>(*ptr)]) == 0) {
-            if (utf8 != 0 || (*ptr & 0x80) != 0) [[unlikely]] {
-                if (!utf8_step(utf8, ptr)) [[unlikely]] {
-                    return types::Unexpected{core::JsonErrc::InvalidUtf8};
-                }
-            }
-            ptr++;
-        }
-
-        if (ptr >= end) {
-            break;
-        }
-
-        // Byte struktural pun masuk DFA: ASCII dari state ACCEPT no-op,
-        // tetapi kutip penutup di tengah sekuens wajib ditolak.
-        if (utf8 != 0 || (*ptr & 0x80) != 0) [[unlikely]] {
-            if (!utf8_step(utf8, ptr)) [[unlikely]] {
-                return types::Unexpected{core::JsonErrc::InvalidUtf8};
-            }
-        }
-
-        const auto flags =
-            lookups::kStructural[static_cast<types::uint8_t>(*ptr)];
-
-        if (flags & lookups::PAIR_CLOSE) {
-            // Tutup tanpa pasangan buwa JENIS yang sama → JSON bermata.
-            if (*ptr == '}') {
-                if (curly_depth == 0) {
-                    return types::Unexpected{core::JsonErrc::InvalidJson};
-                }
-                curly_depth--;
-            } else { // ']' — satu-satunya PAIR_CLOSE lain
-                if (square_depth == 0) {
-                    return types::Unexpected{core::JsonErrc::InvalidJson};
-                }
-                square_depth--;
-            }
-        } else if (flags & lookups::PAIR_OPEN) {
-            if (*ptr == '{') {
-                curly_depth++;
-            } else { // '['
-                square_depth++;
-            }
-        }
-
-        if (flags & lookups::SCAN_NORMAL) {
-            *cursor++ = static_cast<types::size_t>(ptr - src);
-            ptr++;
-        } else if (flags & lookups::SCAN_QUOTE) {
-            *cursor++ = static_cast<types::size_t>(ptr - src);
-            ptr++;
-
-            while (true) { // no has evaluation
-                if (ptr >= end) {
-                    return types::Unexpected{core::JsonErrc::UnexpectedQuote};
-                }
-                if (utf8 != 0 || (*ptr & 0x80) != 0) [[unlikely]] {
-                    if (!utf8_step(utf8, ptr)) [[unlikely]] {
-                        return types::Unexpected{core::JsonErrc::InvalidUtf8};
-                    }
-                }
-                if (*ptr == '\\') {
-                    if (ptr + 1 >= end) {
-                        return types::Unexpected{
-                            core::JsonErrc::UnexpectedQuote};
-                    }
-                    if (utf8 != 0 || (ptr[1] & 0x80) != 0) [[unlikely]] {
-                        if (!utf8_step(utf8, ptr + 1)) [[unlikely]] {
-                            return types::Unexpected{
-                                core::JsonErrc::InvalidUtf8};
-                        }
-                    }
-                    ptr += 2;
-                    continue;
-                }
-
-                if (*ptr == '\"') {
-                    break;
-                }
-                ptr++;
-            }
-
-            if (cursor == end_cursor) {
-                return types::Unexpected{core::JsonErrc::InsufficientBuffer};
-            }
-
-            *cursor++ = static_cast<types::size_t>(ptr - src);
-            ptr++;
-        }
-    }
-
-    // Wajib semua bracket tertutup: input terpotong (depth > 0) ditolak.
-    if (curly_depth != 0 || square_depth != 0) {
-        return types::Unexpected{core::JsonErrc::InvalidJson};
-    }
-
-    // Sekuens UTF-8 terpotong di akhir payload (state belum kembali ACCEPT).
-    if (utf8 != 0) [[unlikely]] {
-        return types::Unexpected{core::JsonErrc::InvalidUtf8};
-    }
-
-    return static_cast<types::size_t>(cursor - dst);
-}
 #if __LITTLE_ENDIAN__ == 1
 #if __IS_64_BIT__ == 1
 types::Result<types::size_t, core::JsonErrc>
@@ -174,10 +54,19 @@ scanner64(
     auto cursor           = dst;
     const auto end_cursor = dst + dst_size;
 
-    // Kedalaman bracket BERTIPE — komentar lengkap lihat scanner8
-    // (Langdale & Lemire 2019 §3.2; satu counter per jenis bracket).
-    types::int64_t curly_depth  = 0;
-    types::int64_t square_depth = 0;
+    // Kedalaman bracket BERTIPE via STACK-BIT (Langdale & Lemire 2019 §3.2)
+    // — BRANCHLESS di jalur panas struktural: satu shift + XOR per bracket.
+    // Bit-31..0 menumpuk tipe (0=array ']', 1=object '}'): pembuka push bit,
+    // penutup pop bit dan WAJIB sama (mismatch → reject). Underflow (stack
+    // kosong) ditolak. Saling-silang [{]} TIDAK terdeteksi (batas 2-tipe
+    // tanpa urutan penuh — ranah scope-stack tahap-2 paper §3.2).
+    //
+    //    open  '{' : stack = (stack << 1) | 1; depth++
+    //    open  '[' : stack = (stack << 1);     depth++
+    //    close '}' : reject if depth==0 or (stack & 1)==0; stack >>= 1; depth--
+    //    close ']' : reject if depth==0 or (stack & 1)==1; stack >>= 1; depth--
+    types::uint64_t bracket_stack = 0; // bit tipe kontainer terbuka
+    types::int64_t bracket_depth  = 0;
 
     // State DFA UTF-8 (0 = ACCEPT) — validasi menumpang jalan scanner.
     types::uint32_t utf8 = 0;
@@ -210,22 +99,21 @@ scanner64(
         if (flags & lookups::PAIR_CLOSE) {
             // Tutup tanpa pasangan buwa JENIS yang sama → JSON mati.
             if (*ptr == '}') {
-                if (curly_depth == 0) {
+                if (bracket_depth == 0 || (bracket_stack & 1) == 0) {
                     return types::Unexpected{core::JsonErrc::InvalidJson};
                 }
-                curly_depth--;
+                bracket_stack >>= 1;
+                bracket_depth--;
             } else { // ']' — satu-satunya PAIR_CLOSE lain
-                if (square_depth == 0) {
+                if (bracket_depth == 0 || (bracket_stack & 1) != 0) {
                     return types::Unexpected{core::JsonErrc::InvalidJson};
                 }
-                square_depth--;
+                bracket_stack >>= 1;
+                bracket_depth--;
             }
         } else if (flags & lookups::PAIR_OPEN) {
-            if (*ptr == '{') {
-                curly_depth++;
-            } else { // '['
-                square_depth++;
-            }
+            bracket_stack = (bracket_stack << 1) | (*ptr == '{' ? 1u : 0u);
+            bracket_depth++;
         }
 
         if (flags & lookups::SCAN_NORMAL) {
@@ -329,7 +217,7 @@ scanner64(
     }
 
     // Wajib semua bracket tertutup: input terpotong (depth > 0) ditolak.
-    if (curly_depth != 0 || square_depth != 0) {
+    if (bracket_depth != 0) {
         return types::Unexpected{core::JsonErrc::InvalidJson};
     }
 
@@ -340,6 +228,11 @@ scanner64(
     return static_cast<types::size_t>(cursor - dst);
 }
 #elif __IS_64_BIT__ == 0
+// ---------------------------------------------------------------------------
+//  scanner32 — fallback LE 32-bit. Tidak teruji di rig ini (preset mesin
+//  64-bit); logika depth bertipe DIKUNCI sama persis dengan scanner8 agar
+//  kontrak penolakan lintas varian identik.
+// ---------------------------------------------------------------------------
 types::Result<types::size_t, core::JsonErrc>
 scanner32(
     const char* const RESTRICT src, types::size_t src_size,
@@ -361,6 +254,10 @@ scanner32(
     auto cursor           = dst;
     const auto end_cursor = dst + dst_size;
 
+    // Kedalaman bracket BERTIPE via STACK-BIT — mirror scanner8 (scalar.cpp).
+    types::uint64_t bracket_stack = 0;
+    types::int64_t bracket_depth  = 0;
+
     while (ptr < end && cursor < end_cursor) {
         while (ptr < end &&
                lookups::kStructural[static_cast<types::uint8_t>(*ptr)] == 0) {
@@ -373,6 +270,26 @@ scanner32(
 
         const auto flags =
             lookups::kStructural[static_cast<types::uint8_t>(*ptr)];
+
+        if (flags & lookups::PAIR_CLOSE) {
+            if (*ptr == '}') {
+                if (bracket_depth == 0 || (bracket_stack & 1) == 0) {
+                    return types::Unexpected{core::JsonErrc::InvalidJson};
+                }
+                bracket_stack >>= 1;
+                bracket_depth--;
+            } else { // ']'
+                if (bracket_depth == 0 || (bracket_stack & 1) != 0) {
+                    return types::Unexpected{core::JsonErrc::InvalidJson};
+                }
+                bracket_stack >>= 1;
+                bracket_depth--;
+            }
+        } else if (flags & lookups::PAIR_OPEN) {
+            bracket_stack = (bracket_stack << 1) | (*ptr == '{' ? 1u : 0u);
+            bracket_depth++;
+        }
+
         if (flags & lookups::SCAN_NORMAL) {
             *cursor++ = static_cast<types::uint64_t>(ptr - src);
             ptr++;
@@ -428,6 +345,11 @@ scanner32(
             *cursor++ = static_cast<types::uint64_t>(ptr - src);
             ptr++;
         }
+    }
+
+    // Wajib semua bracket tertutup: input terpotong (depth > 0) ditolak.
+    if (bracket_depth != 0) {
+        return types::Unexpected{core::JsonErrc::InvalidJson};
     }
     return static_cast<types::size_t>(cursor - dst);
 }

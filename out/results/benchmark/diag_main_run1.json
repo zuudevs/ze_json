@@ -1,0 +1,131 @@
+{
+  "context": {
+    "date": "2026-10-25T16:31:19+07:00",
+    "host_name": "ZUU",
+    "executable": "D:\\kuliah_\\7_semester\\skripsi\\v3\\src\\ze_json\\build\\native-release\\benchmarks\\scanner_benchmark.exe",
+    "num_cpus": 12,
+    "mhz_per_cpu": 2096,
+    "caches": [
+      {
+        "type": "Data",
+        "level": 1,
+        "size": 32768,
+        "num_sharing": 2
+      },
+      {
+        "type": "Instruction",
+        "level": 1,
+        "size": 32768,
+        "num_sharing": 2
+      },
+      {
+        "type": "Unified",
+        "level": 2,
+        "size": 524288,
+        "num_sharing": 2
+      },
+      {
+        "type": "Unified",
+        "level": 3,
+        "size": 4194304,
+        "num_sharing": 6
+      }
+    ],
+    "load_avg": [],
+    "library_version": "v1.9.5",
+    "library_build_type": "release",
+    "json_schema_version": 1
+  },
+  "benchmarks": [
+    {
+      "name": "BM_Scanner8_GithubEvents/min_time:15.000/min_warmup_time:5.000",
+      "family_index": 0,
+      "per_family_instance_index": 0,
+      "run_name": "BM_Scanner8_GithubEvents/min_time:15.000/min_warmup_time:5.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 33433,
+      "real_time": 5.8090031107067561e+05,
+      "cpu_time": 5.7110489635988395e+05,
+      "time_unit": "ns",
+      "bytes_per_second": 5.6597133391816700e+08
+    },
+    {
+      "name": "BM_Scanner8_Jeopardy/min_time:15.000/min_warmup_time:5.000",
+      "family_index": 1,
+      "per_family_instance_index": 0,
+      "run_name": "BM_Scanner8_Jeopardy/min_time:15.000/min_warmup_time:5.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 188,
+      "real_time": 1.0842310265960553e+08,
+      "cpu_time": 1.0654920212765957e+08,
+      "time_unit": "ns",
+      "bytes_per_second": 5.2139878939157563e+08
+    },
+    {
+      "name": "BM_Scanner64_GithubEvents/min_time:15.000/min_warmup_time:5.000",
+      "family_index": 2,
+      "per_family_instance_index": 0,
+      "run_name": "BM_Scanner64_GithubEvents/min_time:15.000/min_warmup_time:5.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 53760,
+      "real_time": 3.8147217075859208e+05,
+      "cpu_time": 3.7841796875000000e+05,
+      "time_unit": "ns",
+      "bytes_per_second": 8.5415869935483873e+08
+    },
+    {
+      "name": "BM_Scanner64_Jeopardy/min_time:15.000/min_warmup_time:5.000",
+      "family_index": 3,
+      "per_family_instance_index": 0,
+      "run_name": "BM_Scanner64_Jeopardy/min_time:15.000/min_warmup_time:5.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 344,
+      "real_time": 5.9342431686080858e+07,
+      "cpu_time": 5.8502906976744182e+07,
+      "time_unit": "ns",
+      "bytes_per_second": 9.4960452173913038e+08
+    },
+    {
+      "name": "BM_Scanner8_Synth/min_time:30.000/min_warmup_time:3.000",
+      "family_index": 4,
+      "per_family_instance_index": 0,
+      "run_name": "BM_Scanner8_Synth/min_time:30.000/min_warmup_time:3.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 97745,
+      "real_time": 4.9754759936573799e+05,
+      "cpu_time": 4.9187298583047726e+05,
+      "time_unit": "ns",
+      "bytes_per_second": 5.3296075928501785e+08
+    },
+    {
+      "name": "BM_Scanner64_Synth/min_time:30.000/min_warmup_time:3.000",
+      "family_index": 5,
+      "per_family_instance_index": 0,
+      "run_name": "BM_Scanner64_Synth/min_time:30.000/min_warmup_time:3.000",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 90201,
+      "real_time": 4.4507194598734705e+05,
+      "cpu_time": 4.3756443941863172e+05,
+      "time_unit": "ns",
+      "bytes_per_second": 5.9910947139192402e+08
+    }
+  ]
+}

@@ -42,7 +42,7 @@ Flag optimasi release dikelola terpusat
 ```mermaid
 flowchart TD
     A["ubah kode C++ / JS"] --> B["build native-release<br/>(+ wasm64 bila menyentuh JS)"]
-    B --> C["48 test native<br/>(8 grup)"]
+    B --> C["51 test native<br/>(8 grup)"]
     C --> D["smoke JS 40 asersi<br/>(salin wasm → js/ dulu!)"]
     D --> E{"perubahan performa?"}
     E -- "ya" --> F["benchmark before/after<br/>(satu proses — lihat benchmarking.md)"]

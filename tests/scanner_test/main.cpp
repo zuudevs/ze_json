@@ -205,15 +205,19 @@ TEST_F(ScannerTest, Scanner64TapeMatchesScanner8) {
 }
 
 TEST_F(ScannerTest, BracketTypeMismatchRejectedByBothScanners) {
-    // Kedalaman bracket BERTIPE (Langdale & Lemire 2019 §3.2): '{' wajib
-    // ditutup '}', '[' wajib ']' — penutupan jenis salah ditolak SEKETIKA
-    // sebagai underflow jenis (fail33 json.org kini tertangkap).
+    // Kedalaman bracket BERTIPE via STACK-BIT (Langdale & Lemire 2019 §3.2):
+    // '{' wajib ditutup '}', '[' wajib ']', DAN urutan tumpukan wajib
+    // konsisten — stack-bit melacak JENIS per level, sehingga saling-silang
+    // [{]} PUN tertolak (peningkatan atas dua-counter).
     const std::string_view mismatches[] = {
         R"(["mismatch"})", // '}' menutup '['
         "{]",              // ']' menutup '{'
         "[}",              // '}' menutup '['
         R"({"a":[1})",     // '}' melintasi array: '[' menggantung di akhir
         R"(["x"]})",       // ']' ekstra setelah array tertutup
+        "[{]}",            // saling-silang: jumlah per jenis seimbang
+        R"([{"b":1]})",    // ']' menutup object dalam array
+        "{[}",             // '}' menutup '[' setelah '{'
     };
 
     for (const auto& json : mismatches) {
@@ -224,22 +228,6 @@ TEST_F(ScannerTest, BracketTypeMismatchRejectedByBothScanners) {
     }
 
     // Batas desain TERDOKUMENTASI: saling-silang seperti [{]} — jumlah
-    // per JENIS seimbang — tidak terdeteksi dua counter (ranah stack
-    // scope tahap-2, per paper §3.2). Kedua varian wajib SETUJU agar
-    // kontrak lintas varian identik.
-    const std::string_view interleaved[] = {
-        "[{]}",
-        R"([{"b":1]})",
-    };
-    for (const auto& json : interleaved) {
-        auto [ok8, _8]   = run_scanner(json);
-        auto [ok64, _64] = run_scanner64(json);
-        EXPECT_EQ(ok8, ok64) << "varian tak setuju: " << json;
-        EXPECT_TRUE(ok8) << "interleave wajib konsisten-lolos (batas 2 "
-                          "counter): "
-                        << json;
-    }
-
     // Nesting campuran yang sah tetap diterima kedua varian.
     const std::string_view balanced[] = {
         R"({"a":[1,{"b":[2]}]})",

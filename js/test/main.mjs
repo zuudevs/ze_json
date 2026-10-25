@@ -218,6 +218,40 @@ const ze = await ZeJson.load();
   );
 }
 
+// --- 6. Varian scanner + version compatibility (v0.1.5) --------------------
+{
+  // Nomor versi tersedia (v0.1.5+).
+  check("versionNumber tersedia (>= 2026000105)",
+    ze.versionNumber !== null && ze.versionNumber >= 2026000105n);
+  check("hasScannerSelection true (v0.1.5+)",
+    ze.hasScannerSelection === true);
+
+  // Varian tak valid → error sebelum wasm dimuat.
+  check("scanner tidak valid → error",
+    (() => {
+      try { new ZeJson({}, "bogus"); return false; }
+      catch { return true; }
+    })());
+
+  // Instansiasi dengan binary yang sama (tanpa file baru) — varian scalar
+  // dan wide menghasilkan session yang setara.
+  const zes = await ZeJson.load({ scanner: "scalar" });
+  const ds = zes.openDocument('{"id":21,"name":"ze","colors":["white","black"]}');
+  check("scanner=scalar → intAt id",
+    ds.intAt("id").value === 21);
+  check("scanner=scalar → stringAt colors[1]",
+    ds.stringAt("colors[1]").value === "black");
+  zes.close();
+
+  const zew = await ZeJson.load({ scanner: "wide" });
+  const dw = zew.openDocument('{"id":21,"name":"ze","colors":["white","black"]}');
+  check("scanner=wide → intAt id",
+    dw.intAt("id").value === 21);
+  check("scanner=wide → stringAt colors[1]",
+    dw.stringAt("colors[1]").value === "black");
+  zew.close();
+}
+
 ze.close();
 console.log(`\n${passed} lolos, ${failed} gagal · STATUS✓ ${STATUS.length} kode`);
 process.exitCode = failed ? 1 : 0;

@@ -6,7 +6,7 @@
 
 ![Lisensi](https://img.shields.io/badge/lisensi-MIT-green)
 ![C++](https://img.shields.io/badge/C%2B%2B-23-blue)
-![Uji](https://img.shields.io/badge/uji-49%2F49%20lolos%20per%20preset-success)
+![Uji](https://img.shields.io/badge/uji-51%2F51%20lolos%20per%20preset-success)
 ![Node](https://img.shields.io/badge/Node-24%2B%20%28memory64%29-brightgreen)
 
 *Dokumen ini tersedia juga dalam [English](README.en.md).*
@@ -107,7 +107,7 @@ doc.stringAt("colors[1]"); // → { status: "OK", value: "black" }
 git clone --recurse-submodules https://github.com/zuudevs/ze_json.git
 git submodule update --init --recursive   # bila sudah clone tanpa submodule
 
-# 49 test per preset × 2 preset (8 grup, 1 kelompok = 1 folder)
+# 51 test per preset × 2 preset (8 grup, 1 kelompok = 1 folder)
 node scripts/test_metrics.js native-debug native-release
 
 # 3 grup benchmark (scanner 12 · parser 9 · session 48)
