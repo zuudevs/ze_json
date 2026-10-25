@@ -20,15 +20,28 @@ lapisan on-demand dari teks di antara entry tape.
 
 ## Tiga varian, satu format tape
 
-| Varian | Pemilihan | Perbedaan |
-|---|---|---|
-| `scanner8` | selalu tersedia (fallback portabel) | semua lintasan byte-per-byte |
-| `scanner64` | LE + 64-bit (default `create_session` di mesin ini) | body string dipindai per blok 8 byte (SWAR); validasi UTF-8 terintegrasi |
-| `scanner32` | LE + 32-bit | seperti scanner64, tetapi validasi UTF-8 masih pass `utils::Utf8Validator` terpisah (jalur fallback yang tak teruji di sini) |
+| Varian | File | Strategi UTF-8 | Kedalaman bracket |
+|---|---|---|---|
+| `scanner8` | `scanner/scalar.cpp` | **Pass validator TERPISAH** (SWAR blok 8-byte) — loop skalar tidak menghasilkan apa-apa dari DFA inline | Stack-bit bertipe |
+| `scanner64` | `scanner/parallel.cpp` | **Terintegrasi** ke jalan pemindaian (blok SWAR; DFA hanya saat non-ASCII) | Stack-bit bertipe |
+| `scanner32` | `scanner/parallel.cpp` | Pass validator terpisah (fallback 32-bit, tak teruji di rig ini) | Stack-bit bertipe |
 
-Pemilihan dilakukan lewat makro `__LITTLE_ENDIAN__` / `__IS_64_BIT__` di
-`create_session` (`src/ze_json.cpp`). **Format tape ketiganya identik** —
-dijamin oleh uji kesetaraan `tests/scanner_test/`.
+Pemilihan di `create_session` via makro `__LITTLE_ENDIAN__`/`__IS_64_BIT__`;
+varian eksplisit via `create_session_with_scanner` (v0.1.5+, gate
+`ZE_JSON_VERSION_NUMBER >= 2026000105`). **Format tape ketiganya
+identik** — dijamin oleh uji kesetaraan `tests/scanner_test/`.
+
+**Mengapa dua strategi UTF-8?** Loop skalar step-by-step tidak
+mendapat keuntungan dari cek DFA inline — setiap byte membayar uji
+`utf8 != 0 || high-bit` yang tidak pernah teramortisasi (terukur
+**−27..43%** pada korpus, replika interleaved
+`scanner_separation_proof.json` menunjukkan pemulihan **×1,9**).
+Sebaliknya, scanner64 memproses string per blok 8-byte: satu uji
+high-bit per blok cukup, dan DFA hanya menyala pada blok non-ASCII
+— integrasi MENANG (−42% pada payload UTF-8-padat Tahap 4, ASCII
+nyaris gratis). Filosofi Langdale & Lemire 2019 / branchfree.org:
+kerja blok-reguler dan kerja langkah-demi-langkah adalah DUA
+algoritma — jangan digabungkan.
 
 ## Format tape
 
@@ -79,21 +92,25 @@ versi validator-terpisah (galit yang lebih dulu dijangkau jalan pemindaian
 yang menang; dulu UTF-8 selalu menang karena divalidasi lebih dulu).
 Keduanya tetap ditolak — hanya prioritas statusnya yang bisa berbeda.
 
-## Validasi scope bertipe (v0.1.5)
+## Validasi scope bertipe: STACK-BIT (v0.1.5)
 
 Dahulu kedalaman bracket memakai satu counter agregat: jumlah `{}[]`
 yang seimbang dianggap cukup — `["mismatch"}` (penutup jenis salah,
-jumlah seimbang) lolos. Kini **satu counter per JENIS**: `{`/`}` dan
-`[`/`]` dihitung terpisah; penutupan jenis yang salah ditolak SEKETIKA
-sebagai *underflow jenis* (per `langdale_parsing_2019` §3.2 — objek
-dibuka `{` wajib ditutup `}`, array `[` wajib `]`), dan akhir payload
-menuntut kedua counter nol.
+jumlah seimbang) lolos. Kini **stack-bit**: satu `uint64_t` menumpuk
+tipe bracket per level (0 = `[`, 1 = `{`):
 
-Batas terdokumentasi: saling-silang `[{]}` (jumlah per jenis seimbang,
-urutan salah) tetap lolos — dua counter tak melacak urutan; itu ranah
-stack scope tahap-2 (lihat [e2e-flow.md](e2e-flow.md)). Dikunci oleh
-`scanner_test` (kedua varian wajib setuju) dan `json_checker_test`
-(fail33 kini subset struktural).
+```text
+buka  '[' : stack = (stack << 1);     depth++
+buka  '{' : stack = (stack << 1)|1;  depth++
+tutup ']' : reject bila depth==0 atau bit teratas ≠ 0; stack >>= 1
+tutup '}' : reject bila depth==0 atau bit teratas ≠ 1; stack >>= 1
+```
+
+Ini **branchless** di jalur struktural (satu shift + XOR per bracket)
+dan menangkap SALING-SILANG `[{]}` juga — bit teratas wajib cocok,
+bukan hanya jumlah per jenis. Biaya: ~9% pada payload bracket-padat
+(synth), ~0% pada payload string-heavy (Jeopardy) — terukur interleaved
+`scanner_separation_proof.json`.
 
 ## Kontrak galat scanner
 
@@ -109,7 +126,8 @@ stack scope tahap-2 (lihat [e2e-flow.md](e2e-flow.md)). Dikunci oleh
 
 ## Berkas terkait
 
-- Implementasi: [`src/scanner/scanner.cpp`](../../src/scanner/scanner.cpp)
+- Implementasi: [`src/scanner/scalar.cpp`](../../src/scanner/scalar.cpp)
+  + [`src/scanner/parallel.cpp`](../../src/scanner/parallel.cpp)
 - Tabel struktural & DFA: [`include/ze_json/lookups/`](../../include/ze_json/lookups/)
 - Util SWAR: [`include/ze_json/utils/swar.hpp`](../../include/ze_json/utils/swar.hpp)
 - Uji: [`tests/scanner_test/`](../../tests/scanner_test/) (termasuk sekuens

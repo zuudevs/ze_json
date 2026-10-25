@@ -8,33 +8,50 @@ versi mengikuti [SemVer](https://semver.org/). Rilis npm
 
 ### Diperbaiki
 
-- **Kedalaman bracket BERTIPE** di `scanner8`/`scanner64` (per
-  `langdale_parsing_2019` §3.2): satu counter per JENIS `{`/`}` dan
-  `[`/`]` — penutupan jenis yang salah (mis. `["mismatch"}`, fail33
-  json.org) ditolak seketika sebagai underflow jenis; akhir payload
-  menuntut kedua counter nol. Batas terdokumentasi: saling-silang
-  `[{]}` tetap lolos (dua counter tak melacak urutan — ranah stack
-  scope tahap-2). Guard performa: delta hanya pada karakter
-  struktural, di bawah lantai noise rig ±20–25%
-  (`tahap5_typedepth_guard*.json`).
+- **Kedalaman bracket BERTIPE via STACK-BIT** di scanner8/scanner64/scanner32
+  (per `langdale_parsing_2019` §3.2): satu shift + XOR per bracket pada
+  jalur struktural — penutupan jenis yang salah ditolak seketika, dan
+  saling-silang `[{]}` PUN tertangkap (peningkatan atas dua-counter yang
+  hanya melacak jenis per jenis tanpa urutan). Semua varian scanner
+  menggunakan algoritma stack-bit yang identik.
+- **Pemisahan algoritma scanner skalar vs paralel** (scalar.cpp +
+  parallel.cpp): scanner8 kembali ke arsitektur pass-validator UTF-8
+  TERPISAH (bukan DFA inline per-byte Tahap 4 yang menggerus throughput
+  −27..43%); scanner64/scanner32 mempertahankan validasi terintegrasi.
+  Bukti interleaved `scanner_separation_proof.json`: scanner8 **×1,9**
+  lebih cepat dari replika Tahap-4.
 - `json_checker_test` kini menjalankan SETIAP varian scanner platform
   (scanner8; scanner64 pada LE 64-bit) — fail33 pindah ke subset
   struktural (4 file), 29 divergensi gramatikal tetap terkunci.
+- scanner32 (fallback 32-bit) kini membawa kedalaman bertipe + validasi
+  bracket (dahulu TANPA validasi bracket sama sekali).
+
+### Ditambahkan
+
+- **Pemilihan varian scanner dari JS**: `ZeJson.load({ scanner:
+  "auto" | "scalar" | "wide" })` — default "auto" (fallback platform,
+  LE 64-bit → paralel). Variannya SCANNER_SCALAR/SCANNER_WIDE;
+  ketersediaan dideteksi lewat `hasScannerSelection` + `versionNumber`.
+- **Version compatibility feature**: `ZE_JSON_VERSION_NUMBER` macro
+  (epoch 2026 + semver → mis. 2026000105 = 0.1.5) di version.hpp.in;
+  export `get_version()` → JS `ze.versionNumber`; fitur baru
+  di-gate `#if ZE_JSON_VERSION_NUMBER >= 2026000105`.
+- `create_session_with_scanner` C ABI — pemilihan varian eksplisit
+  (SCANNER_AUTO/SCALAR/WIDE); varian tak tersedia di platform jatuh
+  ke skalar (bukan error — hasil session setara).
+- `docs/architecture/e2e-flow.md` — alur E2E dua tahag dipetakan ke
+  `langdale_parsing_2019` (tahap-1 struktural + UTF-8 terintegrasi →
+  tahap-2 on-demand per `keiser_-demand_2024`) dengan sitasi ke
+  `references/cites.bib`.
+- `benchmarks/scanner_benchmark/replica_integrated.hpp` — replika
+  algoritma Tahap-4 (scanner8 terintegrasi + scanner64 untyped) untuk
+  pembanding interleaved yang permanen.
 
 ### Aturan
 
 - **Setiap fix/fitur diawali bump versi di `CMakeLists.txt`** (lalu
   `vcpkg.json` + `js/package.json` + regenerate `version.hpp`) —
   dicantumkan di `docs/development/workflow.md`.
-
-### Ditambahkan
-
-- `docs/architecture/e2e-flow.md` — alur E2E dua tahap dipetakan ke
-  `langdale_parsing_2019` (tahap-1 struktural + UTF-8 terintegrasi →
-  tahap-2 on-demand per `keiser_-demand_2024`) dengan sitasi ke
-  `references/cites.bib`; README id/en mengindeks.
-- `tests/scanner_test`: +1 aseri kesetaraan lintas varian untuk
-  mismatch jenis + batas saling-silang (49 test per preset kini).
 
 ## [0.1.4] — 2026-10-25
 

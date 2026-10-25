@@ -113,9 +113,15 @@ export class ZeJson {
    *     default: kandidat bersebelahan modul, lalu build/wasm64-release
    * @param {Uint8Array} [options.binary]  — binary .wasm jadi (browser /
    *     pemakai bundler); mengabaikan wasmPath bila diisi
+   * @param {string} [options.scanner]     — varian scanner (v0.1.5+):
+   *     "auto"   = fallback platform (LE 64-bit → paralel, lainnya skalar)
+   *     "scalar" = scanner8 (pass validator UTF-8 terpisah)
+   *     "wide"   = scanner64/scanner32 (validasi UTF-8 terintegrasi);
+   *                fallback skalar bila varian tak tersedia di platform.
+   *     Default: "auto". WASM pra-v0.1.5 mengabaikan opsi ini (selalu auto).
    * @returns {Promise<ZeJson>}
    */
-  static async load({ wasmPath, binary } = {}) {
+  static async load({ wasmPath, binary, scanner = "auto" } = {}) {
     let bytes = binary ?? null;
     if (!bytes) {
       for (const path of wasmPath ? [wasmPath] : WASM_CANDIDATES) {
@@ -145,11 +151,25 @@ export class ZeJson {
           "Coba: node --experimental-wasm-memory64",
       );
     }
-    return new ZeJson(instance.exports);
+    return new ZeJson(instance.exports, scanner);
   }
 
+  /** Nomor versi numerik wasm saat ini (mis. 2026000105 = 0.1.5 era 2026).
+   *  Null bila wasm pra-v0.1.5 (export get_version tak tersedia). */
+  static get VERSION_0_1_5() { return 2026000105; }
+
+  #scannerMode;   // "auto" | "scalar" | "wide"
+  #versionNumber; // BigInt dari get_version(), atau null
+
   /** Validasi export section; wasm lama/tidak sinkron → error jelas. */
-  constructor(ex) {
+  constructor(ex, scannerMode = "auto") {
+    const VALID_SCANNERS = ["auto", "scalar", "wide"];
+    if (!VALID_SCANNERS.includes(scannerMode)) {
+      throw new Error(
+        `scanner tidak valid: '${scannerMode}' — pilih: ${VALID_SCANNERS.join(" | ")}`,
+      );
+    }
+    this.#scannerMode = scannerMode;
     for (const name of [
       "create_arena", "reset_arena", "get_arena_used_space",
       "create_session", "find_field", "array_size", "array_next",
@@ -165,12 +185,28 @@ export class ZeJson {
     }
     this.ex = ex;
 
+    // Deteksi versi + ketersediaan fitur (v0.1.5+):
+    // get_version() & create_session_with_scanner() di-export mulai
+    // ZE_JSON_VERSION_NUMBER 2026000105. WASM lama → fallback auto.
+    this.#versionNumber = typeof ex.get_version === "function"
+      ? ex.get_version() : null;
+
     // (1) Grow memory SEKALI — alamat region tidak berubah setelah ini.
     this.ensureCapacity(ARENA_BASE + ARENA_CAP);
 
     // (2) Arena dialokasi dari region tetap → handle selalu sama.
     this.arena = ex.create_arena(ARENA_BASE, ARENA_CAP);
     if (this.arena === 0n) throw new Error("create_arena gagal");
+  }
+
+  /** Nomor versi wasm (BigInt) atau null bila pra-v0.1.5. */
+  get versionNumber() { return this.#versionNumber; }
+
+  /** True bila wasm mendukung pemilihan varian scanner (v0.1.5+). */
+  get hasScannerSelection() {
+    return this.#versionNumber !== null &&
+      this.#versionNumber >= 2026000105n &&
+      typeof this.ex.create_session_with_scanner === "function";
   }
 
   // --- siklus hidup ---------------------------------------------------------
@@ -200,8 +236,20 @@ export class ZeJson {
   #openRaw(src, srcSize) {
     this.resetArena(); // buang Session & string unescape dokumen sebelumnya
 
-    const session = this.ex.create_session(
-      src, srcSize, TAPE_BASE, TAPE_ENTRIES, this.arena, ERR_REF);
+    let session;
+    if (this.hasScannerSelection && this.#scannerMode !== "auto") {
+      // v0.1.5+: varian eksplisit (SCANNER_SCALAR=1 / SCANNER_WIDE=2).
+      const SCANNER_CODE = { scalar: 1, wide: 2 };
+      session = this.ex.create_session_with_scanner(
+        src, srcSize, TAPE_BASE, TAPE_ENTRIES, this.arena,
+        SCANNER_CODE[this.#scannerMode], ERR_REF,
+      );
+    } else {
+      // Auto (default) atau wasm pra-v0.1.5: create_session fallback.
+      session = this.ex.create_session(
+        src, srcSize, TAPE_BASE, TAPE_ENTRIES, this.arena, ERR_REF,
+      );
+    }
 
     if (session === 0n) {
       const code = new DataView(this.buffer()).getInt32(Number(ERR_REF), true);

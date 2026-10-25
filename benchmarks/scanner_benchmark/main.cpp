@@ -7,11 +7,16 @@
 #include <unordered_map>
 #include <ze_json/scanner/scanner.hpp>
 
+#include <ze_json/lookups/utf8_dfa.hpp>
+#include <ze_json/utils/swar.hpp>
+
+#include "replica_integrated.hpp"
+
 namespace fs = std::filesystem;
 using namespace zuu;
 
 const fs::path DATASET_DIR =
-    fs::path(__FILE__).parent_path().parent_path().parent_path() / "dataset";
+    fs::path(__FILE__).parent_path().parent_path().parent_path() / "samples";
 
 [[nodiscard]] bool
 load_dataset(std::string& dst, const fs::path& path) {
@@ -179,3 +184,64 @@ BENCHMARK(BM_Scanner64_Synth)
     ->Unit(benchmark::kNanosecond)
     ->MinTime(30)
     ->MinWarmUpTime(3);
+
+// --- REPLIKA INTERLEAVED: pemisahan algoritma v0.1.5 -----------------------
+// Adukan varian tersimpan di library MELAWAN replika algoritma lawas
+// (Tahap 4) dalam SATU proses — satu-satunya perbandingan yang sahih
+// di rig dengan jam lintas-proses bergetar 15-45%. Baca rasio
+// library/replica: >1 berarti pemisahan mengembalikan throughput.
+// Raw name dipakai `--benchmark_filter=_Replica`.
+
+#define MAKE_REPLICA_BENCHMARK(NAME, TARGET, TARGET_PATH, FUNC)               \
+    static void BM_##NAME##_##TARGET(benchmark::State& state) {               \
+        const std::string& json = get_dataset(TARGET_PATH);                   \
+        if (json.empty()) {                                                  \
+            state.SkipWithError(                                             \
+                "Dataset gagal dimuat, benchmark dihentikan.");               \
+            return;                                                          \
+        }                                                                    \
+        std::vector<size_t> tape_idx(json.size());                            \
+        const auto validation = FUNC(                                        \
+            json.data(), json.size(), tape_idx.data(), tape_idx.size());     \
+        if (!validation) {                                                   \
+            state.SkipWithError("Replica gagal pada verifikasi awal.");       \
+            return;                                                          \
+        }                                                                    \
+        for (auto _ : state) {                                               \
+            auto res = FUNC(                                                 \
+                json.data(), json.size(), tape_idx.data(),                   \
+                tape_idx.size());                                            \
+            benchmark::DoNotOptimize(res);                                   \
+            benchmark::ClobberMemory();                                      \
+        }                                                                    \
+        state.SetBytesProcessed(                                              \
+            state.iterations() * static_cast<int64_t>(json.size()));          \
+    }                                                                        \
+    BENCHMARK(BM_##NAME##_##TARGET)                                          \
+        ->Unit(benchmark::kNanosecond)                                       \
+        ->MinTime(15)                                                        \
+        ->MinWarmUpTime(5);
+
+#if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
+// scanner8 terintegrasi (Tahap 4) — adu lawan library scanner8 pulih.
+MAKE_REPLICA_BENCHMARK(
+    Scanner8_IntegratedReplica, Synth, "jeopardy.json",
+    scanner8_integrated_replica)
+MAKE_REPLICA_BENCHMARK(
+    Scanner8_IntegratedReplica, GithubEvents, "github_events.json",
+    scanner8_integrated_replica)
+MAKE_REPLICA_BENCHMARK(
+    Scanner8_IntegratedReplica, Jeopardy, "jeopardy.json",
+    scanner8_integrated_replica)
+
+// scanner64 untyped-depth (pra-v0.1.5) — isolasi biaya kedalaman bertipe.
+MAKE_REPLICA_BENCHMARK(
+    Scanner64_UntypedReplica, Synth, "jeopardy.json",
+    scanner64_untyped_replica)
+MAKE_REPLICA_BENCHMARK(
+    Scanner64_UntypedReplica, GithubEvents, "github_events.json",
+    scanner64_untyped_replica)
+MAKE_REPLICA_BENCHMARK(
+    Scanner64_UntypedReplica, Jeopardy, "jeopardy.json",
+    scanner64_untyped_replica)
+#endif

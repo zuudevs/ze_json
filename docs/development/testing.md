@@ -21,7 +21,7 @@
 4. **Kedua sisi ABI diuji**: native (google-test) dan JS (smoke) —
    keduanya wajib hijau untuk commit perf/rilis.
 
-## Peta grup native (49 test per preset × 2 preset)
+## Peta grup native (51 test per preset × 2 preset)
 
 | Grup | Jumlah | Cakupan |
 |---|---:|---|
@@ -29,10 +29,10 @@
 | `document_test` | 2 | lapis on-demand `Document` mentah |
 | `number_test` | 3 | parser angka (int/double, tepi format) |
 | `object_test` | 5 | pencarian field, ritme kursor objek |
-| `session_test` | 4 | `Session` end-to-end: create, find+getter, drain |
+| `session_test` | 6 | `Session` end-to-end: create, find+getter, drain, **pemilihan varian scanner** (AUTO/SCALAR/WIDE setara), **version compatibility** (get_version == ZE_JSON_VERSION_NUMBER) |
 | `array_test` | 7 | traversal counted, streaming=counted, angka 0-entri, ambigu `'[]'` vs `'[1]'`, over-drain, bauran pola |
 | `path_test` | 14 | sintaks path, tipe-salah, indeks root lazy (4), indeks elemen array (4), kunci escape, dup-key pertama, nested |
-| `json_checker_test` | 3 | pembanding REFERENCE json.org (Crockford) pada korpus resmi pass*/fail* — dijalankan pada **SETIAP varian scanner** platform (scanner8; scanner64 pada LE 64-bit): pass diterima semua validator; fail ditolak reference; tiap varian hanya wajib menolak subset **struktural** (`fail2/8/32/33` — fail33 tipe-bracket-tak-cocok tertangkap depth bertipe v0.1.5) — 29 divergensi gramatikal terkunci sebagai batas desain scanner |
+| `json_checker_test` | 3 | pembanding REFERENCE json.org (Crockford) pada korpus resmi pass*/fail* — dijalankan pada **SETIAP varian scanner** platform (scanner8; scanner64 pada LE 64-bit): pass diterima semua validator; fail ditolak reference; tiap varian hanya wajib menolak subset **struktural** (`fail2/8/32/33` — fail33 tipe-bracket-tak-cocok tertangkap stack-bit v0.1.5) — 29 divergensi gramatikal terkunci sebagai batas desain scanner |
 
 Korpus `json_checker_test` + sumber reference C (domain publik) diambil
 SEKALI lewat [`scripts/invoke_JSON_checker/main.py`](../../scripts/invoke_JSON_checker/main.py)

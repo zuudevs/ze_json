@@ -54,6 +54,8 @@ ze_json/
 │   ├── core/macros.hpp     makro NOEXCEPT / EXPORT_NAME / RESTRICT
 │   └── memory/arena.hpp    bump allocator
 ├── src/                    implementasi (scanner, ondemand, C ABI, compiler_rt stub)
+│   ├── scanner/scalar.cpp   scanner8 — algoritma skalar (pass validator UTF-8 terpisah)
+│   └── scanner/parallel.cpp scanner64/scanner32 — algoritma paralel (validasi UTF-8 terintegrasi)
 ├── tests/                  8 grup uji google-test (1 kelompok = 1 folder):
 │                           scanner, document, object, number, session,
 │                           array, path, JSON_checker (reference json.org)

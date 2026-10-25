@@ -8,7 +8,8 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
 		${CMAKE_CURRENT_SOURCE_DIR}/ondemand/json_array.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/ondemand/json_object.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ondemand/json_value.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/scanner/scanner.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/scanner/scalar.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/scanner/parallel.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/ze_json.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/align.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/alloc.cpp
@@ -48,7 +49,8 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
 		${CMAKE_CURRENT_SOURCE_DIR}/ondemand/json_array.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/ondemand/json_object.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ondemand/json_value.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/scanner/scanner.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/scanner/scalar.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/scanner/parallel.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/ze_json.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/align.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/alloc.cpp

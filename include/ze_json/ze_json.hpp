@@ -1052,6 +1052,38 @@ create_session(
     zuu::types::uint64_t* RESTRICT tape, zuu::types::size_t tape_entries,
     zuu::memory::Arena* arena, zuu::types::int32_t& error) NOEXCEPT;
 
+// ============================================================================
+//  C ABI — pemilihan varian scanner + versi (gate kompatibilitas v0.1.5)
+// ============================================================================
+// Fitur di bawah hanya tersedia mulai ZE_JSON_VERSION_NUMBER 2026000105.
+// Sisi JS mendeteksi ketersediaan lewat get_version() — wasm versi lama
+// tetap kompatibel (binding jatuh ke create_session otomatis).
+
+enum ScannerVariant : zuu::types::int32_t {
+    SCANNER_AUTO   = 0, // fallback platform (LE 64-bit → paralel, lainnya skalar)
+    SCANNER_SCALAR = 1, // scanner8 — pass validator UTF-8 terpisah
+    SCANNER_WIDE   = 2, // scanner64/scanner32 — fallback skalar bila tak tersedia
+};
+
+#if ZE_JSON_VERSION_NUMBER >= 2026000105
+// create_session + varian eksplisit (SCANNER_*). Varian tak tersedia di
+// platform dipetakan ke skalar (dokumentasikan, bukan error) — hasil
+// session & tape setara antar varian.
+EXPORT_NAME(create_session_with_scanner)
+[[nodiscard]] zuu::api::Session*
+create_session_with_scanner(
+    const char* const RESTRICT src, zuu::types::size_t src_size,
+    zuu::types::uint64_t* RESTRICT tape, zuu::types::size_t tape_entries,
+    zuu::memory::Arena* arena, zuu::types::int32_t variant,
+    zuu::types::int32_t& error) NOEXCEPT;
+
+// Nomor versi numerik (mis. 2026000105 = 0.1.5 era 2026) — bahan deteksi
+// fitur runtime bagi konsumen wasm yang tak bisa membaca makro.
+EXPORT_NAME(get_version)
+[[nodiscard]] zuu::types::int32_t
+get_version() NOEXCEPT;
+#endif
+
 // Cari field pada object root. Mengembalikan 1 jika ketemu, 0 jika tidak
 // (sesudah 0, kursor berada di akhir object — session ini habis dipakai,
 // buat session baru untuk mencari ulang atau reset arena dan mulai lagi).

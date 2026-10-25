@@ -91,11 +91,15 @@ scanner32(
 //  IMPLEMENTASI SESSION API
 // ============================================================================
 
-zuu::api::Session*
-create_session(
+// Helper: bangun Session dengan PILIHAN varian eksplisit (internal).
+// 0 = skalar (scanner8); 1 = paralel 64-bit; 2 = paralel 32-bit.
+namespace {
+[[nodiscard]] zuu::api::Session*
+make_session(
     const char* const RESTRICT src, zuu::types::size_t src_size,
     zuu::types::uint64_t* RESTRICT tape, zuu::types::size_t tape_entries,
-    zuu::memory::Arena* arena, zuu::types::int32_t& error) NOEXCEPT {
+    zuu::memory::Arena* arena, zuu::types::int32_t scanner_choice,
+    zuu::types::int32_t& error) NOEXCEPT {
     if (!arena) [[unlikely]] {
         error = static_cast<zuu::types::int32_t>(zuu::api::INSUFFICIENT_BUFFER);
         return nullptr;
@@ -106,16 +110,43 @@ create_session(
         return nullptr;
     }
 
+    // Pilih varian sesuai platform + pilihan pemanggil.
+    zuu::types::Result<zuu::types::size_t, zuu::core::JsonErrc> scan_res{
+        zuu::types::Unexpected{zuu::core::JsonErrc::InvalidJson}};
 #if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
-    // LE 64-bit: pilih scanner64 — pemindaian string SWAR per blok 8 byte,
-    // format tape identik dengan scanner8 (offset uint64 dari awal src).
-    auto scan_res = zuu::scanner::scanner64(
+    if (scanner_choice == 1) {
+        // LE 64-bit: scanner64 — pemindaian string SWAR per blok 8 byte,
+        // validasi UTF-8 terintegrasi; format tape identik scanner8.
+        scan_res = zuu::scanner::scanner64(
+            src, src_size,
+            reinterpret_cast<zuu::types::size_t* const RESTRICT>(tape),
+            tape_entries);
+    } else {
+        scan_res = zuu::scanner::scanner8(
+            src, src_size,
+            reinterpret_cast<zuu::types::size_t* const RESTRICT>(tape),
+            tape_entries);
+    }
+#elif __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 0
+    if (scanner_choice == 2) {
+        // LE 32-bit: scanner32 (paralel; hanya lewat WIDE eksplisit).
+        scan_res = zuu::scanner::scanner32(
+            src, src_size,
+            reinterpret_cast<zuu::types::size_t* const RESTRICT>(tape),
+            tape_entries);
+    } else {
+        scan_res = zuu::scanner::scanner8(
+            src, src_size,
+            reinterpret_cast<zuu::types::size_t* const RESTRICT>(tape),
+            tape_entries);
+    }
 #else
-    auto scan_res = zuu::scanner::scanner8(
-#endif
+    // Big-endian: hanya skalar tersedia.
+    scan_res = zuu::scanner::scanner8(
         src, src_size,
         reinterpret_cast<zuu::types::size_t* const RESTRICT>(tape),
         tape_entries);
+#endif
     if (!scan_res.has_value()) [[unlikely]] {
         error = errc_to_status(scan_res);
         return nullptr;
@@ -135,6 +166,55 @@ create_session(
 
     return session;
 }
+} // namespace
+
+zuu::api::Session*
+create_session(
+    const char* const RESTRICT src, zuu::types::size_t src_size,
+    zuu::types::uint64_t* RESTRICT tape, zuu::types::size_t tape_entries,
+    zuu::memory::Arena* arena, zuu::types::int32_t& error) NOEXCEPT {
+    // AUTO (kontrak lama): LE 64-bit → paralel (scanner64); selainnya
+    // skalar — termasuk LE 32-bit (scanner32 hanya lewat pilihan eksplisit).
+#if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
+    constexpr zuu::types::int32_t kAutoChoice = 1;
+#else
+    constexpr zuu::types::int32_t kAutoChoice = 0;
+#endif
+    return make_session(
+        src, src_size, tape, tape_entries, arena, kAutoChoice, error);
+}
+
+#if ZE_JSON_VERSION_NUMBER >= 2026000105
+zuu::api::Session*
+create_session_with_scanner(
+    const char* const RESTRICT src, zuu::types::size_t src_size,
+    zuu::types::uint64_t* RESTRICT tape, zuu::types::size_t tape_entries,
+    zuu::memory::Arena* arena, zuu::types::int32_t variant,
+    zuu::types::int32_t& error) NOEXCEPT {
+    // Peta varian → pilihan platform. Varian yang tak tersedia jatuh ke
+    // skalar (dokumentasi kontrak, bukan error) — hasil session setara.
+    zuu::types::int32_t choice = 0;
+#if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
+    if (variant == SCANNER_WIDE || variant == SCANNER_AUTO) {
+        choice = 1;
+    }
+#elif __LITTLE_ENDIAN__ == 1
+    if (variant == SCANNER_WIDE) {
+        choice = 2; // scanner32 hanya lewat WIDE eksplisit (AUTO tetap skalar)
+    }
+#else
+    // Big-endian: hanya skalar tersedia — apapun variannya.
+    (void)variant;
+#endif
+    return make_session(
+        src, src_size, tape, tape_entries, arena, choice, error);
+}
+
+zuu::types::int32_t
+get_version() NOEXCEPT {
+    return ZE_JSON_VERSION_NUMBER;
+}
+#endif
 
 zuu::types::int32_t
 find_field(
