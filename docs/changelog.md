@@ -6,9 +6,11 @@ versi mengikuti [SemVer](https://semver.org/). Rilis npm
 
 ## [Belum dirilis]
 
+## [0.1.4] — 2026-10-25
+
 ### Ditambahkan
 
-- **Metadata versi tersinkron**: `project(VERSION 0.1.3)` di
+- **Metadata versi tersinkron**: `project(VERSION 0.1.4)` di
   `CMakeLists.txt` + `vcpkg.json` + `js/package.json`;
   `include/ze_json/version.hpp` DIGENERASI saat configure dari
   `cmake/templates/version.hpp.in` via `cmake/modules/generator.cmake`
@@ -140,7 +142,8 @@ Rilis perdana.
   skrip agregasi metrik (JSON/Markdown ter-commit di `out/results/`).
 - README bilingual (id/en), lisensi MIT.
 
-[Belum dirilis]: https://github.com/zuudevs/ze_json/compare/v0.1.3...HEAD
+[Belum dirilis]: https://github.com/zuudevs/ze_json/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/zuudevs/ze_json/releases/tag/v0.1.4
 [0.1.3]: https://github.com/zuudevs/ze_json/releases/tag/v0.1.3
 [0.1.2]: https://github.com/zuudevs/ze_json/releases/tag/v0.1.2
 [0.1.1]: https://github.com/zuudevs/ze_json/releases/tag/v0.1.1
