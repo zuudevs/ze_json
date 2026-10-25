@@ -4,7 +4,37 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/);
 versi mengikuti [SemVer](https://semver.org/). Rilis npm
 `@zuudevs/ze-json` diterbitkan lewat CI pada tag `v*`.
 
-## [Belum dirilis]
+## [Belum dirilis] — 0.1.5-wip
+
+### Diperbaiki
+
+- **Kedalaman bracket BERTIPE** di `scanner8`/`scanner64` (per
+  `langdale_parsing_2019` §3.2): satu counter per JENIS `{`/`}` dan
+  `[`/`]` — penutupan jenis yang salah (mis. `["mismatch"}`, fail33
+  json.org) ditolak seketika sebagai underflow jenis; akhir payload
+  menuntut kedua counter nol. Batas terdokumentasi: saling-silang
+  `[{]}` tetap lolos (dua counter tak melacak urutan — ranah stack
+  scope tahap-2). Guard performa: delta hanya pada karakter
+  struktural, di bawah lantai noise rig ±20–25%
+  (`tahap5_typedepth_guard*.json`).
+- `json_checker_test` kini menjalankan SETIAP varian scanner platform
+  (scanner8; scanner64 pada LE 64-bit) — fail33 pindah ke subset
+  struktural (4 file), 29 divergensi gramatikal tetap terkunci.
+
+### Aturan
+
+- **Setiap fix/fitur diawali bump versi di `CMakeLists.txt`** (lalu
+  `vcpkg.json` + `js/package.json` + regenerate `version.hpp`) —
+  dicantumkan di `docs/development/workflow.md`.
+
+### Ditambahkan
+
+- `docs/architecture/e2e-flow.md` — alur E2E dua tahap dipetakan ke
+  `langdale_parsing_2019` (tahap-1 struktural + UTF-8 terintegrasi →
+  tahap-2 on-demand per `keiser_-demand_2024`) dengan sitasi ke
+  `references/cites.bib`; README id/en mengindeks.
+- `tests/scanner_test`: +1 aseri kesetaraan lintas varian untuk
+  mismatch jenis + batas saling-silang (49 test per preset kini).
 
 ## [0.1.4] — 2026-10-25
 

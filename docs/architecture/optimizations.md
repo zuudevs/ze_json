@@ -113,7 +113,7 @@ kini lewat jalur `encodeInto`).
 
 ## Regresi menjaga tiap tahap
 
-Setiap tahap diiringi uji regresi: **48 test native per preset** (8 grup —
+Setiap tahap diiringi uji regresi: **49 test native per preset** (8 grup —
 scanner 10, document 2, number 3, object 5, session 4, array 7, path 14)
 dan **40 asersi smoke JS**. Tahap 2: +4 aseri path; tahap 3: +4 aseri
 array; tahap 4: +2 scanner (sekuens multibyte terbelah batas blok) +4 path

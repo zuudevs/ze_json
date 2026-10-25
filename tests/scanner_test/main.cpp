@@ -204,6 +204,56 @@ TEST_F(ScannerTest, Scanner64TapeMatchesScanner8) {
     EXPECT_EQ(big_tape8, big_tape64);
 }
 
+TEST_F(ScannerTest, BracketTypeMismatchRejectedByBothScanners) {
+    // Kedalaman bracket BERTIPE (Langdale & Lemire 2019 §3.2): '{' wajib
+    // ditutup '}', '[' wajib ']' — penutupan jenis salah ditolak SEKETIKA
+    // sebagai underflow jenis (fail33 json.org kini tertangkap).
+    const std::string_view mismatches[] = {
+        R"(["mismatch"})", // '}' menutup '['
+        "{]",              // ']' menutup '{'
+        "[}",              // '}' menutup '['
+        R"({"a":[1})",     // '}' melintasi array: '[' menggantung di akhir
+        R"(["x"]})",       // ']' ekstra setelah array tertutup
+    };
+
+    for (const auto& json : mismatches) {
+        auto [ok8, _8]   = run_scanner(json);
+        auto [ok64, _64] = run_scanner64(json);
+        EXPECT_FALSE(ok8) << "scanner8 malah lolos: " << json;
+        EXPECT_FALSE(ok64) << "scanner64 malah lolos: " << json;
+    }
+
+    // Batas desain TERDOKUMENTASI: saling-silang seperti [{]} — jumlah
+    // per JENIS seimbang — tidak terdeteksi dua counter (ranah stack
+    // scope tahap-2, per paper §3.2). Kedua varian wajib SETUJU agar
+    // kontrak lintas varian identik.
+    const std::string_view interleaved[] = {
+        "[{]}",
+        R"([{"b":1]})",
+    };
+    for (const auto& json : interleaved) {
+        auto [ok8, _8]   = run_scanner(json);
+        auto [ok64, _64] = run_scanner64(json);
+        EXPECT_EQ(ok8, ok64) << "varian tak setuju: " << json;
+        EXPECT_TRUE(ok8) << "interleave wajib konsisten-lolos (batas 2 "
+                          "counter): "
+                        << json;
+    }
+
+    // Nesting campuran yang sah tetap diterima kedua varian.
+    const std::string_view balanced[] = {
+        R"({"a":[1,{"b":[2]}]})",
+        R"([[{"c":{"d":[]}}]])",
+    };
+    for (const auto& json : balanced) {
+        auto [ok8, tape8]   = run_scanner(json);
+        auto [ok64, tape64] = run_scanner64(json);
+        ASSERT_TRUE(ok8) << json;
+        ASSERT_TRUE(ok64) << json;
+        EXPECT_EQ(tape8, tape64) << json;
+    }
+}
+
 TEST_F(ScannerTest, Scanner64ErrorsMatchScanner8) {
     // Kontrak kebalikan: payload yang ditolak scanner8 wajib ditolak
     // scanner64 dengan keputusan yang sama (wajib sama-sama gagal).

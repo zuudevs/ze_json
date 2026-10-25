@@ -37,13 +37,17 @@ scanner8(
     auto cursor           = dst;
     const auto end_cursor = dst + dst_size;
 
-    // Kedalaman bracket: melampaui scan oleh-oleh, semua kontainer wajib
-    // berpasangan — tape tidak bisa dibuat dari payload terpotong.
-    types::int64_t depth = 0;
+    // Kedalaman bracket BERTIPE (Langdale & Lemire 2019 §3.2: kontainer
+    // dibuka '{' wajib ditutup '}', '[' wajib ditutup ']'): satu counter
+    // per JENIS bracket — penutupan jenis yang salah terdeteksi SEKETIKA
+    // sebagai underflow jenis, bukan hanya saat akhir payload (dahulu
+    // satu counter agregat membiarkan ["mismatch"} lolos).
+    // Batas desain: saling-silang seperti [{]} tetap lolos — dua counter
+    // tak melacak URUTAN; itu ranah stack scope tahap-2 (paper §3.2).
+    types::int64_t curly_depth  = 0;
+    types::int64_t square_depth = 0;
 
-    // State DFA UTF-8 (0 = ACCEPT): validasi menumpang jalan scanner —
-    // byte non-ASCII / state di tengah sekuens wajib melangkah DFA;
-    // byte ASCII dari state ACCEPT gratis (transisi no-op).
+    // State DFA UTF-8 (0 = ACCEPT) — validasi menumpang jalan scanner.
     types::uint32_t utf8 = 0;
 
     while (ptr < end && cursor < end_cursor) {
@@ -73,13 +77,24 @@ scanner8(
             lookups::kStructural[static_cast<types::uint8_t>(*ptr)];
 
         if (flags & lookups::PAIR_CLOSE) {
-            // Tutup tanpa pasangan buka → JSON bermata.
-            if (depth == 0) {
-                return types::Unexpected{core::JsonErrc::InvalidJson};
+            // Tutup tanpa pasangan buwa JENIS yang sama → JSON bermata.
+            if (*ptr == '}') {
+                if (curly_depth == 0) {
+                    return types::Unexpected{core::JsonErrc::InvalidJson};
+                }
+                curly_depth--;
+            } else { // ']' — satu-satunya PAIR_CLOSE lain
+                if (square_depth == 0) {
+                    return types::Unexpected{core::JsonErrc::InvalidJson};
+                }
+                square_depth--;
             }
-            depth--;
         } else if (flags & lookups::PAIR_OPEN) {
-            depth++;
+            if (*ptr == '{') {
+                curly_depth++;
+            } else { // '['
+                square_depth++;
+            }
         }
 
         if (flags & lookups::SCAN_NORMAL) {
@@ -129,7 +144,7 @@ scanner8(
     }
 
     // Wajib semua bracket tertutup: input terpotong (depth > 0) ditolak.
-    if (depth != 0) {
+    if (curly_depth != 0 || square_depth != 0) {
         return types::Unexpected{core::JsonErrc::InvalidJson};
     }
 
@@ -159,9 +174,10 @@ scanner64(
     auto cursor           = dst;
     const auto end_cursor = dst + dst_size;
 
-    // Kedalaman bracket: melampaui scan oleh-oleh, semua kontainer wajib
-    // berpasangan — tape tidak bisa dibuat dari payload terpotong.
-    types::int64_t depth = 0;
+    // Kedalaman bracket BERTIPE — komentar lengkap lihat scanner8
+    // (Langdale & Lemire 2019 §3.2; satu counter per jenis bracket).
+    types::int64_t curly_depth  = 0;
+    types::int64_t square_depth = 0;
 
     // State DFA UTF-8 (0 = ACCEPT) — validasi menumpang jalan scanner.
     types::uint32_t utf8 = 0;
@@ -192,13 +208,24 @@ scanner64(
         const auto flags =
             lookups::kStructural[static_cast<types::uint8_t>(*ptr)];
         if (flags & lookups::PAIR_CLOSE) {
-            // Tutup tanpa pasangan buka → JSON mati.
-            if (depth == 0) {
-                return types::Unexpected{core::JsonErrc::InvalidJson};
+            // Tutup tanpa pasangan buwa JENIS yang sama → JSON mati.
+            if (*ptr == '}') {
+                if (curly_depth == 0) {
+                    return types::Unexpected{core::JsonErrc::InvalidJson};
+                }
+                curly_depth--;
+            } else { // ']' — satu-satunya PAIR_CLOSE lain
+                if (square_depth == 0) {
+                    return types::Unexpected{core::JsonErrc::InvalidJson};
+                }
+                square_depth--;
             }
-            depth--;
         } else if (flags & lookups::PAIR_OPEN) {
-            depth++;
+            if (*ptr == '{') {
+                curly_depth++;
+            } else { // '['
+                square_depth++;
+            }
         }
 
         if (flags & lookups::SCAN_NORMAL) {
@@ -302,7 +329,7 @@ scanner64(
     }
 
     // Wajib semua bracket tertutup: input terpotong (depth > 0) ditolak.
-    if (depth != 0) {
+    if (curly_depth != 0 || square_depth != 0) {
         return types::Unexpected{core::JsonErrc::InvalidJson};
     }
 

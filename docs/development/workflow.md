@@ -83,7 +83,9 @@ flowchart LR
 
 Aturan rilis (diperbarui sejak v0.1.4-rc — versi kini TERSINKRON di tiga titik):
 
-- **Bump versi di tiga tempat** + satu artefak tergenerasi:
+- **Bump versi di tiga tempat** + satu artefak tergenerasi — dan
+  **setiap fix/fitur diawali bump versi di `CMakeLists.txt` DULU**
+  (aturan sejak v0.1.5), menyusul dua titik lain:
   1. `CMakeLists.txt` — `project(ze_json VERSION x.y.z)`
   2. `js/package.json` — `version`
   3. `vcpkg.json` — `version`

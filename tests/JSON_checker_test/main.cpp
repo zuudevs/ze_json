@@ -9,13 +9,19 @@
 // METODOLOGI JUJUR — ranah kedua validator BERBEDA:
 //   - JSON_checker = state machine GRAMATIKAL penuh (kutip kunci, sintaks
 //     nilai, escape legal, kontrol dalam string, kedalaman, tipe akar).
-//   - scanner ze_json = validator STRUKTURAL (keseimbangan bracket, kutip
-//     string utuh + pasangan escape, UTF-8 terintegrasi) — sintaks nilai
-//     sengaja BUKAN ranahnya (dibaca on-demand; lihat docs/architecture).
+//   - scanner ze_json = validator STRUKTURAL (keseimbangan bracket BERTIPE
+//     sejak v0.1.5 — objek '{' wajib ditutup '}', array '[' wajib ']',
+//     per Langdale & Lemire 2019 §3.2; kutip string utuh + pasangan
+//     escape; UTF-8 terintegrasi) — sintaks nilai sengaja BUKAN ranahnya
+//     (dibaca on-demand; lihat docs/architecture).
 // Konsekuensi: file fail yang invalid secara gramatikal DIHARAPKAN lolos
 // scanner; hanya subset struktural (kStructuralFails) yang wajib ditolak.
 // Batas desain ini DIKUNCI oleh asersi — bila validasi gramatikal ditambah
 // kelak, pindahkan file dari divergensi ke kStructuralFails.
+//
+// SEMUA varian scanner platform ini diperiksa: scanner8 selalu; scanner64
+// pada LE 64-bit (scanner32 fallback 32-bit tak dikompilasi di sini —
+// kesetaraan format tape lintas varian dijaga scanner_test).
 #include <gtest/gtest.h>
 
 #include <algorithm>
@@ -117,38 +123,66 @@ class JsonCheckerTest : public ::testing::Test {
         return valid;
     }
 
-    // Verdict scanner ze_json — struktural: keseimbangan bracket, kutip
-    // string, escape berpasangan, UTF-8. Tape dialokasikan longgar
-    // (1 entry per byte payload = batas atas aman) lalu arena di-reset.
+    // Varian scanner yang tersedia di platform ini.
+    static std::vector<std::string_view>
+    scannerVariants() {
+        std::vector<std::string_view> variants = {"scanner8"};
+#if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
+        variants.push_back("scanner64");
+#endif
+        return variants;
+    }
+
+    // Verdict satu varian scanner — struktural: keseimbangan bracket
+    // BERTIPE, kutip string, escape berpasangan, UTF-8. Tape dialokasikan
+    // longgar (1 entry per byte payload = batas atas aman) lalu arena
+    // di-reset.
     bool
-    scannerAccepts(const std::string& content) {
+    scannerAccepts(std::string_view variant, const std::string& content) {
         auto* tape = static_cast<types::size_t*>(arena_handle->allocate(
             content.length() * sizeof(types::size_t), sizeof(types::size_t)));
         if (!tape) [[unlikely]] {
             return false;
         }
-        const auto result = scanner::scanner8(
-            content.data(), content.length(), tape, content.length());
+        bool accepted = false;
+        if (variant == "scanner8") {
+            accepted = scanner::scanner8(
+                           content.data(), content.length(), tape,
+                           content.length())
+                           .has_value();
+        }
+#if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
+        else if (variant == "scanner64") {
+            accepted = scanner::scanner64(
+                           content.data(), content.length(), tape,
+                           content.length())
+                           .has_value();
+        }
+#endif
         arena_handle->reset();
-        return result.has_value();
+        return accepted;
     }
 
-    // File fail yang invalid secara STRUKTURAL — scanner WAJIB menolak.
-    // Terukur dari korpus: bracket tanpa pasangan (buka-tanpa-tutup /
-    // tutup-tanpa-buka). 30 file sisanya invalid GRAMATIKAL.
+    // File fail yang invalid secara STRUKTURAL — SETIAP varian scanner
+    // WAJIB menolak. Terukur dari korpus: bracket tanpa pasangan JENIS
+    // yang sama (buka-tanpa-tutup / tutup-tanpa-buka / tipe tak cocok —
+    // fail33 kini tertangkap depth-counter bertipe v0.1.5).
+    // 29 file sisanya invalid GRAMATIKAL.
     static const std::set<std::string>&
     structuralFails() {
         static const std::set<std::string> fails = {
             "fail2.json",  // ["Unclosed array" — '[' tanpa ']'
             "fail8.json",  // ["Extra close"]] — ']' tanpa pembuka
             "fail32.json", // {"Comma instead if closing brace": true, — '{' tanpa '}'
+            "fail33.json", // ["mismatch"} — '}' menutup '[' (tipe tak cocok)
         };
         return fails;
     }
 };
 
 TEST_F(JsonCheckerTest, PassCorpusAcceptedByBoth) {
-    // Kontrak korpus: pass*.json wajib diterima REFERENCE dan scanner.
+    // Kontrak korpus: pass*.json wajib diterima REFERENCE dan SETIAP
+    // varian scanner.
     const auto samples = getCorpusByPrefix("pass");
     ASSERT_FALSE(samples.empty())
         << "Korpus pass*.json tidak ditemukan — jalankan "
@@ -158,8 +192,11 @@ TEST_F(JsonCheckerTest, PassCorpusAcceptedByBoth) {
         const std::string content = readFile(sample);
         EXPECT_TRUE(isValidJson(content))
             << "REFERENCE malah menolak: " << sample;
-        EXPECT_TRUE(scannerAccepts(content))
-            << "Scanner menolak file VALID: " << sample;
+        for (const auto variant : scannerVariants()) {
+            SCOPED_TRACE(variant);
+            EXPECT_TRUE(scannerAccepts(variant, content))
+                << "Scanner menolak file VALID: " << sample;
+        }
     }
 }
 
@@ -177,24 +214,29 @@ TEST_F(JsonCheckerTest, FailCorpusRejectedByReference) {
 }
 
 TEST_F(JsonCheckerTest, FailCorpusScannerRejectsStructuralOnly) {
-    // Klasifikasi terkunci (bukti empiris, bukan tebak): scanner hanya
-    // menolak subset struktural. Divergensi lain — kunci tak berkutip,
-    // koma ekstra, angka ilegal (013/0x14/0e), escape liar (\x15/\017),
-    // kontrol mentah dalam string, kedalaman >20, tipe akar bukan
-    // object/array, bahkan tipe bracket tak cocok dengan jumlah seimbang
-    // ("fail33": ["mismatch"} — kandidat perbaikan depth-counter bertipe)
-    // — semuanya di luar ranah scanner struktural BY DESIGN.
-    for (const auto& sample : getCorpusByPrefix("fail")) {
-        const auto name = sample.filename().string();
-        const bool accepted = scannerAccepts(readFile(sample));
-        if (structuralFails().contains(name)) {
-            EXPECT_FALSE(accepted) << "Invalid struktural wajib ditolak: " << name;
-        } else {
-            EXPECT_TRUE(accepted)
-                << "Divergensi baru — periksa apakah validasi scanner "
-                   "diperluas (pindahkan ke structuralFails bila memang "
-                   "perbaikan): "
-                << name;
+    // Klasifikasi terkunci (bukti empiris, bukan tebak): SETIAP varian
+    // scanner hanya menolak subset struktural. Divergensi lain — kunci
+    // tak berkutip, koma ekstra, angka ilegal (013/0x14/0e), escape liar
+    // (\x15/\017), kontrol mentah dalam string, kedalaman >20, tipe akar
+    // bukan object/array — semuanya di luar ranah scanner struktural
+    // BY DESIGN (saling-silang [{]} juga lolos: dua counter tak melacak
+    // URUTAN — ranah stack scope tahap-2, per Langdale & Lemire 2019
+    // §3.2).
+    for (const auto variant : scannerVariants()) {
+        SCOPED_TRACE(variant);
+        for (const auto& sample : getCorpusByPrefix("fail")) {
+            const auto name = sample.filename().string();
+            const bool accepted = scannerAccepts(variant, readFile(sample));
+            if (structuralFails().contains(name)) {
+                EXPECT_FALSE(accepted)
+                    << "Invalid struktural wajib ditolak: " << name;
+            } else {
+                EXPECT_TRUE(accepted)
+                    << "Divergensi baru — periksa apakah validasi scanner "
+                       "diperluas (pindahkan ke structuralFails bila memang "
+                       "perbaikan): "
+                    << name;
+            }
         }
     }
 }

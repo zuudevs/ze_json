@@ -79,6 +79,22 @@ versi validator-terpisah (galit yang lebih dulu dijangkau jalan pemindaian
 yang menang; dulu UTF-8 selalu menang karena divalidasi lebih dulu).
 Keduanya tetap ditolak — hanya prioritas statusnya yang bisa berbeda.
 
+## Validasi scope bertipe (v0.1.5)
+
+Dahulu kedalaman bracket memakai satu counter agregat: jumlah `{}[]`
+yang seimbang dianggap cukup — `["mismatch"}` (penutup jenis salah,
+jumlah seimbang) lolos. Kini **satu counter per JENIS**: `{`/`}` dan
+`[`/`]` dihitung terpisah; penutupan jenis yang salah ditolak SEKETIKA
+sebagai *underflow jenis* (per `langdale_parsing_2019` §3.2 — objek
+dibuka `{` wajib ditutup `}`, array `[` wajib `]`), dan akhir payload
+menuntut kedua counter nol.
+
+Batas terdokumentasi: saling-silang `[{]}` (jumlah per jenis seimbang,
+urutan salah) tetap lolos — dua counter tak melacak urutan; itu ranah
+stack scope tahap-2 (lihat [e2e-flow.md](e2e-flow.md)). Dikunci oleh
+`scanner_test` (kedua varian wajib setuju) dan `json_checker_test`
+(fail33 kini subset struktural).
+
 ## Kontrak galat scanner
 
 | Kondisi | Status |
@@ -86,6 +102,7 @@ Keduanya tetap ditolak — hanya prioritas statusnya yang bisa berbeda.
 | Pointer null / ukuran kosong | `INVALID_JSON` |
 | Buffer tape kurang | `INSUFFICIENT_BUFFER` |
 | Bracket tak seimbang (terpotong / tutup berlebih) | `INVALID_JSON` |
+| Bracket TAK COCOK JENISNYA (`{` ditutup `]` dst., v0.1.5) | `INVALID_JSON` |
 | Kutip tanpa penutup / escape di ujung payload | `UNEXPECTED_QUOTE` |
 | UTF-8 rusak (DFA REJECT / sekuens terpotong di akhir) | `INVALID_UTF8` |
 | Lolos semua | jumlah entri tape ditulis ke `result`, status `OK` |

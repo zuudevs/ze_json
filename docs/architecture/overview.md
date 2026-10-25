@@ -101,6 +101,7 @@ ze_json/
 
 ## Berkas terkait
 
+- [e2e-flow.md](e2e-flow.md) — alur E2E dua tahap (referensi paper + sitasi)
 - [scanner.md](scanner.md) — pemindaian, SWAR, format tape, validasi UTF-8
 - [session.md](session.md) — kursor, traversal array, path query
 - [optimizations.md](optimizations.md) — 4 tahap optimasi + bukti benchmark

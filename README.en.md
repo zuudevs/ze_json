@@ -6,7 +6,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![C++](https://img.shields.io/badge/C%2B%2B-23-blue)
-![Tests](https://img.shields.io/badge/tests-48%2F48%20passing%20per%20preset-success)
+![Tests](https://img.shields.io/badge/tests-49%2F49%20passing%20per%20preset-success)
 ![Node](https://img.shields.io/badge/Node-24%2B%20%28memory64%29-brightgreen)
 
 *This document is also available in [Bahasa Indonesia](README.md).*
@@ -76,7 +76,8 @@ The detailed documentation set lives under [`docs/`](docs)
 | Document | Contents |
 |---|---|
 | [docs/architecture/overview.md](docs/architecture/overview.md) | overview, pipeline, repo layout, design principles, limitations |
-| [docs/architecture/scanner.md](docs/architecture/scanner.md) | SWAR scanner, tape format, integrated UTF-8 validation |
+| [docs/architecture/e2e-flow.md](docs/architecture/e2e-flow.md) | two-stage E2E flow per `langdale_parsing_2019` + citations from `references/cites.bib` (in Indonesian) |
+| [docs/architecture/scanner.md](docs/architecture/scanner.md) | SWAR scanner, tape format, integrated UTF-8 validation, typed bracket depth |
 | [docs/architecture/session.md](docs/architecture/session.md) | forward-only cursor, array traversal (counted/streaming), path queries |
 | [docs/architecture/optimizations.md](docs/architecture/optimizations.md) | 4-stage optimization + benchmark evidence + JS size sweep |
 | [docs/architecture/js-binding.md](docs/architecture/js-binding.md) | wasm64 memory layout, binding contract, npm package |
@@ -93,7 +94,7 @@ The detailed documentation set lives under [`docs/`](docs)
 # Benchmark corpus: samples/ submodule (simdjson ~61 MB)
 git clone --recurse-submodules https://github.com/zuudevs/ze_json.git
 
-node scripts/test_metrics.js native-debug native-release   # 48 tests × 2 presets
+node scripts/test_metrics.js native-debug native-release   # 49 tests × 2 presets
 node scripts/benchmark_metrics.js native-release           # 3 groups, 69 benchmarks
 cd js && npm test                                          # 40 smoke assertions
 node benchmark/sizes.mjs                                   # size sweep vs JSON.parse
