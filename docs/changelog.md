@@ -4,54 +4,36 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/);
 versi mengikuti [SemVer](https://semver.org/). Rilis npm
 `@zuudevs/ze-json` diterbitkan lewat CI pada tag `v*`.
 
-## [Belum dirilis] — 0.1.5-wip
+## [Belum dirilis]
+
+## [0.1.6] — 2026-10-26
 
 ### Diperbaiki
 
-- **Kedalaman bracket BERTIPE via STACK-BIT** di scanner8/scanner64/scanner32
-  (per `langdale_parsing_2019` §3.2): satu shift + XOR per bracket pada
-  jalur struktural — penutupan jenis yang salah ditolak seketika, dan
-  saling-silang `[{]}` PUN tertangkap (peningkatan atas dua-counter yang
-  hanya melacak jenis per jenis tanpa urutan). Semua varian scanner
-  menggunakan algoritma stack-bit yang identik.
-- **Pemisahan algoritma scanner skalar vs paralel** (scalar.cpp +
-  parallel.cpp): scanner8 kembali ke arsitektur pass-validator UTF-8
-  TERPISAH (bukan DFA inline per-byte Tahap 4 yang menggerus throughput
-  −27..43%); scanner64/scanner32 mempertahankan validasi terintegrasi.
-  Bukti interleaved `scanner_separation_proof.json`: scanner8 **×1,9**
-  lebih cepat dari replika Tahap-4.
-- `json_checker_test` kini menjalankan SETIAP varian scanner platform
-  (scanner8; scanner64 pada LE 64-bit) — fail33 pindah ke subset
-  struktural (4 file), 29 divergensi gramatikal tetap terkunci.
-- scanner32 (fallback 32-bit) kini membawa kedalaman bertipe + validasi
-  bracket (dahulu TANPA validasi bracket sama sekali).
+- **Revert goto-based automaton** (PR #2 → #3): goto state machine memberikan
+  validasi gramatikal penuh (20/33 file fail json.org tertolak) tetapi
+  menggerus throughput berat (S64 Jeopardy 1423 → 511 Mi/s). Kembali ke
+  arsitektur stack-bit + SWAR dari PR #1 — throughput pulih (S64 Jeopardy
+  1252 Mi/s, +145% dari goto).
+  Pelajaran: goto automaton paper (Langdale & Lemire 2019) adalah untuk
+  Stage 2 (parser atas indeks), bukan Stage 1 (scanner) — menggabungkan
+  keduanya = overhead di jalur panas.
 
-### Ditambahkan
+### Dipertahankan dari PR #1–#2
 
-- **Pemilihan varian scanner dari JS**: `ZeJson.load({ scanner:
-  "auto" | "scalar" | "wide" })` — default "auto" (fallback platform,
-  LE 64-bit → paralel). Variannya SCANNER_SCALAR/SCANNER_WIDE;
-  ketersediaan dideteksi lewat `hasScannerSelection` + `versionNumber`.
-- **Version compatibility feature**: `ZE_JSON_VERSION_NUMBER` macro
-  (epoch 2026 + semver → mis. 2026000105 = 0.1.5) di version.hpp.in;
-  export `get_version()` → JS `ze.versionNumber`; fitur baru
-  di-gate `#if ZE_JSON_VERSION_NUMBER >= 2026000105`.
-- `create_session_with_scanner` C ABI — pemilihan varian eksplisit
-  (SCANNER_AUTO/SCALAR/WIDE); varian tak tersedia di platform jatuh
-  ke skalar (bukan error — hasil session setara).
-- `docs/architecture/e2e-flow.md` — alur E2E dua tahag dipetakan ke
-  `langdale_parsing_2019` (tahap-1 struktural + UTF-8 terintegrasi →
-  tahap-2 on-demand per `keiser_-demand_2024`) dengan sitasi ke
-  `references/cites.bib`.
-- `benchmarks/scanner_benchmark/replica_integrated.hpp` — replika
-  algoritma Tahap-4 (scanner8 terintegrasi + scanner64 untyped) untuk
-  pembanding interleaved yang permanen.
-
-### Aturan
-
-- **Setiap fix/fitur diawali bump versi di `CMakeLists.txt`** (lalu
-  `vcpkg.json` + `js/package.json` + regenerate `version.hpp`) —
-  dicantumkan di `docs/development/workflow.md`.
+- Pemisahan algoritma scanner: `scalar.cpp` (scanner8, validator UTF-8
+  terpisah) vs `parallel.cpp` (scanner64/32, UTF-8 terintegrasi SWAR).
+- Stack-bit bracket validation: `["mismatch"}` dan `[{]}` tertolak.
+- `ALIGNED(val)` macro di `macros.hpp` (typo `__attributes__` diperbaiki).
+- Scanner variant selection: `create_session_with_scanner(SCANNER_AUTO/SCALAR/WIDE)` +
+  `ZeJson.load({ scanner: "auto"|"scalar"|"wide" })`.
+- Version compatibility: `ZE_JSON_VERSION_NUMBER` (2026000106 = 0.1.6) +
+  `get_version()` ABI → JS `ze.versionNumber` / `ze.hasScannerSelection`.
+- Scanner32 kini membawa validasi bracket (dahulu TANPA validasi sama sekali).
+- `json_checker_test` lintas varian scanner + replika interleaved sentinel.
+- Submodule `samples/`, notebook analisis, dokumentasi modular + Mermaid.
+- `docs/architecture/e2e-flow.md` + `benchmarks/scanner_benchmark/replica_integrated.hpp`.
+- Aturan: setiap fix diawali bump versi di `CMakeLists.txt`.
 
 ## [0.1.4] — 2026-10-25
 
@@ -189,7 +171,8 @@ Rilis perdana.
   skrip agregasi metrik (JSON/Markdown ter-commit di `out/results/`).
 - README bilingual (id/en), lisensi MIT.
 
-[Belum dirilis]: https://github.com/zuudevs/ze_json/compare/v0.1.4...HEAD
+[Belum dirilis]: https://github.com/zuudevs/ze_json/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/zuudevs/ze_json/releases/tag/v0.1.6
 [0.1.4]: https://github.com/zuudevs/ze_json/releases/tag/v0.1.4
 [0.1.3]: https://github.com/zuudevs/ze_json/releases/tag/v0.1.3
 [0.1.2]: https://github.com/zuudevs/ze_json/releases/tag/v0.1.2
