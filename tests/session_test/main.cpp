@@ -87,10 +87,10 @@ TEST_F(SessionTest, VersionNumberMatchesMacro) {
     // compile-time (skema 2026_0001_05 = era 2026 + 0.1.5).
     static_assert(
         ZE_JSON_VERSION_MAJOR == 0 && ZE_JSON_VERSION_MINOR == 1 &&
-            ZE_JSON_VERSION_PATCH == 5,
-        "versi uji tertaut pada 0.1.5 — perbarui bersama bump versi");
+            ZE_JSON_VERSION_PATCH == 6,
+        "versi uji tertaut pada 0.1.6 — perbarui bersama bump versi");
     EXPECT_EQ(get_version(), ZE_JSON_VERSION_NUMBER);
-    EXPECT_EQ(get_version(), 2026000105);
+    EXPECT_EQ(get_version(), 2026000106);
 }
 #endif
 
