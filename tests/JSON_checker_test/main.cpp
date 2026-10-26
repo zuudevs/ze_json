@@ -163,18 +163,40 @@ class JsonCheckerTest : public ::testing::Test {
         return accepted;
     }
 
-    // File fail yang invalid secara STRUKTURAL — SETIAP varian scanner
-    // WAJIB menolak. Terukur dari korpus: bracket tanpa pasangan JENIS
-    // yang sama (buka-tanpa-tutup / tutup-tanpa-buka / tipe tak cocok —
-    // fail33 kini tertangkap depth-counter bertipe v0.1.5).
-    // 29 file sisanya invalid GRAMATIKAL.
+    // File fail yang DITOLAK oleh goto-automaton scanner8 (gramatikal).
+    // scanner64 menyusul — kontrak kesetaraan varian menuntut behavior sama.
+    // 13 file sisanya = batas ranah scanner (sintaks angka, escape string,
+    // kontrol mentah dalam string, kedalaman > 256).
     static const std::set<std::string>&
     structuralFails() {
         static const std::set<std::string> fails = {
-            "fail2.json",  // ["Unclosed array" — '[' tanpa ']'
-            "fail8.json",  // ["Extra close"]] — ']' tanpa pembuka
-            "fail32.json", // {"Comma instead if closing brace": true, — '{' tanpa '}'
-            "fail33.json", // ["mismatch"} — '}' menutup '[' (tipe tak cocok)
+            // Bracket: tanpa pasangan / tipe tak cocok
+            "fail2.json",  // ["Unclosed array"
+            "fail8.json",   // ["Extra close"]]
+            "fail32.json", // {"...": true,
+            "fail33.json", // ["mismatch"}
+            // Root type (goto: doc_start hanya menerima '{' atau '[')
+            "fail1.json",  // "A JSON payload should be..."
+            // Kunci object (goto: kunci WAJIB berkutip)
+            "fail3.json",  // {unquoted_key: ...}
+            // Koma ekstra / trailing comma (goto: state machine)
+            "fail4.json",  // ["extra comma",]
+            "fail5.json",  // ["double extra comma",,]
+            "fail6.json",  // [, "<-- missing value"]
+            "fail7.json",  // ["Comma after the close"],
+            "fail9.json",  // {"Extra comma": true,}
+            // Trailing garbage setelah root close (goto: done state check)
+            "fail10.json", // {"Extra value..."} "misplaced..."
+            // Pseudo-structural: garbage sebelum literal (goto: ws_only check)
+            "fail12.json", // {"Illegal invocation": alert()}
+            "fail16.json", // [\naked]
+            "fail23.json", // ["Bad value", truth]
+            "fail24.json", // ['single quote']
+            // Kunci/colon sequencing (goto: obj_colon state)
+            "fail19.json", // {"Missing colon" null}
+            "fail20.json", // {"Double colon":: null}
+            "fail21.json", // {"Comma instead of colon", null}
+            "fail22.json", // ["Colon instead of comma": false]
         };
         return fails;
     }
