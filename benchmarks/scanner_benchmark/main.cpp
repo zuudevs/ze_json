@@ -11,6 +11,7 @@
 #include <ze_json/utils/swar.hpp>
 
 #include "replica_integrated.hpp"
+#include "replica_span_prehybrid.hpp"
 
 namespace fs = std::filesystem;
 using namespace zuu;
@@ -244,4 +245,16 @@ MAKE_REPLICA_BENCHMARK(
 MAKE_REPLICA_BENCHMARK(
     Scanner64_UntypedReplica, Jeopardy, "jeopardy.json",
     scanner64_untyped_replica)
+
+// Eksperimen A1 Tahap-6: baseline span byte-per-byte pra-hybrid (v0.1.6)
+// beku — pasangan in-run lawan library scanner64 yang kini probe-hybrid.
+MAKE_REPLICA_BENCHMARK(
+    Scanner64_SpanBaselineReplica, GithubEvents, "github_events.json",
+    replica_span_prehybrid::scanner64_prehybrid_span_replica)
+MAKE_REPLICA_BENCHMARK(
+    Scanner64_SpanBaselineReplica, UpdateCenter, "update-center.json",
+    replica_span_prehybrid::scanner64_prehybrid_span_replica)
+MAKE_REPLICA_BENCHMARK(
+    Scanner64_SpanBaselineReplica, Jeopardy, "jeopardy.json",
+    replica_span_prehybrid::scanner64_prehybrid_span_replica)
 #endif
