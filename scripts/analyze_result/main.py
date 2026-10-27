@@ -538,6 +538,9 @@ if not js_sizes_df.empty and js_sizes_df["revision"].notna().any():
 # | `array_counted_vs_streaming` | counted ↔ streaming | Pola kerja BERBEDA — rasio deskriptif, bukan klaim kecepatan |
 # | `spaniso_byte_vs_swarset` | byte_loop ↔ swar_set | A1 — span non-string: loop byte vs SWAR set terminator (eksperimen spaniso) |
 # | `spaniso_byte_vs_swaradvance` | byte_loop ↔ swar_advance | A1 — span non-string: loop byte vs SWAR fast-path digit/spasi |
+# | `spaniso_byte_vs_hybrid` | byte_loop ↔ swar_hybrid | A1 hybrid — loop byte + probe adaptif (eksperimen spaniso) |
+# | `spanhybrid_library_vs_spanbaseline` | spanbaseline ↔ library_hybrid | Tahap-6 — Library scanner64 (span probe-hybrid) vs replika pra-hybrid beku |
+# | `spanreal_hybrid_vs_prehybrid` | prehybrid ↔ hybrid | Tahap-6 — Pasangan terhimpit dataset nyata (SpanReal) |
 #
 # Cara menyesuaikan: tambahkan/mengubah fungsi matcher di `PAIR_RULES`; engine
 # hanya memasangkan varian yang sebenarnya hadir pada file yang sama, dan
@@ -596,6 +599,16 @@ def _match_array_read(name: str):
     return f"BM_ArrayRead{match.group(2) or ''}", match.group(1).lower()
 
 
+def _match_span_hybrid_baseline(name: str):
+    """Tahap-6: BM_Scanner64_X (library, span probe-hybrid) vs replika
+    span byte-per-byte pra-hybrid (BM_Scanner64_SpanBaselineReplica_X)."""
+    if "SpanBaselineReplica" in name:
+        return name.replace("SpanBaselineReplica_", ""), "spanbaseline"
+    if name.startswith("BM_Scanner64_") and "Replica" not in name:
+        return name, "library_hybrid"
+    return None
+
+
 def _match_span_iso(name: str):
     """Eksperimen A1 span_iso_benchmark. pasangan per (Fill, Pad):
     BM_SpanIso_<Variant>_Fill{WS,Num}/Pad:<n> -> (FillWS|Pad:8, varian)."""
@@ -613,6 +626,17 @@ def _match_span_iso(name: str):
         "SWARHybridReplica": "swar_hybrid",
     }[match.group(1)]
     return f"Fill{match.group(2)}|Pad:{match.group(3)}", variant
+
+
+def _match_span_real_pair(name: str):
+    """Tahap-6 pasangan terhimpit dataset nyata: BM_SpanReal_Hybrid_X (library
+    scanner64 span probe-hybrid) vs BM_SpanReal_PreHybrid_X (replika beku
+    byte-per-byte). Pair key = dataset."""
+    match = re.match(r"BM_SpanReal_(Hybrid|PreHybrid)_(\w+)$", name)
+    if not match:
+        return None
+    return match.group(2), (
+        "hybrid" if match.group(1) == "Hybrid" else "prehybrid")
 
 
 PAIR_RULES = [
@@ -671,6 +695,20 @@ PAIR_RULES = [
         "var_a": "byte_loop",
         "var_b": "swar_hybrid",
         "note": "A1 hybrid · loop byte + probe adaptif (dinonaktifkan di span pendek)",
+    },
+    {
+        "name": "spanhybrid_library_vs_spanbaseline",
+        "match": _match_span_hybrid_baseline,
+        "var_a": "spanbaseline",
+        "var_b": "library_hybrid",
+        "note": "Tahap-6 · library scanner64 (hybrid) vs replika pra-hybrid beku",
+    },
+    {
+        "name": "spanreal_hybrid_vs_prehybrid",
+        "match": _match_span_real_pair,
+        "var_a": "prehybrid",
+        "var_b": "hybrid",
+        "note": "Tahap-6 · pasangan terhimpit dataset nyata (SpanReal)",
     },
 ]
 
@@ -1281,6 +1319,12 @@ STAGE_EVIDENCE = [
     ]),
     ("eksperimen goto automaton (regresi, di-revert 560a6ef)", None, [
         "scanner_goto_interleaved", "scanner_revert_goto", "scanner_goto_final",
+    ]),
+    ("eksperimen A1 span iso + hybrid (PR #4, di benchmark)", None, [
+        "spaniso_interleaved", "spaniso_hybrid_interleaved",
+    ]),
+    ("Tahap-6 · scanner64 span probe-hybrid (src/ dirubah)", "3fa9c40", [
+        "scanner_span_hybrid_interleaved",
     ]),
 ]
 
