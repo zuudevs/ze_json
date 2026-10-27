@@ -6,6 +6,19 @@ versi mengikuti [SemVer](https://semver.org/). Rilis npm
 
 ## [Belum dirilis]
 
+### Ditambahkan
+
+- Eksperimen A1 `benchmarks/span_iso_benchmark/` (PR #4→#5): isolasi span
+  non-string dengan replika ByteLoop/SWARSet/SWARAdvance/Hybrid + gerbang
+  kebenaran count==tape, pasangan terhimpit dataset nyata `BM_SpanReal_*`
+  (dengan replika `replica_span_prehybrid.hpp` — baseline `scanner64`
+  v0.1.6 beku), dan aturan notebook in-run baru
+  (`spaniso_*`, `spanreal_hybrid_vs_prehybrid`,
+  `spanhybrid_library_vs_spanbaseline`). Tanpa perubahan `src/`: adopsi
+  probe span hybrid ke `scanner64` terukur regresi di semua dataset nyata
+  (V1/V2, 0,45–0,99) dan di-revert — lihat
+  `docs/architecture/optimizations.md` §Tahap-6.
+
 ## [0.1.6] — 2026-10-26
 
 ### Diperbaiki

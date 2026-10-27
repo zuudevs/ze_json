@@ -27,6 +27,47 @@ Semua artefak before/after ter-commit di
 | **3** · streaming `array_next` | `47e9cb7` | pola baca satu-lintasan kini **berfungsi** (dulu `array_next` tanpa `array_size` selalu 0 — benchmark streaming skip semua); 1024 elemen **~0,83×** waktu pola counted; counted tak berubah |
 | **4** · validasi UTF-8 terintegrasi + indeks elemen array | `8e0f3e3` | payload UTF-8 padat 64 KiB **−42,7%** E2E (DFA tak dijalankan dua kali; interleaved; ASCII tanpa regresi ~2%); path `items[K]` jauh: 1024 elemen — tengah **2594 → ~65 ns** (×40), akhir **5289 → ~71 ns** (×75) |
 
+## Tahap-6 · probe span hybrid — eksperimen NEGATIF, di-revert
+
+Hipotesis A1 (PR #4): biaya marginal per-byte span non-string `scanner64`
+terkonfirmasi **95–96% dari loop byte** (slope replika in-run, §5b notebook)
+— tetapi adopsinya ke `scanner64` seutuhnya (PR #5) GAGAL terukur dan
+dikembalikan ke loop byte v0.1.6 (`4718def`), mengikuti preseden goto.
+
+Dua varian, keduanya lolos 8 suite gtest, keduanya kalah vs replika
+`scanner64` v0.1.6 beku (`replica_span_prehybrid.hpp`) di pasangan
+terhimpit dataset nyata (`BM_SpanReal_*`, rasio prehybrid/hybrid; <1 =
+regresi):
+
+| dataset | V1 inline (r1/r2) | V2 helper `noinline` |
+|---|---|---|
+| github_events | 0,72 / 0,75 | 0,92 |
+| jeopardy | 0,79 / 0,79 | 0,79 |
+| canada | 0,86 / 0,77 | 0,91 |
+| citm_catalog | 1,00 / 0,83 | 0,56 |
+| twitter | 0,92 / 0,70 | 0,45 |
+| mesh | 0,93 / 0,91 | 0,81 |
+| update_center | — / 0,99 | 0,98 |
+
+Akar masalah (kuanti, `samples/`): span non-string nyata pendek (2–6 byte)
+sehingga gate adaptif nyaris tak pernah menyala (blok 8-byte lolos predikat
+0–6,5% kecuali canada 37,7% / citm 46,5% — dan di sana biaya pemeriksaan
+predikat pada blok gagal menelan lompatannya). V2 membuktikan komponen
+codegen: loop byte pulih (github 0,72→0,92) begitu probe keluar dari badan
+loop, tetapi call+gate per span menenggelamkan regime ber-span padat
+(twitter 0,70→0,45). Selain itu ada bug kecil proses: `update_center` r1
+bernilai 0.0 karena embedded filename tanpa tanda hubung — diperbaiki
+dengan bentuk makro `REGISTER_SPAN_REAL_PAIR(FAMILY, FILE_NAME, CAPACITY)`.
+Replika span_iso tetap menang di payload sintetis karena bekerja
+span-only (tanpa tape/bracket/quote-SWAR).
+
+**Pelajaran**: harness isolasi yang positif TIDAK cukup — adopsi harus
+diukur pasangan-terhimpit sebelum masuk `src/`; dan biaya *per keputusan*
+(probe, branch, call) yang tidak mampu dihindari per-token memenangkan
+segala penghematan per-byte di data nyata. Tautan bukti:
+`spanreal_pair_*`, `scanner_span_hybrid_interleaved_*`,
+`spaniso_hybrid_interleaved_*` + notebook §5/§5b.
+
 ## Kebijakan indeks lazy (dipakai tahap 2 & 4)
 
 Indeks TIDAK dibangun di `create_session` (itu akan membebani pipeline dan

@@ -1326,7 +1326,7 @@ STAGE_EVIDENCE = [
     ("Tahap-6 · scanner64 span probe-hybrid (src/ dirubah)", "3fa9c40", [
         "scanner_span_hybrid_interleaved",
     ]),
-    ("Tahap-6 revert (negatif) — loop byte v0.1.6 dipulihkan", "eba9a6f", [
+    ("Tahap-6 revert (negatif) — loop byte v0.1.6 dipulihkan", "64d17b5", [
         "spanreal_pair",
     ]),
 ]
