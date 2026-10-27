@@ -31,7 +31,10 @@ Dua pola yang sahih:
    Contoh aktif: `benchmarks/span_iso_benchmark/` (eksperimen A1) —
    slope marginal per-byte span non-string `scanner64` dibanding lawan
    replika ByteLoop/SWAR di satu proses; slope dihitung notebook §5b
-   dari medians per Pad.
+   dari medians per Pad. Pola turunannya **pasangan terhimpit**:
+   `BM_SpanReal_Hybrid_*` vs `BM_SpanReal_PreHybrid_*` per dataset nyata
+   (Tahap-6 — dipakai juga untuk mengukur revert; pasangan terdaftar
+   konsekutif sehingga duduk bersebelahan dalam satu run).
 2. **Rasio dalam-run** — untuk kueri berulang, bandingkan rasio
    (mis. last/first) sebelum vs sesudah pada run masing-masing; hukum
    O(N) vs O(1) terlihat dari rasio itu, bukan dari ns absolut
