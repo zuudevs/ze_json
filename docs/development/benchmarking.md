@@ -28,6 +28,10 @@ Dua pola yang sahih:
    (contoh historis: `BM_CreateSession_Pipeline_Scanner8` sebagai
    replika jalur lama vs `…Scanner64`; `BM_Pipeline_SeparateValidator`
    sebagai replika pass validasi terpisah vs jalur terintegrasi).
+   Contoh aktif: `benchmarks/span_iso_benchmark/` (eksperimen A1) —
+   slope marginal per-byte span non-string `scanner64` dibanding lawan
+   replika ByteLoop/SWAR di satu proses; slope dihitung notebook §5b
+   dari medians per Pad.
 2. **Rasio dalam-run** — untuk kueri berulang, bandingkan rasio
    (mis. last/first) sebelum vs sesudah pada run masing-masing; hukum
    O(N) vs O(1) terlihat dari rasio itu, bukan dari ns absolut
@@ -85,11 +89,15 @@ validasi di dalam loop gagal. Jangan pernah mencatat angka ini.
 [`scripts/analyze_result/main.py`](../../scripts/analyze_result/main.py) —
 notebook (`# %%` cells; bisa dijalankan headless atau di VS Code/Jupyter)
 yang membaca seluruh `out/results/` lalu menginventory, mengklasifikasi
-skema, dan membandingkan: pasangan Scanner8/64 **dalam run yang sama**,
-before/after per artefak, sapuan JS, dan laporan test. Hormati hukum
-pertama di atas — grafik tren lintas file bersifat deskriptif, bukan bukti
-kausal. Tabel hasil diekspor ke `out/analysis/` (ter-ignore — turunan
-artefak, regenerable).
+skema, dan membandingkan: pasangan eksperimen APAPUN dari run yang sama
+(pair engine beraturan §5 — scanner8/64, replika Untyped/Integrated,
+SeparateValidator, pola array), lantai noise yang diukur dari artefak
+run-ulang (§3b, dipakai sebagai ambang pada before/after §6 dan
+perbandingan revisi §6b berstatus deskriptif), titik berimbang sapuan
+JS (§4b), audit bukti artefak tahap optimasi (§8b), dan laporan test.
+Hormati hukum pertama di atas — grafik tren lintas file bersifat
+deskriptif, bukan bukti kausal. Tabel hasil diekspor ke `out/analysis/`
+(ter-ignore — turunan artefak, regenerable).
 
 ```bash
 python -m venv .venv

@@ -7,9 +7,11 @@
 #
 # **Catatan metodologis:** grafik tren lintas file bersifat deskriptif. Dokumen
 # `docs/development/benchmarking.md` di repo memperingatkan agar angka absolut
-# lintas proses tidak diperlakukan sebagai bukti kausal. Untuk perbandingan
-# scanner, notebook memprioritaskan pasangan Scanner8/Scanner64 yang berada di
-# file/run benchmark yang sama. Angka JS `ops/s` dan `µs/op` juga tidak dicampur.
+# lintas proses tidak diperlakukan sebagai bukti kausal. Untuk perbandingan,
+# notebook menyediakan: pasangan eksperimen APAPUN dari file/run yang sama
+# (pair engine §5, bukan hanya Scanner8/64), lantai noise yang DIUKUR dari
+# artefak run-ulang (§3b), dan perbandingan antar-revisi berstatus deskriptif
+# (§6b). Angka JS `ops/s` dan `µs/op` juga tidak dicampur.
 
 # %%
 import json
@@ -259,6 +261,73 @@ else:
     print("Tidak ada laporan Google Benchmark mentah yang berhasil dibaca.")
 
 # %% [markdown]
+# ## 3b. Lantai noise dari artefak run-ulang
+#
+# Getaran jam lintas-proses (terdokumentasi 15–45% pada mesin pengembang,
+# docs/development/benchmarking.md) bisa DIUKUR, bukan sekadar diklaim, dari
+# artefak yang direkam berulang dalam konteks eksperimen yang sama:
+# `*_r2`, `*_run2`, atau duplikat eksperimen seperti `tahap5_typedepth_guard2`.
+# Rentang (max−min)/median lintas file replika pada nama benchmark yang sama
+# menjadi ambang "di atas noise" yang dipakai sel perbandingan revisi (§6b)
+# dan penanda pada tabel before/after (§6). Ini mengukur disiplin pengukuran,
+# BUKAN membandingkan kode yang berbeda.
+
+# %%
+def replica_group_key(stem: str, all_stems: set) -> str:
+    """Kelompokkan artefak replika: `x_r2`/`x_run2` mengikuti `x`; `x2`
+    mengikuti `x` hanya bila `x` sendiri adalah artefak yang ada dan tidak
+    berakhiran digit (agar hash revisi seperti `..._05d2180` tidak ikut
+    terpotong)."""
+    stripped = re.sub(r"_(?:run|r)\d+$", "", stem, flags=re.IGNORECASE)
+    if stripped != stem:
+        return stripped
+    match = re.match(r"^(?P<base>.+?)(?P<num>\d+)$", stem)
+    if match and match.group("base") in all_stems and not match.group("base")[-1].isdigit():
+        return match.group("base")
+    return stem
+
+
+noise_floor_rows = []
+noise_band_by_family = {}
+if not bench_df.empty:
+    bench_stems = set(bench_df["artifact_stem"])
+    bench_valid_noise = bench_df[bench_df["valid_measurement"]].copy()
+    bench_valid_noise["replica_group"] = bench_valid_noise["artifact_stem"].apply(
+        lambda s: replica_group_key(s, bench_stems))
+
+    for (replica_group, name), sub in bench_valid_noise.groupby(["replica_group", "benchmark_name"]):
+        file_medians = sub.groupby("source_file")["time_ns"].median()
+        if len(file_medians) < 2:
+            continue  # satu file saja: tidak mengukur antar-run apa pun
+        med = float(file_medians.median())
+        if med <= 0:
+            continue
+        noise_floor_rows.append({
+            "replica_group": replica_group,
+            "benchmark_name": name,
+            "family": family_from_name(name),
+            "files": "; ".join(sorted(Path(p).name for p in file_medians.index)),
+            "file_count": len(file_medians),
+            "median_time_ns": med,
+            "min_time_ns": float(file_medians.min()),
+            "max_time_ns": float(file_medians.max()),
+            # (max-min)/median — proksi getaran antar-run pada konteks sama
+            "spread_pct": (file_medians.max() - file_medians.min()) / med * 100.0,
+            "cv_pct": (float(file_medians.std(ddof=1)) / med * 100.0) if len(file_medians) > 1 else 0.0,
+        })
+
+noise_floor_df = pd.DataFrame(noise_floor_rows)
+if not noise_floor_df.empty:
+    band = noise_floor_df.groupby("family")["spread_pct"].median()
+    noise_band_by_family = {str(k): float(v) for k, v in band.items() if pd.notna(v) and float(v) > 0}
+    print(f"Kelompok replika run-ulang (>=2 file): {noise_floor_df['replica_group'].nunique()}")
+    display(noise_floor_df.sort_values(["replica_group", "benchmark_name"]))
+    print("Ambang noise per keluarga benchmark (median spread % — dipakai §6 dan §6b):")
+    display(pd.DataFrame(sorted(noise_band_by_family.items()), columns=["family", "spread_pct_median"]))
+else:
+    print("Belum ada artefak run-ulang (>=2 file per konteks eksperimen) untuk mengukur lantai noise.")
+
+# %% [markdown]
 # ## 4. Ringkasan benchmark dan metrik JavaScript
 #
 # `summary_*.json` dianalisis sebagai sumber terpisah—jangan digabungkan begitu
@@ -380,49 +449,424 @@ if not js_parse_df.empty:
     display(js_parse_wide)
 
 # %% [markdown]
-# ## 5. Analisis scanner yang dipasangkan dalam satu file/run
+# ## 4b. Sapuan ukuran JS: titik berimbang dan pasangan revisi
 #
-# Rasio didefinisikan sebagai `waktu Scanner8 / waktu Scanner64`:
-# - `> 1`: Scanner64 membutuhkan waktu lebih sedikit pada pasangan itu.
-# - `= 1`: waktu sama.
-# - `< 1`: Scanner64 membutuhkan waktu lebih banyak.
-#
-# Pasangan dibuat hanya dari file laporan mentah yang sama dan baris yang valid.
+# Break-even = ukuran payload terkecil di mana ze_json mulai menang atas
+# `JSON.parse` per workload — informasi yang disembunyikan oleh tabel mentah.
+# Rasio antar revisi (`js_sizes_*` beda hash) HANYA deskriptif: mesin, versi
+# Node, dan jam bisa berbeda; hukum pertama docs/development/benchmarking.md
+# tetap berlaku (angka absolut lintas proses bukan bukti kausal).
 
 # %%
-scanner_pairs_df = pd.DataFrame()
-if not bench_df.empty:
-    scanner_rows = bench_df[
-        bench_df["valid_measurement"] & bench_df["scanner_variant"].notna()
-    ].copy()
-    if not scanner_rows.empty:
-        pivot = scanner_rows.pivot_table(
-            index=["source_file", "run_date", "scanner_pair_key"],
-            columns="scanner_variant",
-            values=["time_ns", "throughput_MB_s", "iterations"],
+js_breakeven_rows = []
+if not js_sizes_wide.empty and "payload_bytes" in js_sizes_wide.columns:
+    js_workload_pairs = [
+        ("scan murni", "JSON.parse", "ze scan"),
+        ("baca 2 field", "JSON+baca", "ze baca"),
+        ("iterasi penuh", "JSON+iter", "ze iter"),
+    ]
+    for source_file, sub in js_sizes_wide.groupby("source_file"):
+        sub = sub.sort_values("payload_bytes")
+        for label, json_col, ze_col in js_workload_pairs:
+            if json_col not in sub.columns or ze_col not in sub.columns:
+                continue
+            good = sub.dropna(subset=[json_col, ze_col])
+            if good.empty:
+                continue
+            speedup = good[json_col] / good[ze_col]
+            winning = good.loc[speedup > 1, "payload_bytes"]
+            js_breakeven_rows.append({
+                "source_file": source_file,
+                "workload": label,
+                "sizes_tested": len(good),
+                "min_bytes": int(good["payload_bytes"].min()),
+                "max_bytes": int(good["payload_bytes"].max()),
+                "break_even_bytes": int(winning.min()) if not winning.empty else None,
+                "ze_wins_at_largest": bool(speedup.iloc[-1] > 1),
+                "speedup_min": float(speedup.min()),
+                "speedup_max": float(speedup.max()),
+            })
+
+js_breakeven_df = pd.DataFrame(js_breakeven_rows)
+if not js_breakeven_df.empty:
+    print("Titik berimbang per workload (ukuran terkecil ze lebih cepat dari JSON.parse):")
+    display(js_breakeven_df)
+else:
+    print("Break-even JS tidak dapat dihitung (kolom workload pasangan tidak lengkap).")
+
+
+js_sizes_crossrev_df = pd.DataFrame()
+if not js_sizes_df.empty and js_sizes_df["revision"].notna().any():
+    js_sizes_with_rev = js_sizes_df[js_sizes_df["revision"].notna()]
+    revision_order = (
+        js_sizes_with_rev.sort_values("timestamp")
+        .drop_duplicates("revision")["revision"].tolist()
+    )
+    if len(revision_order) >= 2:
+        rev_a, rev_b = revision_order[0], revision_order[-1]
+        pivot_rev = js_sizes_with_rev.pivot_table(
+            index=["metric", "payload_bytes"], columns="revision",
+            values="time_us", aggfunc="median",
+        )[[rev_a, rev_b]]
+        js_sizes_crossrev_df = pivot_rev.dropna().reset_index()
+        js_sizes_crossrev_df["ratio_rev_a_over_rev_b"] = (
+            js_sizes_crossrev_df[rev_a] / js_sizes_crossrev_df[rev_b]
+        )
+        print(f"Perbandingan sapuan lintas revisi ({rev_a} vs {rev_b}) — deskriptif:")
+        display(js_sizes_crossrev_df)
+    else:
+        print("Belum ada dua revisi js_sizes berbeda untuk dibandingkan.")
+
+# %% [markdown]
+# ## 5. Pasangan dalam-run — pair engine terneralisasi
+#
+# Semua pasangan dibandingkan HANYA dari file/laporan mentah yang sama
+# (hukum pertama). Aturan pasangan dideklarasikan di `PAIR_RULES`; setiap
+# aturan memetakan nama benchmark → `(pair_key, varian)`, dan baris pada
+# file yang sama dipivot per pasangan. Arti rasio: `ratio_a_over_b =
+# waktu_a / waktu_b` — `> 1` berarti varian B lebih cepat, `time_reduction_pct`
+# positif berarti varian B lebih hemat waktu.
+#
+# Aturan terpasang (bisa ditambah tanpa menyentuh logika engine):
+#
+# | Aturan | Varian A ↔ B | Interpretasi |
+# |---|---|---|
+# | `typed_vs_untyped_class` | typed ↔ untyped | Klasifikasi bracket bertipe vs tanpa tipe (Scanner64) |
+# | `utf8_integrated_vs_separate_on_scanner8` | separate Utf8 ↔ integrated | Validasi UTF-8 terpisah vs terintegrasi di jalur skalar |
+# | `utf8_integrated_vs_separate_pipeline` | separate Utf8 ↔ integrated | Pass validasi terpisah vs satu lintasan terintegrasi (Tahap 4) |
+# | `scanner8_vs_64` | scanner8 ↔ scanner64 | SWAR blok 8 byte vs word 64-bit (Tahap 1) |
+# | `array_counted_vs_streaming` | counted ↔ streaming | Pola kerja BERBEDA — rasio deskriptif, bukan klaim kecepatan |
+# | `spaniso_byte_vs_swarset` | byte_loop ↔ swar_set | A1 — span non-string: loop byte vs SWAR set terminator (eksperimen spaniso) |
+# | `spaniso_byte_vs_swaradvance` | byte_loop ↔ swar_advance | A1 — span non-string: loop byte vs SWAR fast-path digit/spasi |
+#
+# Cara menyesuaikan: tambahkan/mengubah fungsi matcher di `PAIR_RULES`; engine
+# hanya memasangkan varian yang sebenarnya hadir pada file yang sama, dan
+# menolak pasangan yang kolomnya mencampur banyak keluarga benchmark.
+
+# %%
+def _match_scanner_untyped_replica(name: str):
+    """BM_Scanner64_X (typed) vs BM_Scanner64_UntypedReplica_X."""
+    if "UntypedReplica" in name:
+        return name.replace("UntypedReplica_", ""), "untyped"
+    if name.startswith("BM_Scanner64_") and "Replica" not in name:
+        return name, "typed"
+    return None
+
+
+def _match_scanner_integrated_replica(name: str):
+    """BM_Scanner8_X (validasi UTF-8 terpisah) vs BM_Scanner8_IntegratedReplica_X."""
+    if "IntegratedReplica" in name:
+        return name.replace("IntegratedReplica_", ""), "integrated"
+    if name.startswith("BM_Scanner8_") and "Replica" not in name:
+        return name, "separate_utf8_pass"
+    return None
+
+
+def _match_separate_validator(name: str):
+    """BM_Pipeline(_Utf8)_SeparateValidator vs jalur terintegrasi CreateSession."""
+    if "SeparateValidator" in name:
+        regime = "utf8" if "Utf8" in name else "pipeline"
+        return f"{regime}|{name.rsplit('/', 1)[-1]}", "separate"
+    if re.match(r"BM_CreateSession_(?:Pipeline_Scanner(?:32|64|8)|Utf8)/", name):
+        regime = "utf8" if "Utf8" in name else "pipeline"
+        return f"{regime}|{name.rsplit('/', 1)[-1]}", "integrated"
+    return None
+
+
+def _match_scanner_variant(name: str):
+    """Scanner8 vs Scanner64 apapun keluarganya (BM_Scanner*_* dan
+    BM_CreateSession_Pipeline_Scanner*/Idx:n). Nama ber-Replica dikecualikan —
+    sudah diurus aturan replika di atas."""
+    if "Replica" in name:
+        return None
+    match = re.search(r"Scanner(8|64)", name)
+    if not match:
+        return None
+    return (
+        re.sub(r"Scanner(?:8|64)", "ScannerX", name, flags=re.IGNORECASE),
+        f"scanner{match.group(1)}",
+    )
+
+
+def _match_array_read(name: str):
+    """BM_ArrayRead_Counted vs BM_ArrayRead_Streaming — pola kerja berbeda."""
+    match = re.match(r"BM_ArrayRead_(Counted|Streaming)(/.*)?$", name)
+    if not match:
+        return None
+    return f"BM_ArrayRead{match.group(2) or ''}", match.group(1).lower()
+
+
+def _match_span_iso(name: str):
+    """Eksperimen A1 span_iso_benchmark. pasangan per (Fill, Pad):
+    BM_SpanIso_<Variant>_Fill{WS,Num}/Pad:<n> -> (FillWS|Pad:8, varian)."""
+    match = re.match(
+        r"BM_SpanIso_(Scanner64|ByteLoopReplica|SWARSetReplica|SWARAdvanceReplica)"
+        r"_Fill(WS|Num)/Pad:(\d+)$", name)
+    if not match:
+        return None
+    variant = {
+        "Scanner64": "scanner64",
+        "ByteLoopReplica": "byte_loop",
+        "SWARSetReplica": "swar_set",
+        "SWARAdvanceReplica": "swar_advance",
+    }[match.group(1)]
+    return f"Fill{match.group(2)}|Pad:{match.group(3)}", variant
+
+
+PAIR_RULES = [
+    {
+        "name": "typed_vs_untyped_class",
+        "match": _match_scanner_untyped_replica,
+        "var_a": "typed",
+        "var_b": "untyped",
+        "note": "Klasifikasi bracket bertipe vs tanpa tipe (Scanner64)",
+    },
+    {
+        "name": "utf8_integrated_vs_separate_on_scanner8",
+        "match": _match_scanner_integrated_replica,
+        "var_a": "separate_utf8_pass",
+        "var_b": "integrated",
+        "note": "Validasi UTF-8 terpisah vs terintegrasi pada jalur skalar",
+    },
+    {
+        "name": "utf8_integrated_vs_separate_pipeline",
+        "match": _match_separate_validator,
+        "var_a": "separate",
+        "var_b": "integrated",
+        "note": "Pipeline pass validasi terpisah vs satu lintasan terintegrasi",
+    },
+    {
+        "name": "scanner8_vs_64",
+        "match": _match_scanner_variant,
+        "var_a": "scanner8",
+        "var_b": "scanner64",
+        "note": "Scanner SWAR blok 8 byte vs word 64-bit",
+    },
+    {
+        "name": "array_counted_vs_streaming",
+        "match": _match_array_read,
+        "var_a": "counted",
+        "var_b": "streaming",
+        "note": "Pola kerja BERBEDA — rasio deskriptif, bukan klaim kecepatan",
+    },
+    {
+        "name": "spaniso_byte_vs_swarset",
+        "match": _match_span_iso,
+        "var_a": "byte_loop",
+        "var_b": "swar_set",
+        "note": "A1 · span non-string: loop byte (gwibim) vs SWAR set-terminator",
+    },
+    {
+        "name": "spaniso_byte_vs_swaradvance",
+        "match": _match_span_iso,
+        "var_a": "byte_loop",
+        "var_b": "swar_advance",
+        "note": "A1 · span non-string: loop byte vs SWAR fast-path digit/spasi",
+    },
+]
+
+
+def build_named_pairs(valid_bench: pd.DataFrame, rules):
+    """Bangun pasangan per aturan HANYA dari baris file yang sama.
+    Setiap nama benchmark boleh ikut beberapa aturan sekaligus (mis. nama
+    jalur terintegrasi ikut aturan SeparateValidator dan aturan scanner8/64).
+    Pasangan dengan kolom varian yang mencampur banyak keluarga benchmark
+    ditolak sebagai pengaman ambiguitas."""
+    pair_frames = []
+    dropped_notes = []
+    for rule in rules:
+        recs = []
+        for _, row in valid_bench.iterrows():
+            matched = rule["match"](row["benchmark_name"])
+            if not matched:
+                continue
+            pair_key, variant = matched
+            recs.append({
+                "source_file": row["source_file"],
+                "run_date": row["run_date"],
+                "benchmark_name": row["benchmark_name"],
+                "pair_key": pair_key,
+                "variant": variant,
+                "time_ns": row["time_ns"],
+                "throughput_MB_s": row["throughput_MB_s"],
+            })
+        if not recs:
+            continue
+        rdf = pd.DataFrame(recs)
+
+        # Pengaman: satu (file, key, varian) tidak boleh campuran keluarga.
+        family_counts = rdf.groupby(["source_file", "pair_key", "variant"])[
+            "benchmark_name"].nunique()
+        mixed = family_counts[family_counts > 1]
+        for (src, key, variant) in mixed.index.tolist():
+            dropped_notes.append(
+                f"{Path(src).name} | {rule['name']} | {key} | {variant} "
+                "(mencampur beberapa keluarga benchmark)")
+        rdf = rdf.merge(
+            family_counts.rename("family_count").reset_index(),
+            on=["source_file", "pair_key", "variant"])
+        rdf = rdf[rdf["family_count"] == 1].drop(columns="family_count")
+        if rdf.empty:
+            continue
+
+        var_a, var_b = rule["var_a"], rule["var_b"]
+        pivot = rdf.pivot_table(
+            index=["source_file", "run_date", "pair_key"],
+            columns="variant",
+            values=["time_ns", "throughput_MB_s"],
             aggfunc="median",
         )
-        pivot.columns = [f"{metric}_scanner{variant}" for metric, variant in pivot.columns]
+        pivot.columns = [f"{metric}_{column}" for metric, column in pivot.columns]
         pivot = pivot.reset_index()
-        required = ["time_ns_scanner8", "time_ns_scanner64"]
-        if all(col in pivot.columns for col in required):
-            scanner_pairs_df = pivot.dropna(subset=required).copy()
-            scanner_pairs_df["speedup_64_vs_8"] = (
-                scanner_pairs_df["time_ns_scanner8"] / scanner_pairs_df["time_ns_scanner64"]
-            )
-            scanner_pairs_df["time_reduction_pct"] = (
-                1 - scanner_pairs_df["time_ns_scanner64"] / scanner_pairs_df["time_ns_scanner8"]
-            ) * 100
-            if "throughput_MB_s_scanner8" in scanner_pairs_df and "throughput_MB_s_scanner64" in scanner_pairs_df:
-                scanner_pairs_df["throughput_ratio_64_vs_8"] = (
-                    scanner_pairs_df["throughput_MB_s_scanner64"] / scanner_pairs_df["throughput_MB_s_scanner8"]
-                )
+        time_cols = [f"time_ns_{var_a}", f"time_ns_{var_b}"]
+        if not all(col in pivot.columns for col in time_cols):
+            continue
 
-if scanner_pairs_df.empty:
-    print("Tidak ditemukan pasangan Scanner8/Scanner64 valid dalam file mentah yang sama.")
+        part = pivot.dropna(subset=time_cols).copy()
+        part.rename(columns={
+            f"time_ns_{var_a}": "time_a_ns",
+            f"time_ns_{var_b}": "time_b_ns",
+            f"throughput_MB_s_{var_a}": "throughput_a_MB_s",
+            f"throughput_MB_s_{var_b}": "throughput_b_MB_s",
+        }, inplace=True)
+        part["rule"] = rule["name"]
+        part["variant_a"] = var_a
+        part["variant_b"] = var_b
+        part["interpretation"] = rule["note"]
+        part["ratio_a_over_b"] = part["time_a_ns"] / part["time_b_ns"]  # >1: B lebih cepat
+        part["time_reduction_pct"] = (1.0 - part["time_b_ns"] / part["time_a_ns"]) * 100.0
+        pair_frames.append(part)
+
+    if not pair_frames:
+        return pd.DataFrame(), dropped_notes
+    return pd.concat(pair_frames, ignore_index=True, sort=False), dropped_notes
+
+
+pairs_all_df = pd.DataFrame()
+pair_engine_notes = []
+if not bench_df.empty:
+    pairs_all_df, pair_engine_notes = build_named_pairs(
+        bench_df[bench_df["valid_measurement"]], PAIR_RULES)
+
+if pair_engine_notes:
+    print("Kandidat pasangan DIBUANG karena ambigu:")
+    for note in pair_engine_notes:
+        print(f"  - {note}")
+
+if pairs_all_df.empty:
+    print("Tidak ada pasangan dalam-run yang valid per aturan PAIR_RULES.")
 else:
-    print(f"Pasangan Scanner8/Scanner64 yang dapat dibandingkan dalam file yang sama: {len(scanner_pairs_df)}")
-    display(scanner_pairs_df.sort_values(["source_file", "scanner_pair_key"]))
+    print(f"Total pasangan dalam-run: {len(pairs_all_df)} — rincian per aturan:")
+    display(pairs_all_df.groupby("rule").agg(
+        pairs=("pair_key", "count"), files=("source_file", "nunique"),
+        interpretation=("interpretation", "first"),
+    ).reset_index())
+    display(pairs_all_df.sort_values(["rule", "source_file", "pair_key"]))
+
+# Subset kompatibel dengan tabel lama (Scanner8 vs Scanner64).
+scanner_pairs_df = pd.DataFrame()
+if not pairs_all_df.empty:
+    scanner_pairs_df = pairs_all_df[pairs_all_df["rule"] == "scanner8_vs_64"].copy()
+    if not scanner_pairs_df.empty:
+        scanner_pairs_df["scanner_pair_key"] = scanner_pairs_df["pair_key"]
+        scanner_pairs_df["speedup_64_vs_8"] = (
+            scanner_pairs_df["time_a_ns"] / scanner_pairs_df["time_b_ns"])
+        scanner_pairs_df["time_reduction_pct"] = (
+            1.0 - scanner_pairs_df["time_b_ns"] / scanner_pairs_df["time_a_ns"]) * 100.0
+
+# %% [markdown]
+# ## 5b. Slope eksperimen A1 (span iso) — uji hipotesis H1/H2 per fill
+#
+# `spaniso_interleaved*` menyintesis payload dengan jumlah token struktural
+# KONSTAN (4096) dan filler yang berkembang (Pad = 0/8/64/256; pad byte
+# utilisasi space/space digit). Memeriksa perubahan per byte:
+#
+# - **slope Scanner64** — slope "real" (span + tulis tape + bookkeeping)
+# - **slope ByteLoopReplica** — isolasi murni loop span non-string (H1: dominasi)
+# - **slope SWARSetReplica / SWARAdvanceReplica** — kandidat Tahap-6 (H2)
+#
+# Ukuran payload presisi dari konstruksi generator: 4096·Pad + 8199 byte.
+# Slope = kemiringan regresi linear median-time vs ukuran tersebut; dibanding
+# hanya antar-varian pada artefact/run yang SAMA (hukum pertama). Proyeksi
+# gain E2E ≈ fraksi_span_byte × (1 − slope_SWAR/slope_asli).
+
+# %%
+def span_iso_slope_cell():
+    if bench_df.empty:
+        return pd.DataFrame()
+    run = bench_df[
+        bench_df["artifact_stem"].str.startswith("spaniso_interleaved")
+        & ~bench_df["artifact_stem"].str.endswith(("_r2", "_run2"))
+    ].copy()
+    run = run[run["valid_measurement"]]  # run utama saja, bukan replika noise
+    if run.empty:
+        print("Artefak spaniso_interleaved belum ada — sel slope dilewati.")
+        return pd.DataFrame()
+
+    parts = run["benchmark_name"].str.extract(
+        r"BM_SpanIso_(?P<variant>Scanner64|ByteLoopReplica|SWARSetReplica"
+        r"|SWARAdvanceReplica)_Fill(?P<fill>WS|Num)/Pad:(?P<pad>\d+)$")
+    run = pd.concat([run, parts], axis=1).dropna(
+        subset=["variant", "fill", "pad"])
+    run["pad"] = run["pad"].astype(int)
+    # ukuran payload presisi dari konstruksi generator: 4096*Pad + 8199.
+    run["payload_bytes"] = 4096 * run["pad"] + 8199
+
+    med_time = run.groupby(
+        ["source_file", "variant", "fill", "pad"], as_index=False).agg(
+            time_ns=("time_ns", "median"),
+            payload_bytes=("payload_bytes", "first"),
+    )
+
+    slope_rows = []
+    for (src, variant, fill), sub in med_time.groupby(
+            ["source_file", "variant", "fill"]):
+        sub = sub.sort_values("pad")
+        slope, intercept = np.polyfit(
+            sub["payload_bytes"].to_numpy(dtype=float),
+            sub["time_ns"].to_numpy(dtype=float), 1)
+        r = np.corrcoef(
+            sub["payload_bytes"].to_numpy(dtype=float),
+            sub["time_ns"].to_numpy(dtype=float))[0, 1]
+        slope_rows.append({
+            "source_file": Path(src).name,
+            "artifact_stem": Path(src).stem,
+            "variant": variant,
+            "fill": fill,
+            "pads": "; ".join(map(str, sub["pad"])),
+            "slope_ns_per_byte": float(slope),
+            "intercept_ns": float(intercept),
+            "R2": float(r * r),
+        })
+    slope_df = pd.DataFrame(slope_rows).sort_values(
+        ["source_file", "fill", "variant"])
+    display(slope_df)
+
+    print("\nH1 — seberapa besar kontribusi loop span terhadap slope scanner64:")
+    for (src, fill), sub in slope_df.groupby(["source_file", "fill"]):
+        by_variant = sub.set_index("variant")["slope_ns_per_byte"]
+        if "scanner64" in by_variant and "byte_loop" in by_variant:
+            sc = float(by_variant["scanner64"])
+            bl = float(by_variant["byte_loop"])
+            print(
+                f"  {Path(src).stem} | {fill}: scanner64 = {sc:.4f} ns/B, "
+                f"byte_loop = {bl:.4f} ns/B "
+                f"({(bl / max(sc, 1e-9)) * 100:.1f}% dari slope scanner64)")
+    print("\nH2 — slope kandidat SWAR relatif terhadap byte_loop:")
+    for (src, fill), sub in slope_df.groupby(["source_file", "fill"]):
+        by_variant = sub.set_index("variant")["slope_ns_per_byte"]
+        if "byte_loop" not in by_variant:
+            continue
+        bl = max(float(by_variant["byte_loop"]), 1e-9)
+        for candidate in ("swar_set", "swar_advance"):
+            if candidate in by_variant:
+                cv = float(by_variant[candidate])
+                print(
+                    f"  {Path(src).stem} | {fill}: {candidate} = {cv:.4f} "
+                    f"ns/B ({(cv / bl) * 100:.1f}% dari byte_loop)")
+    return slope_df
+
+spaniso_slope_df = span_iso_slope_cell()
 
 # %% [markdown]
 # ## 6. Perbandingan file before/baseline vs after (eksploratif)
@@ -486,6 +930,86 @@ if before_after_df.empty:
     print("Tidak ada benchmark bernama sama yang tersedia pada artefak before/baseline dan after.")
 else:
     display(before_after_df.sort_values(["experiment_family", "benchmark_name"]))
+
+# Ampelas bacaan: tandai delta yang masuk rentang noise run-ulang (§3b) supaya
+# pembaca tidak menafsirkan perbedaan kecil sebagai efek nyata.
+if not before_after_df.empty:
+    before_after_df["family"] = before_after_df["benchmark_name"].map(family_from_name)
+    before_after_df["noise_band_pct"] = before_after_df["family"].map(noise_band_by_family)
+    before_after_df["signal"] = np.where(
+        before_after_df["noise_band_pct"].isna(),
+        "tanpa ukuran noise",
+        np.where(
+            before_after_df["time_change_pct"].abs() > before_after_df["noise_band_pct"],
+            "di atas noise",
+            "dalam noise",
+        ),
+    )
+    before_after_df.drop(columns="family", inplace=True)
+    print("Kolom signal menilai |time_change_pct| terhadap lantai noise run-ulang (§3b).")
+
+# %% [markdown]
+# ## 6b. Perbandingan dua revisi (hash A vs B) — STATUS DESKRIPTIF
+#
+# HUKUM PERTAMA: angka absolut lintas-proses di mesin ini bergetar 15–45%.
+# Tabel di bawah HANYA deskriptif; keputusan optimasi tetap harus dari rasio
+# dalam-run (§5) atau replika bersebelahan. Nilai tambah sel ini: rasio A/B
+# per benchmark bernama sama + penanda apakah delta melebihi lantai noise
+# run-ulang dari §3b (pertolongan dangkal pertama sebelum menulis benchmark
+# interleaved baru). Isi `REV_*_OVERRIDE` untuk memilih pasangan tertentu.
+
+# %%
+REV_A_OVERRIDE = None  # hash "baseline", mis. "e408674"
+REV_B_OVERRIDE = None  # hash "kandidat", mis. "05d2180"
+
+revision_compare_df = pd.DataFrame()
+revision_pair_note = ""
+if not bench_df.empty and bench_df["revision"].notna().any():
+    rev_stats = (
+        bench_df[bench_df["revision"].notna()]
+        .groupby("revision")
+        .agg(latest_date=("run_date", "max"), files=("source_file", "nunique"))
+    )
+    ordered = rev_stats.sort_values(
+        ["latest_date"], na_position="first").index.tolist()
+    if len(ordered) >= 2:
+        rev_a = str(REV_A_OVERRIDE or ordered[-2])
+        rev_b = str(REV_B_OVERRIDE or ordered[-1])
+        valid_rev = bench_df[bench_df["valid_measurement"] & bench_df["revision"].notna()]
+        med_a = valid_rev[valid_rev["revision"] == rev_a].groupby("benchmark_name")["time_ns"].median()
+        med_b = valid_rev[valid_rev["revision"] == rev_b].groupby("benchmark_name")["time_ns"].median()
+        common = med_a.index.intersection(med_b.index)
+        if len(common):
+            revision_compare_df = pd.DataFrame({
+                "time_a_ns": med_a[common], "time_b_ns": med_b[common],
+            })
+            revision_compare_df["ratio_a_over_b"] = (
+                revision_compare_df["time_a_ns"] / revision_compare_df["time_b_ns"])
+            revision_compare_df["delta_pct_b_vs_a"] = (
+                revision_compare_df["time_b_ns"] / revision_compare_df["time_a_ns"] - 1) * 100
+            revision_compare_df["family"] = revision_compare_df.index.map(family_from_name)
+            revision_compare_df["noise_band_pct"] = revision_compare_df["family"].map(noise_band_by_family)
+            revision_compare_df["signal"] = np.where(
+                revision_compare_df["noise_band_pct"].isna(),
+                "tanpa ukuran noise",
+                np.where(
+                    revision_compare_df["delta_pct_b_vs_a"].abs() > revision_compare_df["noise_band_pct"],
+                    "di atas noise",
+                    "dalam noise",
+                ),
+            )
+            revision_pair_note = f"{rev_a} vs {rev_b}"
+            print(
+                f"Revisi A: {rev_a} (terakhir: {rev_stats.loc[rev_a, 'latest_date']}, "
+                f"{int(rev_stats.loc[rev_a, 'files'])} file) vs "
+                f"Revisi B: {rev_b} (terakhir: {rev_stats.loc[rev_b, 'latest_date']}, "
+                f"{int(rev_stats.loc[rev_b, 'files'])} file); "
+                f"{len(common)} benchmark bernama sama.")
+            display(revision_compare_df.sort_index())
+        else:
+            print("Tidak ada nama benchmark yang sama antara dua revisi terbaru.")
+    else:
+        print("Belum cukup revisi berlabel hash untuk perbandingan (perlu >=2).")
 
 # %% [markdown]
 # ## 7. Analisis hasil Google Test
@@ -720,6 +1244,60 @@ else:
     print("Tidak ada ringkasan test untuk diaudit.")
 
 # %% [markdown]
+# ## 8b. Audit bukti artefak tahap optimasi
+#
+# Disiplin proyek: "benchmark tanpa artefak dianggap tidak terjadi"
+# (docs/development/benchmarking.md). Tabel ini memeriksa keberadaan artefak
+# bukti per tahap di `out/results/benchmark/` — pemeriksaan keberadaan saja,
+# bukan pengukuran ulang.
+
+# %%
+STAGE_EVIDENCE = [
+    ("1 · scanner64 di create_session", "e408674", [
+        "session_baseline_scanner8", "session_after_scanner64",
+        "session_pipeline_interleaved",
+    ]),
+    ("2 · indeks root lazy", "23a12ee", [
+        "rootwide_pathquery_baseline", "rootwide_pathquery_after_index",
+    ]),
+    ("3 · streaming array_next", "47e9cb7", [
+        "arrayread_before", "arrayread_after_streaming",
+    ]),
+    ("4 · validasi UTF-8 terintegrasi + indeks elemen array", "8e0f3e3", [
+        "tahap4_before", "tahap4_after", "tahap4_interleaved",
+    ]),
+    ("tahap5 · typedepth guard (eksperimen lanjutan)", None, [
+        "tahap5_typedepth_guard",
+    ]),
+    ("eksperimen goto automaton (regresi, di-revert 560a6ef)", None, [
+        "scanner_goto_interleaved", "scanner_revert_goto", "scanner_goto_final",
+    ]),
+]
+
+stage_audit_rows = []
+benchmark_stems = set(bench_df["artifact_stem"]) if not bench_df.empty else set()
+for stage, commit, patterns in STAGE_EVIDENCE:
+    for pattern in patterns:
+        found = sorted(stem for stem in benchmark_stems if stem.startswith(pattern))
+        stage_audit_rows.append({
+            "stage": stage,
+            "commit": commit,
+            "artifact_pattern": pattern,
+            "found": bool(found),
+            "files": "; ".join(found) if found else None,
+        })
+
+stage_audit_df = pd.DataFrame(stage_audit_rows)
+if not stage_audit_df.empty:
+    display(stage_audit_df)
+    missing = stage_audit_df[~stage_audit_df["found"]]
+    if not missing.empty:
+        print("Pola artefak TIDAK ditemukan:")
+        display(missing)
+else:
+    print("Audit tahap dilewati (tidak ada benchmark mentah untuk dipetakan).")
+
+# %% [markdown]
 # ## 9. Tabel ringkasan dan pemeriksaan data
 
 # %%
@@ -794,20 +1372,28 @@ if not bench_df.empty:
 # ## 11. Grafik pasangan scanner dan perbandingan JavaScript
 
 # %%
-if not scanner_pairs_df.empty:
-    plot_scanner = scanner_pairs_df.sort_values(["source_file", "scanner_pair_key"]).copy()
-    plot_scanner["label"] = plot_scanner["source_file"].map(lambda x: Path(x).name) + " | " + plot_scanner["scanner_pair_key"].astype(str)
-    fig, ax = plt.subplots(figsize=(14, max(5, len(plot_scanner) * 0.35)))
-    ax.barh(plot_scanner["label"], plot_scanner["speedup_64_vs_8"])
-    ax.axvline(1.0, linestyle="--", linewidth=1)
-    ax.set_title("Scanner64 dibanding Scanner8 dalam file/run yang sama")
-    ax.set_xlabel("Speedup = waktu Scanner8 / waktu Scanner64 (lebih besar = Scanner64 lebih cepat)")
-    ax.set_ylabel("File | pasangan benchmark")
-    ax.grid(True, axis="x", alpha=0.25)
-    plt.tight_layout()
-    plt.show()
+if not pairs_all_df.empty:
+    for rule_name, rule_pairs in pairs_all_df.sort_values(
+            ["source_file", "pair_key"]).groupby("rule"):
+        plot_label = (
+            rule_pairs["source_file"].map(lambda p: Path(p).name)
+            + " | " + rule_pairs["pair_key"].astype(str))
+        fig, ax = plt.subplots(figsize=(14, max(4, len(rule_pairs) * 0.35)))
+        ax.barh(plot_label, rule_pairs["ratio_a_over_b"])
+        ax.axvline(1.0, linestyle="--", linewidth=1)
+        title_pair = (
+            f"{rule_pairs['variant_a'].iloc[0]} vs {rule_pairs['variant_b'].iloc[0]}"
+            f" ({rule_name})")
+        ax.set_title(
+            f"{title_pair} — rasio = waktu_a / waktu_b (>1 = varian B lebih cepat)")
+        ax.set_xlabel(f"Rasio (skala log; interpretasi: {rule_pairs['interpretation'].iloc[0]})")
+        ax.set_ylabel("File | pasangan benchmark")
+        ax.set_xscale("log")
+        ax.grid(True, axis="x", alpha=0.25)
+        plt.tight_layout()
+        plt.show()
 else:
-    print("Grafik scanner dilewati karena pasangan valid tidak tersedia.")
+    print("Grafik pasangan dilewati karena tidak ada pasangan dalam-run yang valid.")
 
 if not js_sizes_df.empty:
     fig, ax = plt.subplots(figsize=(12, 7))
@@ -913,6 +1499,28 @@ if not bench_df.empty:
         equal = int(np.isclose(scanner_pairs_df["speedup_64_vs_8"], 1).sum())
         print(f"Pasangan Scanner8/64 dalam run sama: {len(scanner_pairs_df)}")
         print(f"  Scanner64 lebih cepat: {faster}; lebih lambat: {slower}; setara kira-kira: {equal}")
+    if not pairs_all_df.empty:
+        print("Pasangan dalam-run per aturan (varian B senderannya):")
+        for rule_name, rule_sub in pairs_all_df.groupby("rule"):
+            b_faster = int((rule_sub["ratio_a_over_b"] > 1).sum())
+            print(f"  {rule_name}: {len(rule_sub)} pasangan (B lebih cepat: {b_faster})")
+    if not noise_floor_df.empty:
+        worst = noise_floor_df.nlargest(3, "spread_pct")
+        median_spread = float(noise_floor_df["spread_pct"].median())
+        print(f"Lantai noise run-ulang: median spread {median_spread:.1f}%; 3 getaran terburuk:")
+        for _, noise_row in worst.iterrows():
+            print(f"  {noise_row['benchmark_name']} ({Path(noise_row['files'].split(';')[0].strip()).name}): {noise_row['spread_pct']:.1f}%")
+    if revision_pair_note:
+        above_noise = int((revision_compare_df["signal"] == "di atas noise").sum())
+        print(f"Perbandingan revisi (DESKRIPTIF): {revision_pair_note} — {len(revision_compare_df)} benchmark, {above_noise} delta di atas lantai noise run-ulang")
+if not stage_audit_df.empty:
+    n_missing = int((~stage_audit_df["found"]).sum())
+    print(f"Audit bukti tahap 1–5: {int(stage_audit_df['found'].sum())}/{len(stage_audit_df)} pola artefak ditemukan" + (f" ({n_missing} hilang)" if n_missing else ""))
+if not js_breakeven_df.empty:
+    for _, breakeven_row in js_breakeven_df.iterrows():
+        be = breakeven_row["break_even_bytes"]
+        be_text = f"{be/1024:.1f} KiB" if be else "tidak menang pada ukuran teruji"
+        print(f"JS break-even {breakeven_row['workload']} ({Path(breakeven_row['source_file']).name}): {be_text}")
 if not test_summary_df.empty:
     print(f"Baris grup test dari summary: {len(test_summary_df)}")
     print(f"Jumlah test pada semua summary (setiap revisi/preset dihitung sebagai run tersendiri): {int(test_summary_df['tests'].sum())}")
@@ -927,6 +1535,9 @@ print("2. Bandingkan Scanner8 dan Scanner64 terutama dari pasangan yang tercatat
 print("3. Google Benchmark error atau 0 ns/op dikeluarkan dari analisis performa, tetapi tetap ditampilkan sebagai anomali.")
 print("4. JS js_parse disimpan awalnya sebagai ops/s; notebook menghitung latency turunan 1e6 / ops/s untuk visualisasi.")
 print("5. Laporan test dari commit/preset berbeda adalah riwayat, bukan gambaran tunggal status HEAD saat ini.")
+print("6. Lantai noise §3b diukur DARI artefak run-ulang; delta di dalam band tidak boleh ditafsiri sebagai efek.")
+print("7. Perbandingan revisi §6b deskriptif — keputusan optimasi tetap wajib rasio dalam-run atau benchmark interleaved.")
+print("8. Pasangan pola kerja berbeda (mis. array_counted_vs_streaming) bukan kandidat kecepatan yang setara.")
 
 # %% [markdown]
 # ## 14. Ekspor tabel (opsional)
@@ -944,12 +1555,19 @@ if EXPORT_TABLES:
         "file_inventory.csv": inventory_df,
         "benchmark_raw.csv": bench_df,
         "benchmark_summary_rows.csv": summary_bench_df,
+        "benchmark_pairs_same_run.csv": pairs_all_df,
         "scanner_pairs_same_run.csv": scanner_pairs_df,
+        "spaniso_slope.csv": spaniso_slope_df,
+        "noise_floor_replicas.csv": noise_floor_df,
         "benchmark_before_after_exploratory.csv": before_after_df,
+        "revision_compare.csv": revision_compare_df,
         "js_sizes_long.csv": js_sizes_df,
         "js_sizes_comparison.csv": js_sizes_wide,
+        "js_sizes_breakeven.csv": js_breakeven_df,
+        "js_sizes_cross_revision.csv": js_sizes_crossrev_df,
         "js_parse_long.csv": js_parse_df,
         "js_parse_comparison.csv": js_parse_wide,
+        "stage_evidence_audit.csv": stage_audit_df,
         "test_summary_groups.csv": test_summary_df,
         "test_raw_runs.csv": test_runs_df,
         "test_raw_cases.csv": test_cases_df,
