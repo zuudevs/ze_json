@@ -33,63 +33,6 @@ utf8_step(types::uint32_t& state, const char* byte_ptr) NOEXCEPT {
     state = lookups::kUtf8Dfa[256 + state + type];
     return state != 12;
 }
-
-// ---------------------------------------------------------------------------
-//  PROBE SPAN HYBRID (Eksperimen A1, benchmarks/span_iso_benchmark):
-//  loop span non-string tetap byte-per-byte sebagai mesin, dengan probe
-//  blok murah (2-3 predikat, TANPA mask terminator) yang melompat
-//  blok penuh digit-run tanpa ':' ATAU spasi penuh — hanya bila span
-//  SEBELUMNYA >= 1 blok. Terukur pada REPLIKA span_iso (artefak
-//  spaniso_hybrid_interleaved): menang semua regime in-run. Lompatan aman:
-//  blok yang lolos predikat tidak mungkin memuat byte struktural (set
-//  terminator tidak memuat digit/spasi; ':' satu-satunya terminator
-//  nibble-3 dan dieksplisitkan), dan DFA pas-ACCEPT (utf8 == 0)
-//  persyaratan probe. V2: probe berada di helper out-of-line (lihat
-//  span_probe_scan) — hiper dalam-loop mengganggu codegen (terukur).
-// ---------------------------------------------------------------------------
-constexpr types::uint64_t kSpanHighBitMask =
-    utils::repeat_byte_v<types::uint64_t, 0x80_u8>;
-constexpr types::uint64_t kSpanNibbleFMask =
-    utils::repeat_byte_v<types::uint64_t, 0xF0_u8>;
-constexpr types::uint64_t kSpanNibble3Rep =
-    utils::repeat_byte_v<types::uint64_t, 0x30_u8>;
-constexpr types::uint64_t kSpanSpaceRep =
-    utils::repeat_byte_v<types::uint64_t, 0x20_u8>;
-constexpr types::uint64_t kSpanColonRep =
-    utils::repeat_byte_v<types::uint64_t, 0x3A_u8>;
-
-// ---------------------------------------------------------------------------
-//  PROBE SPAN —_setelah pengukuran V1 (inline di loop utama): hasil
-//  spanreal r1+r2 menunjukkan regresi konsisten (0,70-0,99 vs replika beku)
-//  padahal gate nyaris tak pernah menyala di data yang regresinya terparah
-//  (github 0,05%, jeopardy 0%) → regresi bukan kerja probe, melainkan
-//  DISRUPSI CODEGEN pada loop byte (tumpahan span_start/prev_span_len,
-//  CFG lebih lebar). V2 maka menaruh seluruh probe pada HELPER OUT-OF-LINE
-//  (noinline+noclone): badan scanner64 kembali identik pra-hybrid, call
-//  tak-bersyarat satu per span (prediktabil sempurna), gate dievaluasi
-//  di dalam helper sehingga tak ada cabang baru di loop byte.
-// ---------------------------------------------------------------------------
-[[gnu::noinline, gnu::noclone]] const char*
-span_probe_scan(
-    const char* ptr, const char* end, types::uint32_t utf8,
-    types::size_t prev_span_len) NOEXCEPT {
-    if (utf8 != 0 || prev_span_len < sizeof(types::uint64_t)) {
-        return ptr;
-    }
-    while (ptr + sizeof(types::uint64_t) <= end) {
-        types::uint64_t block;
-        __builtin_memcpy(&block, ptr, sizeof(types::uint64_t));
-        if ((block & kSpanHighBitMask) == 0 &&
-            ((block ^ kSpanSpaceRep) == 0 ||
-             (((block & kSpanNibbleFMask) ^ kSpanNibble3Rep) == 0 &&
-              utils::swar_has_zero_byte(block ^ kSpanColonRep) == 0))) {
-            ptr += sizeof(types::uint64_t);
-            continue;
-        }
-        break; // predikat gagal — kembalikan pointer: byte-loop mengambil alih
-    }
-    return ptr;
-}
 } // namespace
 
 #if __LITTLE_ENDIAN__ == 1
@@ -128,17 +71,7 @@ scanner64(
     // State DFA UTF-8 (0 = ACCEPT) — validasi menumpang jalan scanner.
     types::uint32_t utf8 = 0;
 
-    // Sinyal adaptivitas probe span hybrid (lihat konstanta di atas):
-    // panjang span SEBELUMNYA; span pertama diizinkan probe (start state).
-    types::size_t prev_span_len = sizeof(types::uint64_t);
-
     while (ptr < end && cursor < end_cursor) {
-        const char* const span_start = ptr;
-
-        // Probe V2 out-of-line — seluruh logika lompat blok di helper
-        // (dagang tetap sama; codegen loop byte tidak tersentuh).
-        ptr = span_probe_scan(ptr, end, utf8, prev_span_len);
-
         while (ptr < end &&
                lookups::kStructural[static_cast<types::uint8_t>(*ptr)] == 0) {
             if (utf8 != 0 || (*ptr & 0x80) != 0) [[unlikely]] {
@@ -148,8 +81,6 @@ scanner64(
             }
             ptr++;
         }
-        // Panjang span TOTAL (probe + byte-loop) — sinyal adaptivitas.
-        prev_span_len = static_cast<types::size_t>(ptr - span_start);
 
         if (ptr >= end) {
             break;
