@@ -34,8 +34,11 @@
 // ============================================================================
 #include <benchmark/benchmark.h>
 #include <cstddef>
+#include <filesystem>
+#include <fstream>
 #include <print>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <ze_json/core/error.hpp>
@@ -48,8 +51,12 @@
 #include <ze_json/utils/repeat_byte.hpp>
 #include <ze_json/utils/swar.hpp>
 
+#include "../scanner_benchmark/replica_span_prehybrid.hpp"
+
 using namespace zuu;
 using zuu::types::size_t;
+
+namespace fs = std::filesystem;
 
 // ---------------------------------------------------------------------------
 //  Generator payload sintetis deterministik
@@ -699,4 +706,76 @@ REGISTER_SPAN_GROUP(WS, 64)
 REGISTER_SPAN_GROUP(Num, 64)
 REGISTER_SPAN_GROUP(WS, 256)
 REGISTER_SPAN_GROUP(Num, 256)
+
+// ---------------------------------------------------------------------------
+//  TAHAP-6: pasangan TERSEBELAHAN pada dataset nyata (samples/) — library
+//  scanner64 (span probe-hybrid) vs replika pra-hybrid beku. Adjacency
+//  eksplisit per dataset: dua slot konsekutif = mitigasi getaran jam
+//  antar-benchmark (bergetar 15-45% terdokumentasi).
+// ---------------------------------------------------------------------------
+#if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
+
+const fs::path SAMPLES_DIR =
+    fs::path(__FILE__).parent_path().parent_path().parent_path() / "samples";[[nodiscard]] const std::string&
+get_span_real_dataset(const std::string& name) {
+    static std::unordered_map<std::string, std::string> cache;
+    if (!cache.contains(name)) {
+        auto& data = cache[name];
+        std::ifstream reader(SAMPLES_DIR / name, std::ios::binary);
+        if (!reader.is_open()) {
+            std::println(stderr, "Gagal memuat {}", name);
+            data.clear();
+            return data;
+        }
+        auto file_size = fs::file_size(SAMPLES_DIR / name);
+        data.resize(file_size);
+        reader.read(data.data(), static_cast<std::streamsize>(file_size));
+    }
+    return cache[name];
+}
+
+#define REGISTER_SPAN_REAL_PAIR(FAMILY, FILE_NAME, CAPACITY)                \
+    static void BM_SpanReal_Hybrid_##FAMILY(benchmark::State& state) {      \
+        static const std::string& json =                                    \
+            get_span_real_dataset(FILE_NAME);                               \
+        if (json.empty()) { state.SkipWithError("Dataset gagal"); return; } \
+        std::vector<types::size_t> tape((CAPACITY));                        \
+        for (auto _ : state) {                                              \
+            auto res = zuu::scanner::scanner64(                             \
+                json.data(), json.size(), tape.data(), tape.size());        \
+            benchmark::DoNotOptimize(res);                                  \
+            benchmark::ClobberMemory();                                     \
+        }                                                                   \
+        state.SetBytesProcessed(                                            \
+            state.iterations() * static_cast<int64_t>(json.size()));        \
+    }                                                                       \
+    BENCHMARK(BM_SpanReal_Hybrid_##FAMILY)->Unit(                           \
+        benchmark::kNanosecond)->MinTime(15)->MinWarmUpTime(3);             \
+    static void BM_SpanReal_PreHybrid_##FAMILY(benchmark::State& state) {   \
+        static const std::string& json =                                    \
+            get_span_real_dataset(FILE_NAME);                               \
+        if (json.empty()) { state.SkipWithError("Dataset gagal"); return; } \
+        std::vector<types::size_t> tape((CAPACITY));                        \
+        for (auto _ : state) {                                              \
+            auto res = replica_span_prehybrid::                             \
+                scanner64_prehybrid_span_replica(                           \
+                    json.data(), json.size(),                               \
+                    tape.data(), tape.size());                              \
+            benchmark::DoNotOptimize(res);                                  \
+            benchmark::ClobberMemory();                                     \
+        }                                                                   \
+        state.SetBytesProcessed(                                            \
+            state.iterations() * static_cast<int64_t>(json.size()));        \
+    }                                                                       \
+    BENCHMARK(BM_SpanReal_PreHybrid_##FAMILY)->Unit(                        \
+        benchmark::kNanosecond)->MinTime(15)->MinWarmUpTime(3);
+
+REGISTER_SPAN_REAL_PAIR(github_events, "github_events.json", 316 * 1024)
+REGISTER_SPAN_REAL_PAIR(mesh,        "mesh.json",        352 * 1024)
+REGISTER_SPAN_REAL_PAIR(twitter,     "twitter.json",     648 * 1024)
+REGISTER_SPAN_REAL_PAIR(citm_catalog, "citm_catalog.json", 1768 * 1024)
+REGISTER_SPAN_REAL_PAIR(update_center, "update-center.json", 3214 * 1024)
+REGISTER_SPAN_REAL_PAIR(canada,      "canada.json",      2256 * 1024)
+REGISTER_SPAN_REAL_PAIR(jeopardy,    "jeopardy.json",    54 * 1024 * 1024)
+#endif
 
