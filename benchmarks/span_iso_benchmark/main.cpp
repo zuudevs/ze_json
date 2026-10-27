@@ -388,6 +388,80 @@ swar_advance_replica(
     return static_cast<size_t>(found);
 }
 
+// ---------------------------------------------------------------------------
+//  Replika 4 — SWAR HYBRID (probe adaptif): loop skalar VERBATIM sebagai
+//  mesin, dengan PROBE blok murah (2 predikat, tanpa mask terminator)
+//  yang hanya menyala ketika span SEBELUMNYA >= 8 byte (bukti A1: SWAR
+//  menang di span panjang — Pad64/256 — tetapi KALAH di span pendek,
+//  Pad8, karena overhead per blok melebihi pencarian byte).
+//  Probe hanya melompat blok penuh spasi ATAU digit-run penuh tanpa ':'
+//  — tak ada terminator yang lepas (set terminator tidak memuat byte
+//  spasi/digit; ':' satu-satunya terminator nibble-3 dan dieksplisitkan).
+//  Blok apa pun yang gagal predikat jatuh ke byte-loop — biaya Δ per
+//  token hanya satu muat + 2 cmp, dirawat oleh ekor skalar.
+// ---------------------------------------------------------------------------
+[[nodiscard]] types::Result<size_t, core::JsonErrc>
+swar_hybrid_replica(
+    const char* const RESTRICT src, size_t src_size,
+    types::size_t* RESTRICT /*dst*/, size_t /*dst_size*/) NOEXCEPT {
+    types::uint32_t utf8 = 0;
+    size_t found         = 0;
+
+    // span pertama diizinkan probe (start state = "span panjang");
+    // realita terukur: aproximasi tidak mengubah semantik apa pun.
+    size_t prev_span_len = kBlock;
+
+    auto ptr      = src;
+    const auto end = src + src_size;
+
+    while (ptr < end) {
+        const char* const span_start = ptr;
+
+        // PROBE adaptif: berulang di dalam span — tiap lompatan 8 byte
+        // penuh (spasi ATAU digit-run tanpa ':') menghemat 8 byte-loop.
+        // Gate: DFA ACCEPT + span sebelumnya >= 1 blok + muat blok penuh.
+        while (utf8 == 0 && prev_span_len >= kBlock && ptr + kBlock <= end) {
+            types::uint64_t block;
+            __builtin_memcpy(&block, ptr, kBlock);
+            if ((block & kHighBitMask) == 0 &&
+                ((block ^ kSpaceRep) == 0 ||
+                 (((block & kNibbleFMask) ^ kNibble3Rep) == 0 &&
+                  utils::swar_has_zero_byte(block ^ kColonRep) == 0))) {
+                ptr += kBlock;
+                continue;
+            }
+            break; // predikat gagal — span pendek/campuran: byte-loop
+        }
+
+        while (ptr < end &&
+               lookups::kStructural[static_cast<types::uint8_t>(*ptr)] == 0) {
+            if (utf8 != 0 || (*ptr & 0x80) != 0) [[unlikely]] {
+                if (!utf8_step_span(utf8, ptr)) [[unlikely]] {
+                    return types::Unexpected{core::JsonErrc::InvalidUtf8};
+                }
+            }
+            ptr++;
+        }
+        // panjang span TOTAL (probe + byte-loop) — sinyal adaptivitas.
+        prev_span_len = static_cast<size_t>(ptr - span_start);
+
+        if (ptr >= end) {
+            break;
+        }
+
+        if (!consume_terminator(ptr, utf8)) [[unlikely]] {
+            return types::Unexpected{core::JsonErrc::InvalidUtf8};
+        }
+        ++found;
+        ptr++;
+    }
+
+    if (utf8 != 0) [[unlikely]] {
+        return types::Unexpected{core::JsonErrc::InvalidUtf8};
+    }
+    return static_cast<size_t>(found);
+}
+
 } // namespace span_replica
 
 // ---------------------------------------------------------------------------
@@ -450,9 +524,11 @@ run_gate() {
         span_replica::byte_loop_replica,
         span_replica::swar_set_replica,
         span_replica::swar_advance_replica,
+        span_replica::swar_hybrid_replica,
     };
     const char* replica_names[] = {
         "ByteLoopReplica", "SWARSetReplica", "SWARAdvanceReplica",
+        "SWARHybridReplica",
     };
 
     const size_t gate_pads[] = {0, 7, 8, 16, 63, 64, 255, 256, 257};
@@ -575,6 +651,16 @@ BM_SpanIso_SWARAdvanceReplica_FillNum(benchmark::State& state)
 {
     span_iso_run(state, FillKind::NUM, span_replica::swar_advance_replica);
 }
+void
+BM_SpanIso_SWARHybridReplica_FillWS(benchmark::State& state)
+{
+    span_iso_run(state, FillKind::WS, span_replica::swar_hybrid_replica);
+}
+void
+BM_SpanIso_SWARHybridReplica_FillNum(benchmark::State& state)
+{
+    span_iso_run(state, FillKind::NUM, span_replica::swar_hybrid_replica);
+}
 
 } // namespace
 
@@ -590,16 +676,22 @@ BM_SpanIso_SWARAdvanceReplica_FillNum(benchmark::State& state)
     REGISTER_PADED(BM_SpanIso_Scanner64_Fill##FILL_TAG, PAD)            \
     REGISTER_PADED(BM_SpanIso_ByteLoopReplica_Fill##FILL_TAG, PAD)      \
     REGISTER_PADED(BM_SpanIso_SWARSetReplica_Fill##FILL_TAG, PAD)       \
-    REGISTER_PADED(BM_SpanIso_SWARAdvanceReplica_Fill##FILL_TAG, PAD)
+    REGISTER_PADED(BM_SpanIso_SWARAdvanceReplica_Fill##FILL_TAG, PAD)   \
+    REGISTER_PADED(BM_SpanIso_SWARHybridReplica_Fill##FILL_TAG, PAD)
 #else
 #define REGISTER_SPAN_GROUP(FILL_TAG, PAD)                              \
     REGISTER_PADED(BM_SpanIso_ByteLoopReplica_Fill##FILL_TAG, PAD)      \
     REGISTER_PADED(BM_SpanIso_SWARSetReplica_Fill##FILL_TAG, PAD)       \
-    REGISTER_PADED(BM_SpanIso_SWARAdvanceReplica_Fill##FILL_TAG, PAD)
+    REGISTER_PADED(BM_SpanIso_SWARAdvanceReplica_Fill##FILL_TAG, PAD)   \
+    REGISTER_PADED(BM_SpanIso_SWARHybridReplica_Fill##FILL_TAG, PAD)
 #endif
 
 REGISTER_PADED(BM_SpanIso_Scanner64_FillWS, 0)   // dasar slope tanpa filler
 REGISTER_PADED(BM_SpanIso_Scanner64_FillNum, 0)
+// Hybrid ikut diukur pada Pasangan 0 — pengujian regresi-tanpa-filler:
+// gate probe adaptif harus menyala-mati tanpa overhead di region padat.
+REGISTER_PADED(BM_SpanIso_SWARHybridReplica_FillWS, 0)
+REGISTER_PADED(BM_SpanIso_SWARHybridReplica_FillNum, 0)
 
 REGISTER_SPAN_GROUP(WS, 8)
 REGISTER_SPAN_GROUP(Num, 8)

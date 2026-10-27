@@ -600,7 +600,8 @@ def _match_span_iso(name: str):
     """Eksperimen A1 span_iso_benchmark. pasangan per (Fill, Pad):
     BM_SpanIso_<Variant>_Fill{WS,Num}/Pad:<n> -> (FillWS|Pad:8, varian)."""
     match = re.match(
-        r"BM_SpanIso_(Scanner64|ByteLoopReplica|SWARSetReplica|SWARAdvanceReplica)"
+        r"BM_SpanIso_(Scanner64|ByteLoopReplica|SWARSetReplica|SWARAdvanceReplica"
+        r"|SWARHybridReplica)"
         r"_Fill(WS|Num)/Pad:(\d+)$", name)
     if not match:
         return None
@@ -609,6 +610,7 @@ def _match_span_iso(name: str):
         "ByteLoopReplica": "byte_loop",
         "SWARSetReplica": "swar_set",
         "SWARAdvanceReplica": "swar_advance",
+        "SWARHybridReplica": "swar_hybrid",
     }[match.group(1)]
     return f"Fill{match.group(2)}|Pad:{match.group(3)}", variant
 
@@ -662,6 +664,13 @@ PAIR_RULES = [
         "var_a": "byte_loop",
         "var_b": "swar_advance",
         "note": "A1 · span non-string: loop byte vs SWAR fast-path digit/spasi",
+    },
+    {
+        "name": "spaniso_byte_vs_hybrid",
+        "match": _match_span_iso,
+        "var_a": "byte_loop",
+        "var_b": "swar_hybrid",
+        "note": "A1 hybrid · loop byte + probe adaptif (dinonaktifkan di span pendek)",
     },
 ]
 
@@ -795,7 +804,7 @@ def span_iso_slope_cell():
     if bench_df.empty:
         return pd.DataFrame()
     run = bench_df[
-        bench_df["artifact_stem"].str.startswith("spaniso_interleaved")
+        bench_df["artifact_stem"].str.startswith("spaniso")
         & ~bench_df["artifact_stem"].str.endswith(("_r2", "_run2"))
     ].copy()
     run = run[run["valid_measurement"]]  # run utama saja, bukan replika noise
@@ -805,7 +814,8 @@ def span_iso_slope_cell():
 
     parts = run["benchmark_name"].str.extract(
         r"BM_SpanIso_(?P<variant>Scanner64|ByteLoopReplica|SWARSetReplica"
-        r"|SWARAdvanceReplica)_Fill(?P<fill>WS|Num)/Pad:(?P<pad>\d+)$")
+        r"|SWARAdvanceReplica|SWARHybridReplica)_Fill(?P<fill>WS|Num)"
+        r"/Pad:(?P<pad>\d+)$")
     run = pd.concat([run, parts], axis=1).dropna(
         subset=["variant", "fill", "pad"])
     run["pad"] = run["pad"].astype(int)
@@ -858,7 +868,7 @@ def span_iso_slope_cell():
         if "byte_loop" not in by_variant:
             continue
         bl = max(float(by_variant["byte_loop"]), 1e-9)
-        for candidate in ("swar_set", "swar_advance"):
+        for candidate in ("swar_set", "swar_advance", "swar_hybrid"):
             if candidate in by_variant:
                 cv = float(by_variant[candidate])
                 print(
