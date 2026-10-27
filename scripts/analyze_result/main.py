@@ -639,6 +639,17 @@ def _match_span_real_pair(name: str):
         "hybrid" if match.group(1) == "Hybrid" else "prehybrid")
 
 
+def _match_gram_pair(name: str):
+    """Tahap-7 pasangan terhimpit: BM_GRAM_Base_X (create_session murni) vs
+    BM_GRAM_Tapewalk_X (create_session + validator gramatikal tape-walk).
+    Pair key = dataset."""
+    match = re.match(r"BM_GRAM_(Base|Tapewalk)_(\w+)$", name)
+    if not match:
+        return None
+    return match.group(2), (
+        "base" if match.group(1) == "Base" else "tapewalk")
+
+
 PAIR_RULES = [
     {
         "name": "typed_vs_untyped_class",
@@ -709,6 +720,14 @@ PAIR_RULES = [
         "var_a": "prehybrid",
         "var_b": "hybrid",
         "note": "Tahap-6 · pasangan terhimpit dataset nyata (SpanReal)",
+    },
+    {
+        "name": "gram_base_vs_tapewalk",
+        "match": _match_gram_pair,
+        "var_a": "base",
+        "var_b": "tapewalk",
+        "note": "Tahap-7 · create_session vs + validator gramatikal tape-walk "
+                "(ratio <1 = overhead validator; reduction negatif)",
     },
 ]
 
