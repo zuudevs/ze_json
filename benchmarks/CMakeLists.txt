@@ -56,4 +56,8 @@ if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
 	add_comprehensive_benchmark_target(session_benchmark
 		"${CMAKE_CURRENT_SOURCE_DIR}/session_benchmark/main.cpp"
 	)
+
+	add_comprehensive_benchmark_target(span_iso_benchmark
+		"${CMAKE_CURRENT_SOURCE_DIR}/span_iso_benchmark/main.cpp"
+	)
 endif()
