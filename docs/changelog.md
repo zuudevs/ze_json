@@ -18,6 +18,23 @@ versi mengikuti [SemVer](https://semver.org/). Rilis npm
   probe span hybrid ke `scanner64` terukur regresi di semua dataset nyata
   (V1/V2, 0,45–0,99) dan di-revert — lihat
   `docs/architecture/optimizations.md` §Tahap-6.
+- Eksperimen Tahap-7 `benchmarks/session_benchmark/` (C2 — validator
+  gramatikal tape-walk): replika beku
+  `replica_grammar_tapewalk.hpp` (mesin status 10-state + stack-bit;
+  gerbang korpus json.org 33 fail, 26 reject-target, sisanya
+  accept-sengaja string-lazy/depth), pasangan in-run
+  `BM_GRAM_Base_*` vs `BM_GRAM_Tapewalk_*` untuk 7 dataset nyata +
+  payload sintetis, aturan notebook `gram_base_vs_tapewalk`, artefak
+  AMD uProf `out/results/profiling/amduprof_tahap7_*.csv`. Hasil
+  NEGATIF: overhead +90–201% vs `create_session`; dekomposisi
+  α ≈ 7,1 ns/entri-tape dominan (R²=1,0) → pass O(token) kedua tidak
+  bisa mendekati gerbang ±5–10%; tidak diadopsi ke `src/` — lihat
+  `docs/architecture/optimizations.md` §Tahap-7 dan
+  `docs/architecture/grammar-validation.md` §Hasil pengukuran.
+- Mode CLI headless notebook `scripts/analyze_result/main.py`: saat
+  dijalankan sebagai `python main.py` (di luar Jupyter) figure
+  matplotlib disimpan ke `out/analysis/figures/*.png` alih-alih
+  membuka jendela interaktif; di Jupyter tetap inline.
 
 ## [0.1.6] — 2026-10-26
 

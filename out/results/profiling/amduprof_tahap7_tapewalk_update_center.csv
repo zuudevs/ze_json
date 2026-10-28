@@ -1,0 +1,170 @@
+
+"AMD uProf (Version:5.3.521.0)"
+PERFORMANCE ANALYSIS REPORT
+
+EXECUTION
+Target Path:,"D:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe"
+Command Line Arguments:,"--benchmark_filter=BM_GRAM_Tapewalk_update_center "
+Working Directory:,"D:\kuliah_\7_semester\skripsi\v3\src\ze_json"
+Environment Variables:
+CPU Details:,"Family(0x17), Model(0x68), Number of Cores(12)"
+Operating System:,"Win1125H2-64"
+Collect Command:,"AMDuProfCLI.exe collect --config assess_ext -d 25 -w D:\kuliah_\7_semester\skripsi\v3\src\ze_json -o C:\Users\ASUS\AppData\Local\Temp\opencode\amduprof\tapewalk_uc D:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe --benchmark_filter=BM_GRAM_Tapewalk_update_center"
+Report Command:,"AMDuProfCLI.exe report -i C:\Users\ASUS\AppData\Local\Temp\opencode\amduprof\tapewalk_uc --detail --show-event-count --show-percentage"
+
+PROFILE DETAILS
+Profile Session Type:,"Assess Performance (Extended)"
+Profile Scope:,"Single Application"
+CPU Mask:,"0-11"
+CPU Affinity Mask:,"0-11"
+Profile Start Time:,"Wed Oct 28 10:16:40 2026"
+Profile End Time:,"Wed Oct 28 10:17:05 2026"
+Profile Duration:,"25.113 seconds"
+Data Folder:,"C:\Users\ASUS\AppData\Local\Temp\opencode\amduprof\tapewalk_uc"
+Virtual Machine:,"Yes"
+Hypervisor Vendor:,"Microsoft Hyper-V"
+Call Stack Sampling:,"False"
+Selected View:,"Overall Assessment (Extended)"
+
+MONITORED EVENTS
+PMC Events:,Name,Interval,Unitmask,Countmask,Invert Countmask,User,OS,Description
+,"MISALIGNED_LOADS (PMCx047)",25000,0x00,0x00,False,True,True,"The number of misaligned loads. On Zen3, this predefined counts the 64B (cacheline crossing) and 4K (page crossing) misaligned loads."
+,"CYCLES_NOT_IN_HALT (PMCx076)",250000,0x00,0x00,False,True,True,"The number of cpu cycles when the thread is not in halt state."
+,"RETIRED_INST (PMCx0C0)",250000,0x00,0x00,False,True,True,"The number of instructions retired from execution. This count includes exceptions and interrupts. Each exception or interrupt is counted as one instruction."
+,"RETIRED_BR_INST (PMCx0C2)",25000,0x00,0x00,False,True,True,"The number of branch instructions retired. This includes all types of architectural control flow changes, including exceptions and interrupts."
+,"RETIRED_BR_INST_MISP (PMCx0C3)",25000,0x00,0x00,False,True,True,"The number of retired branch instructions, that were mispredicted.Note that only EX direct mispredicts and indirect target mispredicts are counted
+            "
+,"L1_DEMAND_DC_REFILLS_LOCAL_L2 (PMCx043)",25000,0x01,0x00,False,True,True,"Counts all L2 Prefetches accepted by L2 pipeline which hit in the L2 Cache."
+,"LsBadStatus2.StliOther (PMCx024)",25000,0x02,0x00,False,True,True,"Bad Status 2"
+,"L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PMCx043)",25000,0x02,0x00,False,True,True,"The demand Data Cache (DC) fills from same the cache of same CCX or cache of different CCX in the same package (node)."
+,"INEFFECTIVE_SW_PF (PMCx052)",25000,0x03,0x00,False,True,True,"The number of software prefetches that did not fetch data outside of the processor core. This predefined counts the Software PREFETCH instruction that saw a match on an already - allocated miss request buffer.Also counts the Software PREFETCH instruction that saw a DC hit."
+,"L1_DC_ACCESSES_ALL (PMCx029)",250000,0x07,0x00,False,True,True,"The number of load and store ops dispatched to LS unit. This counts the dispatch of single op that performs a memory load, dispatch of single op that performs a memory store, dispatch of a single op that performs a load from and store to the same memory address."
+,"L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PMCx043)",25000,0x08,0x00,False,True,True,"The demand Data Cache (DC) fills from DRAM or IO connected in the same package (node)."
+,"FpDispFaults.YmmSpillFault.YmmFillFault.XmmFillFault (PMCx00E)",25000,0x0E,0x00,False,True,True,"Floating Point Dispatch Faults."
+,"L2_CACHE_ACCESS_FROM_L1_DC_MISS (PMCx060)",25000,0xC8,0x00,False,True,True,"The L2 cache access requests due to L1 data cache misses. This also counts hardware and software prefetches."
+
+
+DERIVED METRICS
+Metric Name,Expression,Description
+"CPI","CYCLES_NOT_IN_HALT / RETIRED_INST","The average number of CPU cycles consumed to retire an instruction. This metric is computed as the ratio of CYCLES_NOT_IN_HALT to RETIRED_INST event. The higher values means the application consumes more CPU cycles to retire an instruction due to high cache misses, branch mispredictions, pipeline stalls, I/O or any other bottlenecks. If the CPI values exceeds a threshold value, it will be highlighted in pink."
+"RETIRED_BR_INST (PTI)","( RETIRED_BR_INST * 1000 ) / RETIRED_INST","The number of retired branch instructions per thousand retired instructions."
+"%RETIRED_BR_INST_MISP","( RETIRED_BR_INST_MISP * 100 ) / RETIRED_BR_INST","The percentage of retired mispredicted branches with respect to the total number of retired branches."
+"L1_DC_ACCESSES (PTI)","( L1_DC_ACCESSES_ALL * 1000 ) / RETIRED_INST","The number of load and store operations per thousand instructions. This counts the dispatch of single op that performs a memory load, dispatch of single op that performs a memory store, dispatch of a single op that performs a load from and store to the same memory address"
+"%L1_DC_MISSES","( L2_CACHE_ACCESS_FROM_L1_DC_MISS * 100 ) / L1_DC_ACCESSES_ALL","The percentage of L2 cache access requests due to L1 data cache misses with respect to the total number of load and store operations. This also counts the hardware and software prefetches."
+"L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","( L1_DEMAND_DC_REFILLS_LOCAL_DRAM * 1000 ) / RETIRED_INST","The number of demand data cache (DC) fills per thousand retired instructions. These demand DC fills are from DRAM or IO connected in the same package (node)."
+"L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","( L1_DEMAND_DC_REFILLS_LOCAL_CACHE * 1000 ) / RETIRED_INST","The number of demand data cache (DC) fills per thousand retired instructions. These demand DC fills are from same the cache of same CCX or cache of different CCX in the same package (node)."
+"L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","( L1_DEMAND_DC_REFILLS_LOCAL_L2 * 1000 ) / RETIRED_INST","The number of demand data cache (DC) fills per thousand retired instructions. These DC fills are from local L2 cache to the core."
+"MISALIGNED_LOADS (PTI)","( MISALIGNED_LOADS * 1000 ) / RETIRED_INST","The number of misaligned loads per thousand retired instructions."
+"STLI_OTHER (PTI)","( LsBadStatus2.StliOther * 1000 ) / RETIRED_INST","Store-to-load conflicts: A load was unable to complete due to a non-forwardable conflict with an older store. Most commonly, a load's address range partially but not completely overlaps with an uncompleted older store. Software can avoid this problem by using same-size and same-alignment loads and stores when accessing the same data. Vector/SIMD code is particularly susceptible to this problem; software should construct wide vector stores by manipulating vector elements in registers using shuffle/blend/swap instructions prior to storing to memory, instead of using narrow element-by-element stores."
+"SSE_AVX_STALLS (PTC)","( FpDispFaults.YmmSpillFault.YmmFillFault.XmmFillFault * 1000 ) / CYCLES_NOT_IN_HALT","SSE AVX Dispatch Stalls."
+"INEFFECTIVE_SW_PF (PTI)","( INEFFECTIVE_SW_PF * 1000 ) / RETIRED_INST","The number of ineffective software prefetches per thousand instructions."
+
+
+APPLICATION PERFORMANCE SNAPSHOT
+Thread Count,"5"
+
+
+"10 HOTTEST FUNCTIONS (Sort Event - CYCLES_NOT_IN_HALT)"
+FUNCTION,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)",Module
+"session_benchmark.exe!0x14001b66c",2134.0000,3934.0000,0.5425,124.4789,0.6943,568.3782,1.1852,0.0254,0.0508,0.1779,0.0000,0.0000,0.0000,0.1525,"d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe"
+"session_benchmark.exe!0x140032a09",2049.0000,4297.0000,0.4768,220.6190,1.1392,176.8676,3.7632,0.0233,0.0465,0.0465,3.4210,0.0233,0.0000,0.1164,"d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe"
+"session_benchmark.exe!0x14001b54d",1703.0000,2849.0000,0.5978,126.9568,0.9677,558.7926,1.1495,0.0000,0.1404,0.0351,0.0000,0.0000,0.0000,0.3159,"d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe"
+"session_benchmark.exe!0x14001c102",1476.0000,2745.0000,0.5377,126.9581,0.5452,573.7705,0.9778,0.0364,0.0000,0.1093,0.0000,0.0000,0.0000,0.3279,"d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe"
+"session_benchmark.exe!0x14001b539",1464.0000,2802.0000,0.5225,127.3019,0.4486,588.8651,0.9879,0.0000,0.0357,0.1428,0.0000,0.0000,0.0000,0.2141,"d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe"
+"session_benchmark.exe!0x14001b586",1463.0000,2611.0000,0.5603,126.6565,0.8164,563.3857,1.0129,0.0000,0.0383,0.1915,0.0000,0.0000,0.0000,0.1149,"d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe"
+"session_benchmark.exe!0x14001c0ed",1351.0000,2553.0000,0.5292,126.9487,0.8022,587.9358,1.0726,0.0000,0.0392,0.0392,0.0000,0.0392,0.0000,0.1567,"d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe"
+"session_benchmark.exe!0x140032b93",1088.0000,2005.0000,0.5426,224.4888,1.3997,170.5736,4.4152,0.0998,0.0998,0.1995,3.8404,0.0000,0.0000,0.2494,"d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe"
+"session_benchmark.exe!0x140032bba",1050.0000,2152.0000,0.4879,220.1673,1.3930,165.8922,4.9020,0.0000,0.0465,0.0465,3.5316,0.0465,0.0000,0.2323,"d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe"
+"session_benchmark.exe!0x140032ea8",1020.0000,2188.0000,0.4662,219.8355,1.0395,190.1280,3.7019,0.0000,0.0914,0.1371,4.2505,0.0457,0.0000,0.2742,"d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe"
+
+"10 HOTTEST PROCESSES (Sort Event - CYCLES_NOT_IN_HALT)"
+PROCESS,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe (PID:7076)",39600.0000,73767.0000,0.5368,165.2772,1.0318,410.9154,1.6215,0.0298,0.0461,0.1749,1.5196,0.0122,0.0000,0.2047
+
+"10 HOTTEST MODULES (Sort Event - CYCLES_NOT_IN_HALT)"
+MODULE,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe",39352.0000,73683.0000,0.5341,165.2878,1.0313,410.6510,1.6068,0.0190,0.0461,0.1398,1.4970,0.0109,0.0000,0.2022
+"c:\windows\system32\vcruntime140.dll",165.0000,38.0000,4.3421,118.4211,2.2222,736.8421,9.6429,7.8947,0.0000,21.0526,0.0000,2.6316,0.0000,2.6316
+"c:\windows\system32\ucrtbase.dll",45.0000,16.0000,2.8125,137.5000,4.5455,562.5000,14.4444,18.7500,0.0000,56.2500,68.7500,0.0000,0.0000,6.2500
+"c:\windows\system32\ntdll.dll",30.0000,28.0000,1.0714,217.8571,0.0000,571.4286,6.8750,7.1429,0.0000,32.1429,25.0000,0.0000,0.0000,0.0000
+"c:\windows\system32\kernelbase.dll",6.0000,2.0000,3.0000,150.0000,0.0000,500.0000,20.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+"c:\windows\system32\msvcp140.dll",2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+"10 HOTTEST THREADS (Sort Event - CYCLES_NOT_IN_HALT)"
+THREAD,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)",THREAD ID
+"Thread-3660 (PID:7076)",39594.0000,73765.0000,0.5368,165.2708,1.0319,410.8859,1.6216,0.0298,0.0461,0.1749,1.5197,0.0122,0.0000,0.2047,"3660"
+"Thread-8240 (PID:7076)",3.0000,1.0000,3.0000,400.0000,0.0000,1000.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"8240"
+"Thread-2000 (PID:7076)",2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"2000"
+"Thread-18908 (PID:7076)",1.0000,1.0000,1.0000,300.0000,0.0000,1000.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"18908"
+
+"ALL PROCESSES (Sort Event - CYCLES_NOT_IN_HALT)"
+PROCESS,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe (PID:7076)",39600.0000,73767.0000,0.5368,165.2772,1.0318,410.9154,1.6215,0.0298,0.0461,0.1749,1.5196,0.0122,0.0000,0.2047
+
+
+PROFILE REPORT FOR PROCESS - d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe (PID:7076)
+PROCESS,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe (PID:7076)",39600.0000,73767.0000,0.5368,165.2772,1.0318,410.9154,1.6215,0.0298,0.0461,0.1749,1.5196,0.0122,0.0000,0.2047
+
+THREAD SUMMARY
+THREAD,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)",THREAD ID
+"Thread-3660 (PID:7076)",39594.0000,73765.0000,0.5368,165.2708,1.0319,410.8859,1.6216,0.0298,0.0461,0.1749,1.5197,0.0122,0.0000,0.2047,"3660"
+"Thread-8240 (PID:7076)",3.0000,1.0000,3.0000,400.0000,0.0000,1000.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"8240"
+"Thread-2000 (PID:7076)",2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"2000"
+"Thread-18908 (PID:7076)",1.0000,1.0000,1.0000,300.0000,0.0000,1000.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,"18908"
+
+
+MODULE SUMMARY
+MODULE,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe,39352.0000,73683.0000,0.5341,165.2878,1.0313,410.6510,1.6068,0.0190,0.0461,0.1398,1.4970,0.0109,0.0000,0.2022
+c:\windows\system32\vcruntime140.dll,165.0000,38.0000,4.3421,118.4211,2.2222,736.8421,9.6429,7.8947,0.0000,21.0526,0.0000,2.6316,0.0000,2.6316
+c:\windows\system32\ucrtbase.dll,45.0000,16.0000,2.8125,137.5000,4.5455,562.5000,14.4444,18.7500,0.0000,56.2500,68.7500,0.0000,0.0000,6.2500
+c:\windows\system32\ntdll.dll,30.0000,28.0000,1.0714,217.8571,0.0000,571.4286,6.8750,7.1429,0.0000,32.1429,25.0000,0.0000,0.0000,0.0000
+c:\windows\system32\kernelbase.dll,6.0000,2.0000,3.0000,150.0000,0.0000,500.0000,20.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+c:\windows\system32\msvcp140.dll,2.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000,0.0000
+
+
+FUNCTION SUMMARY
+FUNCTION,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)",MODULE
+"session_benchmark.exe!0x14001b66c",2134.0000,3934.0000,0.5425,124.4789,0.6943,568.3782,1.1852,0.0254,0.0508,0.1779,0.0000,0.0000,0.0000,0.1525,d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe
+"session_benchmark.exe!0x140032a09",2049.0000,4297.0000,0.4768,220.6190,1.1392,176.8676,3.7632,0.0233,0.0465,0.0465,3.4210,0.0233,0.0000,0.1164,d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe
+"session_benchmark.exe!0x14001b54d",1703.0000,2849.0000,0.5978,126.9568,0.9677,558.7926,1.1495,0.0000,0.1404,0.0351,0.0000,0.0000,0.0000,0.3159,d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe
+"session_benchmark.exe!0x14001c102",1476.0000,2745.0000,0.5377,126.9581,0.5452,573.7705,0.9778,0.0364,0.0000,0.1093,0.0000,0.0000,0.0000,0.3279,d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe
+"session_benchmark.exe!0x14001b539",1464.0000,2802.0000,0.5225,127.3019,0.4486,588.8651,0.9879,0.0000,0.0357,0.1428,0.0000,0.0000,0.0000,0.2141,d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe
+"session_benchmark.exe!0x14001b586",1463.0000,2611.0000,0.5603,126.6565,0.8164,563.3857,1.0129,0.0000,0.0383,0.1915,0.0000,0.0000,0.0000,0.1149,d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe
+"session_benchmark.exe!0x14001c0ed",1351.0000,2553.0000,0.5292,126.9487,0.8022,587.9358,1.0726,0.0000,0.0392,0.0392,0.0000,0.0392,0.0000,0.1567,d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe
+"session_benchmark.exe!0x140032b93",1088.0000,2005.0000,0.5426,224.4888,1.3997,170.5736,4.4152,0.0998,0.0998,0.1995,3.8404,0.0000,0.0000,0.2494,d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe
+"session_benchmark.exe!0x140032bba",1050.0000,2152.0000,0.4879,220.1673,1.3930,165.8922,4.9020,0.0000,0.0465,0.0465,3.5316,0.0465,0.0000,0.2323,d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe
+"session_benchmark.exe!0x140032ea8",1020.0000,2188.0000,0.4662,219.8355,1.0395,190.1280,3.7019,0.0000,0.0914,0.1371,4.2505,0.0457,0.0000,0.2742,d:\kuliah_\7_semester\skripsi\v3\src\ze_json\build\native-release\benchmarks\session_benchmark.exe
+
+Function Detail Data
+Function,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"session_benchmark.exe!0x14001b66c" (DEBUG INFO NOT FOUND),2134.0000,3934.0000,0.5425,124.4789,0.6943,568.3782,1.1852,0.0254,0.0508,0.1779,0.0000,0.0000,0.0000,0.1525
+
+Function,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"session_benchmark.exe!0x140032a09" (DEBUG INFO NOT FOUND),2049.0000,4297.0000,0.4768,220.6190,1.1392,176.8676,3.7632,0.0233,0.0465,0.0465,3.4210,0.0233,0.0000,0.1164
+
+Function,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"session_benchmark.exe!0x14001b54d" (DEBUG INFO NOT FOUND),1703.0000,2849.0000,0.5978,126.9568,0.9677,558.7926,1.1495,0.0000,0.1404,0.0351,0.0000,0.0000,0.0000,0.3159
+
+Function,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"session_benchmark.exe!0x14001c102" (DEBUG INFO NOT FOUND),1476.0000,2745.0000,0.5377,126.9581,0.5452,573.7705,0.9778,0.0364,0.0000,0.1093,0.0000,0.0000,0.0000,0.3279
+
+Function,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"session_benchmark.exe!0x14001b539" (DEBUG INFO NOT FOUND),1464.0000,2802.0000,0.5225,127.3019,0.4486,588.8651,0.9879,0.0000,0.0357,0.1428,0.0000,0.0000,0.0000,0.2141
+
+Function,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"session_benchmark.exe!0x14001b586" (DEBUG INFO NOT FOUND),1463.0000,2611.0000,0.5603,126.6565,0.8164,563.3857,1.0129,0.0000,0.0383,0.1915,0.0000,0.0000,0.0000,0.1149
+
+Function,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"session_benchmark.exe!0x14001c0ed" (DEBUG INFO NOT FOUND),1351.0000,2553.0000,0.5292,126.9487,0.8022,587.9358,1.0726,0.0000,0.0392,0.0392,0.0000,0.0392,0.0000,0.1567
+
+Function,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"session_benchmark.exe!0x140032b93" (DEBUG INFO NOT FOUND),1088.0000,2005.0000,0.5426,224.4888,1.3997,170.5736,4.4152,0.0998,0.0998,0.1995,3.8404,0.0000,0.0000,0.2494
+
+Function,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"session_benchmark.exe!0x140032bba" (DEBUG INFO NOT FOUND),1050.0000,2152.0000,0.4879,220.1673,1.3930,165.8922,4.9020,0.0000,0.0465,0.0465,3.5316,0.0465,0.0000,0.2323
+
+Function,"CYCLES_NOT_IN_HALT","RETIRED_INST","CPI","RETIRED_BR_INST (PTI)","%RETIRED_BR_INST_MISP","L1_DC_ACCESSES (PTI)","%L1_DC_MISSES","L1_DEMAND_DC_REFILLS_LOCAL_DRAM (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_CACHE (PTI)","L1_DEMAND_DC_REFILLS_LOCAL_L2 (PTI)","MISALIGNED_LOADS (PTI)","STLI_OTHER (PTI)","SSE_AVX_STALLS (PTC)","INEFFECTIVE_SW_PF (PTI)"
+"session_benchmark.exe!0x140032ea8" (DEBUG INFO NOT FOUND),1020.0000,2188.0000,0.4662,219.8355,1.0395,190.1280,3.7019,0.0000,0.0914,0.1371,4.2505,0.0457,0.0000,0.2742
+
