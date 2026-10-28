@@ -68,6 +68,46 @@ segala penghematan per-byte di data nyata. Tautan bukti:
 `spanreal_pair_*`, `scanner_span_hybrid_interleaved_*`,
 `spaniso_hybrid_interleaved_*` + notebook §5/§5b.
 
+## Tahap-7 · validator gramatikal tape-walk (C2) — eksperimen NEGATIF, benchmark-only
+
+Hipotesis: gramatika dapat divalidasi "gratis" dari data yang sudah
+dihasilkan scanner64 — pass O(token) kedua men-walk entri tape, tanpa
+memindai ulang payload. Replika beku
+`benchmarks/session_benchmark/replica_grammar_tapewalk.hpp`
+(mesin status 10-state + stack-bit, gerbang korpus json.org 33 fail
+sesuai target) diukur pasangan terhimpit `BM_GRAM_Base_*` vs
+`BM_GRAM_Tapewalk_*` (commit `97c053d`).
+
+Hasil: overhead **+90% s.d. +201%** terhadap `create_session` di
+SEMUA 8 dataset (tabel lengkap di
+[grammar-validation.md](grammar-validation.md) §Hasil pengukuran).
+Dekomposisi kuadrat-terkecil (R² = 1,0000) atas karakterisasi tape
+`samples/`:
+
+```
+overhead_ns ≈ 7,14 × entri_tape + 0,64 × byte_ws + 1,44 × byte_angka
+```
+
+Biaya didominasi **α ≈ 7,1 ns per entri tape** (dispatch state machine),
+bukan scan gap: `update_center` (+135%) nyaris tanpa byte-gap sama
+sekali; `canada` dikunci β_num 1,44 ns/B (gap 1,98 MB angka). AMD uProf
+(`assess_ext`) mengonfirmasi: klaster validator ber-CPI ~0,55 dengan
+mispredict cabang hanya 0,45–1,4% — biaya adalah jumlah instruksi
+skalar per entri, bukan denda prediksi.
+
+Floor proyeksi (DFA sempurna α→2,5 ns + SWAR ws β_ws→0,15 ns, β_num
+tetap) tetap menyisakan overhead **35–119%** base: gerbang ±5–10%
+menuntut < 0,5 ns/entri — di bawah biaya satu lompatan kondisional.
+**Pass kedua di atas tape tidak pernah bisa gratis.**
+
+**Pelajaran**: data gratis (tape) TIDAK berarti pemrosesan kedua gratis —
+biaya per-entri O(token) tak tersubsidi oleh apa pun yang sudah dibayar
+scanner. Validasi gramatikal penuh hanya realistis via fusi ke
+Stage-1 (preseden goto: −50% throughput — berisiko) atau tetap lazy di
+Stage-2 (kebijakan saat ini). Tautan bukti:
+`grammar_walk_interleaved_97c053d.json`, aturan notebook
+`gram_base_vs_tapewalk`, `out/results/profiling/amduprof_tahap7_*.csv`.
+
 ## Kebijakan indeks lazy (dipakai tahap 2 & 4)
 
 Indeks TIDAK dibangun di `create_session` (itu akan membebani pipeline dan

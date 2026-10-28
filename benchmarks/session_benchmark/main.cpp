@@ -7,13 +7,19 @@
 // ==========================================================================
 #include <benchmark/benchmark.h>
 #include <cstdio>
+#include <filesystem>
+#include <fstream>
+#include <print>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 #include <ze_json/scanner/scanner.hpp>
 #include <ze_json/utils/utf8_validator.hpp>
 #include <ze_json/ze_json.hpp>
+
+#include "replica_grammar_tapewalk.hpp"
 
 namespace {
 using zuu::types::int32_t;
@@ -995,5 +1001,301 @@ BENCHMARK(BM_Pipeline_Utf8_SeparateValidator)
     ->ArgName("KiB")
     ->Arg(0)
     ->Arg(1);
+
+} // namespace
+
+// ===========================================================================
+//  TAHAP-7 — eksperimen C2: validator gramatikal tape-walk (replika beku)
+//  Pasangan bersebelahan per dataset: BM_GRAM_Base_* (create_session murni)
+//  vs BM_GRAM_Tapewalk_* (create_session + validator). Kedua VARIAN memakai
+//  komposisi identik scanner64 + arena->make<Session> — mirror persis isi
+//  create_session (src/ze_json.cpp: dispatch scanner64 LE-64-bit + make
+//  Session) — karena API tidak mengekspos tape_len yang dibutuhkan
+//  validator. Hukum pertama: hanya Δ dalam-run pasangan yang sah; bukan
+//  klaim kecepatan antar-proses (docs/development/benchmarking.md).
+//
+//  GERBANG kebenaran start-up (gagal → SkipWithError SEMUA benchmark):
+//    - korpus json.org: pass1..3 → ACCEPT; fail*.json → REJECT KECUALI
+//      fail15/17/25/26/27/28 (escape liar/kontrol di dalam string —
+//      dilazy-kan ke string-read) dan fail18 (depth 21 << kMaxDepth).
+//    - seluruh samples/*.json (7 dataset nyata) → ACCEPT.
+//    - payload sintetis token-padat → ACCEPT.
+// ===========================================================================
+namespace {
+
+namespace fs = std::filesystem;
+namespace grm = grammar_replica;
+
+bool        g_gram_ok = true;
+std::string g_gram_detail;
+
+const fs::path kGramRootDir =
+    fs::path(__FILE__).parent_path().parent_path().parent_path();
+
+[[nodiscard]] bool gram_read_file(const fs::path& p, std::string& out) {
+    std::error_code ec;
+    const auto size = fs::file_size(p, ec);
+    if (ec) {
+        return false;
+    }
+    out.resize(static_cast<size_t>(size));
+    std::ifstream reader(p, std::ios::binary);
+    if (!reader.is_open()) {
+        return false;
+    }
+    reader.read(out.data(), static_cast<std::streamsize>(size));
+    if (reader.gcount() != static_cast<std::streamsize>(size)) {
+        return false; // pembacaan potong: konsisten gagal
+    }
+    return true;
+}
+
+// Loader dataset nyata (idiom get_span_real_dataset — cache file in-proses).
+[[nodiscard]] const std::string& get_gram_dataset(const std::string& name) {
+    static std::unordered_map<std::string, std::string> cache;
+    auto it = cache.find(name);
+    if (it != cache.end()) {
+        return it->second;
+    }
+    auto& data = cache[name];
+    std::string buf;
+    if (!gram_read_file(kGramRootDir / "samples" / name, buf)) {
+        std::println(stderr, "Gagal memuat dataset {}", name);
+        return data; // kosong → SkipWithError pada pemanggil
+    }
+    data = std::move(buf);
+    return data;
+}
+
+// Payload sintetis token-padat: pola generatif literal/angka/string dengan
+// whitespace — biaya validator konsentrasi penuh di hot-path O(token).
+[[nodiscard]] const std::string& get_gram_synthetic() {
+    static const std::string json = [] {
+        std::string out = "{\"v\":[";
+        for (size_t k = 0; k < 16384; ++k) {
+            switch (k % 4) {
+            case 0: out += "true, "; break;
+            case 1: out += "1230, "; break;
+            case 2: out += "\"x\", "; break;
+            default: out += "null, 2.5e-3, "; break;
+            }
+        }
+        out += "-7]}";
+        return out;
+    }();
+    return json;
+}
+
+// Uji satu payload: scanner64 dulu (struktural/UTF-8), lalu validator
+// tape-walk pada tape hasilnya. Return false bila salah satu menolak;
+// `why` mengisi alasan teks untuk diagnostik gerbang.
+[[nodiscard]] bool gram_actual_accept(
+    const std::string& json, std::vector<zuu::types::uint64_t>& tape,
+    std::string& why) {
+    tape.assign(json.size(), 0);
+    why.clear();
+    const auto scan = zuu::scanner::scanner64(
+        json.data(), json.size(),
+        reinterpret_cast<zuu::types::size_t*>(tape.data()), tape.size());
+    if (!scan) {
+        why = "scanner64 menolak (err=" +
+              std::to_string(static_cast<int>(scan.error())) + ")";
+        return false;
+    }
+    size_t rpos = 0;
+    int rstate  = -1;
+    const bool ok = grm::validate_grammar_tapewalk_dbg(
+        json.data(), json.size(), tape.data(), scan.value(), &rpos, &rstate);
+    if (!ok) {
+        const size_t ctx_lo = rpos > 24 ? rpos - 24 : 0;
+        const size_t ctx_hi = rpos + 24 < json.size() ? rpos + 24 : json.size();
+        why = "validator menolak di pos=" + std::to_string(rpos) +
+              " state=" + std::to_string(rstate) +
+              " ctx=" + json.substr(ctx_lo, ctx_hi - ctx_lo);
+        return false;
+    }
+    return true;
+}
+
+void run_gram_gate() {
+    std::vector<zuu::types::uint64_t> tape;
+    std::string json;
+    std::string why;
+
+    // --- 1) korpus json.org -------------------------------------------------
+    for (const auto& entry : fs::directory_iterator(
+             kGramRootDir / "tests" / "JSON_checker_test" / "corpus")) {
+        if (!entry.is_regular_file() || entry.path().extension() != ".json") {
+            continue;
+        }
+        const std::string stem = entry.path().stem().string();
+        bool expect_accept;
+        if (stem.rfind("pass", 0) == 0) {
+            expect_accept = true;
+        } else if (stem.rfind("fail", 0) == 0) {
+            // Daftar lazy — sengaja TIDAK divalidasi tape-walk:
+            // fail15/17/25/26/27/28 = escape liar/kontrol DI DALAM string
+            // (string opak = 2 entri), fail18 = depth 21 << kMaxDepth.
+            const std::string num = stem.substr(4);
+            int n = 0;
+            for (const char ch : num) {
+                if (ch < '0' || ch > '9') {
+                    n = -1;
+                    break;
+                }
+                n = n * 10 + (ch - '0');
+            }
+            expect_accept = n == 15 || n == 17 || n == 18 || n == 25 ||
+                            n == 26 || n == 27 || n == 28;
+        } else {
+            continue; // berkas lain: bukan pasien gerbang
+        }
+        if (!gram_read_file(entry.path(), json)) {
+            g_gram_detail = "korpus gagal dibaca: " + stem;
+            g_gram_ok = false;
+            return;
+        }
+        if (gram_actual_accept(json, tape, why) != expect_accept) {
+            g_gram_detail = "gerbang: " + stem + " (path=" +
+                entry.path().string() + ") → " +
+                (expect_accept ? "harus accept" : "harus reject") +
+                " | hasil: " + why;
+            g_gram_ok = false;
+            return;
+        }
+    }
+
+    // --- 2) seluruh dataset nyata wajib ACCEPT -------------------------------
+    const char* datasets[] = {
+        "github_events.json", "mesh.json",          "twitter.json",
+        "citm_catalog.json",  "update-center.json", "canada.json",
+        "jeopardy.json",
+    };
+    for (const char* name : datasets) {
+        const std::string& data = get_gram_dataset(name);
+        if (data.empty()) {
+            g_gram_detail = std::string("dataset kosong: ") + name;
+            g_gram_ok = false;
+            return;
+        }
+        if (!gram_actual_accept(data, tape, why)) {
+            g_gram_detail = std::string("gerbang: dataset ") + name +
+                " harus accept | validator: " + why;
+            g_gram_ok = false;
+            return;
+        }
+    }
+
+    // --- 3) payload sintetis token-padat wajib ACCEPT ------------------------
+    if (!gram_actual_accept(get_gram_synthetic(), tape, why)) {
+        g_gram_detail = "gerbang: sintetis harus accept | validator: " + why;
+        g_gram_ok = false;
+        return;
+    }
+}
+
+const bool g_gram_gate_result = (run_gram_gate(), g_gram_ok);
+
+void gram_run(
+    benchmark::State& state, const std::string& json, const size_t cap,
+    const bool validating) {
+    if (!g_gram_gate_result) {
+        state.SkipWithError(g_gram_detail);
+        return;
+    }
+    if (json.empty()) {
+        state.SkipWithError("Dataset gagal dimuat.");
+        return;
+    }
+
+    static std::vector<zuu::types::uint64_t> tape;
+    tape.resize(cap);
+    static zuu::types::uint64_t buf[128 * 1024]; // 1 MiB — arena per runner
+    static zuu::memory::Arena* arena = create_arena(buf, sizeof(buf));
+    if (!arena) {
+        state.SkipWithError("Arena gagal dibuat.");
+        return;
+    }
+
+    for (auto _ : state) {
+        reset_arena(arena);
+        auto res = zuu::scanner::scanner64(
+            json.data(), json.size(),
+            reinterpret_cast<zuu::types::size_t*>(tape.data()), tape.size());
+        if (!res) [[unlikely]] {
+            state.SkipWithError("scanner64 gagal padahal gerbang lolos.");
+            return;
+        }
+        auto* session = arena->make<zuu::api::Session>(
+            json.data(), tape.data(), res.value(), arena);
+        if (!session) [[unlikely]] {
+            state.SkipWithError("arena penuh.");
+            return;
+        }
+        benchmark::DoNotOptimize(session);
+        if (validating) {
+            const bool ok = grm::validate_grammar_tapewalk(
+                json.data(), json.size(), tape.data(), res.value());
+            if (!ok) [[unlikely]] {
+                state.SkipWithError(
+                    "validator menolak dataset yang digerbangkan accept "
+                    "— bug validator.");
+                return;
+            }
+            benchmark::DoNotOptimize(&ok);
+        }
+    }
+    state.SetBytesProcessed(
+        state.iterations() * static_cast<int64_t>(json.size()));
+}
+
+#define REGISTER_GRAM_PAIR(FAMILY, FILE_NAME, CAPACITY)                     \
+    static void BM_GRAM_Base_##FAMILY(benchmark::State& state) {            \
+        static const std::string& json = get_gram_dataset(FILE_NAME);       \
+        gram_run(state, json, (CAPACITY), false);                           \
+    }                                                                       \
+    BENCHMARK(BM_GRAM_Base_##FAMILY)                                        \
+        ->Unit(benchmark::kNanosecond)                                      \
+        ->MinTime(15)                                                       \
+        ->MinWarmUpTime(3);                                                 \
+    static void BM_GRAM_Tapewalk_##FAMILY(benchmark::State& state) {        \
+        static const std::string& json = get_gram_dataset(FILE_NAME);       \
+        gram_run(state, json, (CAPACITY), true);                            \
+    }                                                                       \
+    BENCHMARK(BM_GRAM_Tapewalk_##FAMILY)                                    \
+        ->Unit(benchmark::kNanosecond)                                      \
+        ->MinTime(15)                                                       \
+        ->MinWarmUpTime(3);
+
+#if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
+REGISTER_GRAM_PAIR(github_events, "github_events.json", 316 * 1024)
+REGISTER_GRAM_PAIR(mesh, "mesh.json", 352 * 1024)
+REGISTER_GRAM_PAIR(twitter, "twitter.json", 648 * 1024)
+REGISTER_GRAM_PAIR(citm_catalog, "citm_catalog.json", 1768 * 1024)
+REGISTER_GRAM_PAIR(update_center, "update-center.json", 3214 * 1024)
+REGISTER_GRAM_PAIR(canada, "canada.json", 2256 * 1024)
+REGISTER_GRAM_PAIR(jeopardy, "jeopardy.json", 54 * 1024 * 1024)
+
+// Pasangan sintetis token-padat — hot-path O(token) tanpa biaya I/O.
+static void
+BM_GRAM_Base_Synthetic(benchmark::State& state) {
+    static const std::string& json = get_gram_synthetic();
+    gram_run(state, json, 128 * 1024, false);
+}
+BENCHMARK(BM_GRAM_Base_Synthetic)
+    ->Unit(benchmark::kNanosecond)
+    ->MinTime(15)
+    ->MinWarmUpTime(3);
+
+static void
+BM_GRAM_Tapewalk_Synthetic(benchmark::State& state) {
+    static const std::string& json = get_gram_synthetic();
+    gram_run(state, json, 128 * 1024, true);
+}
+BENCHMARK(BM_GRAM_Tapewalk_Synthetic)
+    ->Unit(benchmark::kNanosecond)
+    ->MinTime(15)
+    ->MinWarmUpTime(3);
+#endif
 
 } // namespace

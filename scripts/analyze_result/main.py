@@ -17,13 +17,57 @@
 import json
 import re
 import math
+import sys
 from pathlib import Path
 from collections import Counter
 
 import numpy as np
 import pandas as pd
+
+# CLI: pakai backend non-interaktif (Agg) supaya plt.show() tidak membuka
+# jendela figure; figure disimpan sebagai PNG ke out/analysis/figures.
+# Deteksi sesi interaktif via get_ipython() — keberadaan modul IPython di
+# sys.modules TIDAK bisa dipakai (import IPython.display untuk display()
+# ikut memuat modul itu di mode CLI). Dari Jupyter, get_ipython() terdefinisi
+# sehingga backend inline dipertahankan dan sel grafik tetap interaktif.
+def _running_under_ipython() -> bool:
+    try:
+        return get_ipython() is not None  # noqa: F821 (hanya ada di kernel IPython)
+    except NameError:
+        return False
+
+
+if not _running_under_ipython():
+    import matplotlib
+
+    matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from IPython.display import display, Markdown
+
+
+def _cli_show(*_args, **_kwargs):
+    """Pengganti plt.show() mode CLI: simpan figure aktif ke
+    out/analysis/figures/<seq>_<judul>.png lalu tutup — tanpa jendela."""
+    if _running_under_ipython():
+        return
+    fig = plt.gcf()
+    try:
+        out_dir = REPO_ROOT / "out" / "analysis" / "figures"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        base = (fig.axes[0].get_title() if fig.axes else "") or "figure"
+        slug = re.sub(r"[^A-Za-z0-9]+", "_", base).strip("_")[:60] or "figure"
+        _CLI_FIGURE_SEQ[0] += 1
+        fig.savefig(
+            out_dir / f"{_CLI_FIGURE_SEQ[0]:02d}_{slug}.png",
+            dpi=150, bbox_inches="tight")
+    except NameError:
+        pass  # REPO_ROOT belum tersedia: buang figure saja
+    plt.close(fig)
+
+
+_CLI_FIGURE_SEQ = [0]
+if not _running_under_ipython():
+    plt.show = _cli_show
 
 pd.set_option("display.max_columns", 100)
 pd.set_option("display.max_colwidth", 140)
@@ -639,6 +683,17 @@ def _match_span_real_pair(name: str):
         "hybrid" if match.group(1) == "Hybrid" else "prehybrid")
 
 
+def _match_gram_pair(name: str):
+    """Tahap-7 pasangan terhimpit: BM_GRAM_Base_X (create_session murni) vs
+    BM_GRAM_Tapewalk_X (create_session + validator gramatikal tape-walk).
+    Pair key = dataset."""
+    match = re.match(r"BM_GRAM_(Base|Tapewalk)_(\w+)$", name)
+    if not match:
+        return None
+    return match.group(2), (
+        "base" if match.group(1) == "Base" else "tapewalk")
+
+
 PAIR_RULES = [
     {
         "name": "typed_vs_untyped_class",
@@ -709,6 +764,14 @@ PAIR_RULES = [
         "var_a": "prehybrid",
         "var_b": "hybrid",
         "note": "Tahap-6 · pasangan terhimpit dataset nyata (SpanReal)",
+    },
+    {
+        "name": "gram_base_vs_tapewalk",
+        "match": _match_gram_pair,
+        "var_a": "base",
+        "var_b": "tapewalk",
+        "note": "Tahap-7 · create_session vs + validator gramatikal tape-walk "
+                "(ratio <1 = overhead validator; reduction negatif)",
     },
 ]
 
