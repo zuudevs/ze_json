@@ -54,8 +54,7 @@ TEST_F(SessionTest, ScannerVariantSelectionAndVersion) {
         types::int32_t err = static_cast<types::int32_t>(api::INVALID_JSON);
         auto* session      = create_session_with_scanner(
             payload, payload_size, tape_, 256, arena_handle, variant, err);
-        ASSERT_NE(session, nullptr)
-            << "varian " << variant << " gagal dibuat";
+        ASSERT_NE(session, nullptr) << "varian " << variant << " gagal dibuat";
         ASSERT_EQ(static_cast<api::Status>(err), api::OK);
 
         // Kueri setara lintas varian: skalar + path query + array.

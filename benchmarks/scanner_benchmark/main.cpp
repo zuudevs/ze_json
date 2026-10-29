@@ -145,23 +145,23 @@ BM_Scanner_Synth(benchmark::State& state, bool use_scanner64) {
     static const std::string json = make_synth_json(256 * 1024);
     std::vector<size_t> tape_idx(json.size());
 
-    auto scan = use_scanner64 ? zuu::scanner::scanner64
-                              : zuu::scanner::scanner8;
-    auto validation = scan(
-        json.data(), json.size(), tape_idx.data(), tape_idx.size());
+    auto scan =
+        use_scanner64 ? zuu::scanner::scanner64 : zuu::scanner::scanner8;
+    auto validation =
+        scan(json.data(), json.size(), tape_idx.data(), tape_idx.size());
     if (!validation) {
         state.SkipWithError("Scanner gagal pada verifikasi awal.");
         return;
     }
 
     for (auto _ : state) {
-        auto res = scan(
-            json.data(), json.size(), tape_idx.data(), tape_idx.size());
+        auto res =
+            scan(json.data(), json.size(), tape_idx.data(), tape_idx.size());
         benchmark::DoNotOptimize(res);
         benchmark::ClobberMemory();
     }
-    state.SetBytesProcessed(state.iterations()
-        * static_cast<int64_t>(json.size()));
+    state.SetBytesProcessed(
+        state.iterations() * static_cast<int64_t>(json.size()));
 }
 
 void
@@ -193,34 +193,33 @@ BENCHMARK(BM_Scanner64_Synth)
 // library/replica: >1 berarti pemisahan mengembalikan throughput.
 // Raw name dipakai `--benchmark_filter=_Replica`.
 
-#define MAKE_REPLICA_BENCHMARK(NAME, TARGET, TARGET_PATH, FUNC)               \
-    static void BM_##NAME##_##TARGET(benchmark::State& state) {               \
-        const std::string& json = get_dataset(TARGET_PATH);                   \
-        if (json.empty()) {                                                  \
-            state.SkipWithError(                                             \
-                "Dataset gagal dimuat, benchmark dihentikan.");               \
-            return;                                                          \
-        }                                                                    \
-        std::vector<size_t> tape_idx(json.size());                            \
-        const auto validation = FUNC(                                        \
-            json.data(), json.size(), tape_idx.data(), tape_idx.size());     \
-        if (!validation) {                                                   \
-            state.SkipWithError("Replica gagal pada verifikasi awal.");       \
-            return;                                                          \
-        }                                                                    \
-        for (auto _ : state) {                                               \
-            auto res = FUNC(                                                 \
-                json.data(), json.size(), tape_idx.data(),                   \
-                tape_idx.size());                                            \
-            benchmark::DoNotOptimize(res);                                   \
-            benchmark::ClobberMemory();                                      \
-        }                                                                    \
-        state.SetBytesProcessed(                                              \
-            state.iterations() * static_cast<int64_t>(json.size()));          \
-    }                                                                        \
-    BENCHMARK(BM_##NAME##_##TARGET)                                          \
-        ->Unit(benchmark::kNanosecond)                                       \
-        ->MinTime(15)                                                        \
+#define MAKE_REPLICA_BENCHMARK(NAME, TARGET, TARGET_PATH, FUNC)                \
+    static void BM_##NAME##_##TARGET(benchmark::State& state) {                \
+        const std::string& json = get_dataset(TARGET_PATH);                    \
+        if (json.empty()) {                                                    \
+            state.SkipWithError(                                               \
+                "Dataset gagal dimuat, benchmark dihentikan.");                \
+            return;                                                            \
+        }                                                                      \
+        std::vector<size_t> tape_idx(json.size());                             \
+        const auto validation =                                                \
+            FUNC(json.data(), json.size(), tape_idx.data(), tape_idx.size());  \
+        if (!validation) {                                                     \
+            state.SkipWithError("Replica gagal pada verifikasi awal.");        \
+            return;                                                            \
+        }                                                                      \
+        for (auto _ : state) {                                                 \
+            auto res = FUNC(                                                   \
+                json.data(), json.size(), tape_idx.data(), tape_idx.size());   \
+            benchmark::DoNotOptimize(res);                                     \
+            benchmark::ClobberMemory();                                        \
+        }                                                                      \
+        state.SetBytesProcessed(                                               \
+            state.iterations() * static_cast<int64_t>(json.size()));           \
+    }                                                                          \
+    BENCHMARK(BM_##NAME##_##TARGET)                                            \
+        ->Unit(benchmark::kNanosecond)                                         \
+        ->MinTime(15)                                                          \
         ->MinWarmUpTime(5);
 
 #if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
@@ -237,8 +236,7 @@ MAKE_REPLICA_BENCHMARK(
 
 // scanner64 untyped-depth (pra-v0.1.5) — isolasi biaya kedalaman bertipe.
 MAKE_REPLICA_BENCHMARK(
-    Scanner64_UntypedReplica, Synth, "jeopardy.json",
-    scanner64_untyped_replica)
+    Scanner64_UntypedReplica, Synth, "jeopardy.json", scanner64_untyped_replica)
 MAKE_REPLICA_BENCHMARK(
     Scanner64_UntypedReplica, GithubEvents, "github_events.json",
     scanner64_untyped_replica)

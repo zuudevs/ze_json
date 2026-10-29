@@ -2,82 +2,60 @@
 # CMAKE_SYSTEM_PROCESSOR = wasm64/wasm32 bila sesuai preset WASM.
 if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
 	enable_testing()
-	function(RunAndExportTestReport name executable_name)
-		set(FILENAME_POSTFIX_ "")
-		if(NOT GIT_COMMIT_HASH STREQUAL "unknown_hash")
-			set(FILENAME_POSTFIX_ "_${GIT_COMMIT_HASH}")
-		endif()
-		
-		set(RESULT_DIR "${CMAKE_SOURCE_DIR}/out/results/test")
-		add_custom_target(run_and_export_${name}_report
-			COMMAND ${CMAKE_COMMAND} -E make_directory "${RESULT_DIR}"
-			COMMAND $<TARGET_FILE:${executable_name}> 
-				--gtest_output=json:${RESULT_DIR}/${executable_name}${FILENAME_POSTFIX_}.json
-			DEPENDS ${executable_name}
-			COMMENT "Run & Export Report for ${name}"
-		)
-	endfunction()
-
-	include("${CMAKE_SOURCE_DIR}/cmake/packages/google-test.cmake")
 	include("${CMAKE_SOURCE_DIR}/cmake/modules/optimizations.cmake")
+	include(${CMAKE_SOURCE_DIR}/cmake/modules/coverage.cmake)
+	include(${CMAKE_SOURCE_DIR}/cmake/modules/exporter.cmake)
+	include("${CMAKE_SOURCE_DIR}/cmake/packages/google-test.cmake")
 
-	function(add_test_target name)
-		add_executable(${name}
+	function(add_test_target TARGET_NAME)
+		add_executable(${TARGET_NAME}
 			${ARGN}
 		)
 
 		target_include_directories(
-			${name}
+			${TARGET_NAME}
 				PRIVATE
 					"${CMAKE_SOURCE_DIR}/include"
 		)
 
 		target_link_libraries(
-			${name}
+			${TARGET_NAME}
 				PRIVATE	
 					GTest::gtest_main
 					${LIBRARY_OUTPUT_NAME}
 		)
 
-		gtest_discover_tests(${name})
-		RunAndExportTestReport(${name} ${name})
+		gtest_discover_tests(${TARGET_NAME})
 	endfunction()
 
-	# Satu kelompok uji = satu folder (modular): scanner, document, object,
-	# number, session, array, path.
-	add_test_target(scanner_test
-		"${CMAKE_CURRENT_SOURCE_DIR}/scanner_test/main.cpp"
-	)
+	add_test_target(scanner_test "${CMAKE_CURRENT_SOURCE_DIR}/scanner_test/main.cpp")
+	add_code_coverage_target(scanner_test)
+	add_export_test_target(scanner_test)
 
-	add_test_target(document_test
-		"${CMAKE_CURRENT_SOURCE_DIR}/document_test/main.cpp"
-	)
+	add_test_target(document_test "${CMAKE_CURRENT_SOURCE_DIR}/document_test/main.cpp")
+	add_code_coverage_target(document_test)
+	add_export_test_target(document_test)
 
-	add_test_target(object_test
-		"${CMAKE_CURRENT_SOURCE_DIR}/object_test/main.cpp"
-	)
+	add_test_target(object_test "${CMAKE_CURRENT_SOURCE_DIR}/object_test/main.cpp")
+	add_code_coverage_target(object_test)
+	add_export_test_target(object_test)
 
-	add_test_target(number_test
-		"${CMAKE_CURRENT_SOURCE_DIR}/number_test/main.cpp"
-	)
+	add_test_target(number_test "${CMAKE_CURRENT_SOURCE_DIR}/number_test/main.cpp")
+	add_code_coverage_target(number_test)
+	add_export_test_target(number_test)
 
-	add_test_target(session_test
-		"${CMAKE_CURRENT_SOURCE_DIR}/session_test/main.cpp"
-	)
+	add_test_target(session_test "${CMAKE_CURRENT_SOURCE_DIR}/session_test/main.cpp")
+	add_code_coverage_target(session_test)
+	add_export_test_target(session_test)
 
-	add_test_target(array_test
-		"${CMAKE_CURRENT_SOURCE_DIR}/array_test/main.cpp"
-	)
+	add_test_target(array_test "${CMAKE_CURRENT_SOURCE_DIR}/array_test/main.cpp")
+	add_code_coverage_target(array_test)
+	add_export_test_target(array_test)
 
-	add_test_target(path_test
-		"${CMAKE_CURRENT_SOURCE_DIR}/path_test/main.cpp"
-	)
+	add_test_target(path_test "${CMAKE_CURRENT_SOURCE_DIR}/path_test/main.cpp")
+	add_code_coverage_target(path_test)
+	add_export_test_target(path_test)
 
-	add_test_target(json_checker_test
-		"${CMAKE_CURRENT_SOURCE_DIR}/JSON_checker_test/JSON_checker.c"
-		"${CMAKE_CURRENT_SOURCE_DIR}/JSON_checker_test/utf8_to_utf16.c"
-		"${CMAKE_CURRENT_SOURCE_DIR}/JSON_checker_test/utf8_decode.c"
-		"${CMAKE_CURRENT_SOURCE_DIR}/JSON_checker_test/main.cpp"
-	)
+	add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/JSON_checker_test")
 
 endif()

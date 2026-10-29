@@ -34,9 +34,10 @@
 | `path_test` | 14 | sintaks path, tipe-salah, indeks root lazy (4), indeks elemen array (4), kunci escape, dup-key pertama, nested |
 | `json_checker_test` | 3 | pembanding REFERENCE json.org (Crockford) pada korpus resmi pass*/fail* — dijalankan pada **SETIAP varian scanner** platform (scanner8; scanner64 pada LE 64-bit): pass diterima semua validator; fail ditolak reference; tiap varian hanya wajib menolak subset **struktural** (`fail2/8/32/33` — fail33 tipe-bracket-tak-cocok tertangkap stack-bit v0.1.5) — 29 divergensi gramatikal terkunci sebagai batas desain scanner |
 
-Korpus `json_checker_test` + sumber reference C (domain publik) diambil
-SEKALI lewat [`scripts/invoke_JSON_checker/main.py`](../../scripts/invoke_JSON_checker/main.py)
-(json.org) dan **ter-commit** bersama grup — CI tidak butuh unduhan.
+Korpus + sumber reference C (domain publik) diambil SEKALI lewat
+[`scripts/install_JSON_checker/main.py`](../../scripts/install_JSON_checker/main.py)
+(json.org): sumber → `third_party/JSON_checker/` (ter-commit),
+korpus → `samples/JSON_Checker/` (submodule) — CI tidak butuh unduhan.
 Baca komentar di
 [`tests/JSON_checker_test/main.cpp`](../../tests/JSON_checker_test/main.cpp)
 untuk metodologi ranah struktural vs gramatikal.

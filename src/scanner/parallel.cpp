@@ -128,20 +128,19 @@ scanner64(
                     types::uint64_t block;
                     __builtin_memcpy(&block, ptr, sizeof(types::uint64_t));
 
-                    if (utf8 == 0 &&
-                        (block & 0x8080808080808080ULL) == 0) [[likely]] {
+                    if (utf8 == 0 && (block & 0x8080808080808080ULL) == 0)
+                        [[likely]] {
                         // Blok ASCII murni + DFA ACCEPT: seluruh blok lolos
                         // validasi tanpa DFA — jalur SWAR pencarian
                         // quote/backslash seperti biasa.
                         types::uint64_t mask =
                             utils::swar_has_zero_byte(
                                 block ^
-                                utils::repeat_byte_v<types::uint64_t,
-                                                    0x22_u8>) |
+                                utils::
+                                    repeat_byte_v<types::uint64_t, 0x22_u8>) |
                             utils::swar_has_zero_byte(
                                 block ^
-                                utils::repeat_byte_v<types::uint64_t,
-                                                    0x5C_u8>);
+                                utils::repeat_byte_v<types::uint64_t, 0x5C_u8>);
 
                         if (mask != 0) {
                             ptr += __builtin_ctzll(mask) >> 3;

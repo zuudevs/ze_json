@@ -37,7 +37,7 @@
 #include <ze_json/ze_json.hpp>
 
 extern "C" {
-#include "JSON_checker.h"
+#include <JSON_checker.h>
 }
 
 namespace zuu::testing {
@@ -59,13 +59,14 @@ class JsonCheckerTest : public ::testing::Test {
     // urutan ini).
     static std::vector<fs::path>
     globCorpus() {
-        const auto corpus_dir = fs::path(__FILE__).parent_path() / "corpus";
+        const auto corpus_dir = fs::path(SAMPLE_DIR);
         std::vector<fs::path> paths;
         if (!fs::exists(corpus_dir)) {
             return paths;
         }
         for (const auto& entry : fs::directory_iterator(corpus_dir)) {
-            if (entry.is_regular_file() && entry.path().extension() == ".json") {
+            if (entry.is_regular_file() &&
+                entry.path().extension() == ".json") {
                 paths.push_back(entry.path());
             }
         }
@@ -95,8 +96,8 @@ class JsonCheckerTest : public ::testing::Test {
         if (first == corpus.end()) {
             return {};
         }
-        const auto last = std::find_if_not(
-            first, corpus.end(), [prefix](const fs::path& p) {
+        const auto last =
+            std::find_if_not(first, corpus.end(), [prefix](const fs::path& p) {
                 return p.filename().string().starts_with(prefix);
             });
         return std::span<const fs::path>(
@@ -146,17 +147,17 @@ class JsonCheckerTest : public ::testing::Test {
         }
         bool accepted = false;
         if (variant == "scanner8") {
-            accepted = scanner::scanner8(
-                           content.data(), content.length(), tape,
-                           content.length())
-                           .has_value();
+            accepted =
+                scanner::scanner8(
+                    content.data(), content.length(), tape, content.length())
+                    .has_value();
         }
 #if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
         else if (variant == "scanner64") {
-            accepted = scanner::scanner64(
-                           content.data(), content.length(), tape,
-                           content.length())
-                           .has_value();
+            accepted =
+                scanner::scanner64(
+                    content.data(), content.length(), tape, content.length())
+                    .has_value();
         }
 #endif
         arena_handle->reset();
@@ -173,7 +174,8 @@ class JsonCheckerTest : public ::testing::Test {
         static const std::set<std::string> fails = {
             "fail2.json",  // ["Unclosed array" — '[' tanpa ']'
             "fail8.json",  // ["Extra close"]] — ']' tanpa pembuka
-            "fail32.json", // {"Comma instead if closing brace": true, — '{' tanpa '}'
+            "fail32.json", // {"Comma instead if closing brace": true, — '{'
+                           // tanpa '}'
             "fail33.json", // ["mismatch"} — '}' menutup '[' (tipe tak cocok)
         };
         return fails;
@@ -225,7 +227,7 @@ TEST_F(JsonCheckerTest, FailCorpusScannerRejectsStructuralOnly) {
     for (const auto variant : scannerVariants()) {
         SCOPED_TRACE(variant);
         for (const auto& sample : getCorpusByPrefix("fail")) {
-            const auto name = sample.filename().string();
+            const auto name     = sample.filename().string();
             const bool accepted = scannerAccepts(variant, readFile(sample));
             if (structuralFails().contains(name)) {
                 EXPECT_FALSE(accepted)

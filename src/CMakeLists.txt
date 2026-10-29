@@ -9,16 +9,16 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
 		${CMAKE_CURRENT_SOURCE_DIR}/ondemand/json_object.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ondemand/json_value.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/scanner/scalar.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/scanner/parallel.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/scanner/parallel.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/ze_json.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/align.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/alloc.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/utils/compiler_rt.cpp
     )
 
-	target_include_directories(${LIBRARY_OUTPUT_NAME}
-		PRIVATE
-			${CMAKE_SOURCE_DIR}/include
+	target_include_directories(${LIBRARY_OUTPUT_NAME} PRIVATE
+		$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:include>
 	)
 
     target_link_options(${LIBRARY_OUTPUT_NAME}
@@ -42,7 +42,7 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
 		PROPERTIES
         	SUFFIX ".wasm"
     )
-	elseif(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
+elseif(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
 	add_library(${LIBRARY_OUTPUT_NAME}
 		${CMAKE_CURRENT_SOURCE_DIR}/memory/arena.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ondemand/document.cpp
@@ -50,14 +50,14 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
 		${CMAKE_CURRENT_SOURCE_DIR}/ondemand/json_object.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ondemand/json_value.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/scanner/scalar.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/scanner/parallel.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/scanner/parallel.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/ze_json.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/align.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/alloc.cpp
 	)
 
-	target_include_directories(${LIBRARY_OUTPUT_NAME}
-		PRIVATE
-			${CMAKE_SOURCE_DIR}/include
+	target_include_directories(${LIBRARY_OUTPUT_NAME} PRIVATE
+		$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:include>
 	)
 endif()

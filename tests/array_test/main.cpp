@@ -272,8 +272,7 @@ TEST_F(ArrayTest, StreamingEqualsCountedMixedElements) {
     EXPECT_EQ(array_next(session), 1);
     EXPECT_EQ(array_next(session), 1);
     EXPECT_EQ(
-        static_cast<api::ValueType>(value_type(session)),
-        api::ValueType::Null);
+        static_cast<api::ValueType>(value_type(session)), api::ValueType::Null);
 
     // Elemen 4: array bersarang — tidak dibaca; array_next berikutnya
     // melewati SELURUH kontainer.
@@ -354,17 +353,15 @@ TEST_F(ArrayTest, StreamingNumberOnlyAndAmbiguity) {
 TEST_F(ArrayTest, StreamingViaFindPath) {
     // find_path pada nilai array lalu streaming langsung — kontrak baru:
     // tidak perlu array_size (dan tanpa pass penghitungan dua kali jalan).
-    alignas(8) constexpr const char payload[] =
-        R"({"tags":["a","bb","ccc"]})";
-    constexpr auto payload_size = sizeof(payload) - 1;
+    alignas(8) constexpr const char payload[] = R"({"tags":["a","bb","ccc"]})";
+    constexpr auto payload_size               = sizeof(payload) - 1;
 
     types::int32_t err = api::OK;
     auto* session      = make_session(payload, payload_size, err);
     ASSERT_NE(session, nullptr);
     ASSERT_EQ(static_cast<api::Status>(err), api::OK);
 
-    ASSERT_EQ(static_cast<api::Status>(find_path(session, "tags", 4)),
-        api::OK);
+    ASSERT_EQ(static_cast<api::Status>(find_path(session, "tags", 4)), api::OK);
     EXPECT_EQ(
         static_cast<api::ValueType>(value_type(session)),
         api::ValueType::Array);

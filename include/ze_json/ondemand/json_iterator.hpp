@@ -63,7 +63,8 @@ class JsonIterator {
             if (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') {
                 continue;
             }
-            return *p == '-' || *p == '+' || *p == '.' || (*p >= '0' && *p <= '9');
+            return *p == '-' || *p == '+' || *p == '.' ||
+                   (*p >= '0' && *p <= '9');
         }
         return false;
     }

@@ -23,7 +23,6 @@
 //  berupa BigInt; pada wasm32 berupa Number.
 // ============================================================================
 
-#include <ze_json/version.hpp>
 #include <ze_json/core/error.hpp>
 #include <ze_json/core/macros.hpp>
 #include <ze_json/memory/arena.hpp>
@@ -31,6 +30,7 @@
 #include <ze_json/ondemand/json_object.hpp>
 #include <ze_json/types/string_view.hpp>
 #include <ze_json/utils/hash_fnv1a.hpp>
+#include <ze_json/version.hpp>
 
 // ============================================================================
 //  KONTRAK STATUS (ABI-stabil)
@@ -186,7 +186,7 @@ class Session {
     types::size_t arr_elem_capacity_{0};   // kapasitas blok (entri)
     types::size_t arr_elem_source_{0};     // identitas array (idx '[')
     types::uint64_t arr_heavy_queries_{0};
-    bool arr_idx_present_{false};  // tabel berlaku utk arr_elem_source_
+    bool arr_idx_present_{false}; // tabel berlaku utk arr_elem_source_
     bool arr_idx_disabled_{false};
     memory::Arena* arena_{nullptr};
 
@@ -252,8 +252,7 @@ class Session {
         // Fallback sekuensial seperti kode lama, PLUS penghitung berat.
         doc_.get_root().get_object(); // kursor = kunci pertama root.
         types::size_t members = 0;
-        const bool hit
-            = root_obj_.find_field_counted(key, &value_, members);
+        const bool hit = root_obj_.find_field_counted(key, &value_, members);
 
         if (members <= kIdxQuota || ++heavy_queries_ < 2) [[likely]] {
             return hit;
@@ -330,17 +329,17 @@ class Session {
 
     void
     insert_slot(
-        types::uint64_t h, const types::StringView& key,
-        types::size_t key_idx, types::size_t val_idx) NOEXCEPT {
+        types::uint64_t h, const types::StringView& key, types::size_t key_idx,
+        types::size_t val_idx) NOEXCEPT {
         types::size_t pos = static_cast<types::size_t>(h) & idx_mask_;
         while (idx_slots_[pos].hash != 0) {
             // Hash samberita TIDAKMUNGKIN tanpa kunci berkembar — namun
             // selalu verifikasi byte-exact: kunci kembar mempertahankan
             // kemunculan PERTAMA (semantik sama dengan pencarian sekuensial).
-            if (idx_slots_[pos].hash == h
-                && key_text_at(
-                       static_cast<types::size_t>(idx_slots_[pos].key_idx))
-                    == key) {
+            if (idx_slots_[pos].hash == h &&
+                key_text_at(
+                    static_cast<types::size_t>(idx_slots_[pos].key_idx)) ==
+                    key) {
                 return;
             }
             pos = (pos + 1) & idx_mask_;
@@ -361,14 +360,13 @@ class Session {
 
         types::size_t pos = static_cast<types::size_t>(h) & idx_mask_;
         while (idx_slots_[pos].hash != 0) {
-            if (idx_slots_[pos].hash == h
-                && key_text_at(
-                       static_cast<types::size_t>(idx_slots_[pos].key_idx))
-                    == key) {
+            if (idx_slots_[pos].hash == h &&
+                key_text_at(
+                    static_cast<types::size_t>(idx_slots_[pos].key_idx)) ==
+                    key) {
                 // Lompatan kursor ke entry awal nilai (rutenya identik
                 // dengan keadaan pasca-hitung find_field sekuensial).
-                it.seek(static_cast<types::size_t>(
-                    idx_slots_[pos].val_idx));
+                it.seek(static_cast<types::size_t>(idx_slots_[pos].val_idx));
                 return true;
             }
             pos = (pos + 1) & idx_mask_;
@@ -421,9 +419,9 @@ class Session {
     // tanpa pelintasan kursor sepenuhnya via tape/src.
     [[nodiscard]] types::StringView
     key_text_at(types::size_t key_idx) NOEXCEPT {
-        ondemand::JsonIterator& it = doc_.iter();
-        const types::uint64_t* tape   = it.tape();
-        const char* src               = it.src();
+        ondemand::JsonIterator& it      = doc_.iter();
+        const types::uint64_t* tape     = it.tape();
+        const char* src                 = it.src();
         const types::uint64_t open_pos  = tape[key_idx];
         const types::uint64_t close_pos = tape[key_idx + 1];
         return types::StringView(
@@ -436,9 +434,9 @@ class Session {
     // hasil unescape).
     [[nodiscard]] bool
     raw_key_has_escape(types::size_t key_idx) NOEXCEPT {
-        ondemand::JsonIterator& it = doc_.iter();
-        const types::uint64_t* tape   = it.tape();
-        const char* src               = it.src();
+        ondemand::JsonIterator& it      = doc_.iter();
+        const types::uint64_t* tape     = it.tape();
+        const char* src                 = it.src();
         const types::uint64_t open_pos  = tape[key_idx];
         const types::uint64_t close_pos = tape[key_idx + 1];
         for (const char* p = src + open_pos + 1; p < src + close_pos; ++p) {
@@ -464,8 +462,7 @@ class Session {
     // terbangun untuk array INI, sekuensial murni + penghitung berat bila
     // belum (kebijakan mirror resolve_root_key).
     [[nodiscard]] bool
-    resolve_array_index(
-        types::size_t arr_id, types::size_t idx) NOEXCEPT {
+    resolve_array_index(types::size_t arr_id, types::size_t idx) NOEXCEPT {
         if (arr_idx_present_ && arr_elem_source_ == arr_id) [[likely]] {
             if (idx >= arr_elem_count_) {
                 return false;
@@ -541,7 +538,7 @@ class Session {
         walk_array_elements<true>();
 
         arr_elem_source_   = arr_id;
-        arr_elem_count_     = count;
+        arr_elem_count_    = count;
         arr_idx_present_   = true;
         arr_heavy_queries_ = 0;
     }
@@ -554,7 +551,7 @@ class Session {
     types::size_t
     walk_array_elements() NOEXCEPT {
         ondemand::JsonIterator& it = doc_.iter();
-        types::size_t i = 0;
+        types::size_t i            = 0;
         for (;;) {
             char c = value_.peek_char();
             if (c == '\0') [[unlikely]] {
@@ -589,7 +586,6 @@ class Session {
     }
 
   public:
-
     // ------------------------------------------------------------------
     //  PATH — pencarian + pembacaan dalam SATU lapis pemanggilan C ABI
     // ------------------------------------------------------------------
@@ -610,9 +606,9 @@ class Session {
     [[nodiscard]] types::int32_t
     find_path(const char* const path, types::size_t len) NOEXCEPT {
         doc_.rewind();
-        value_pending_ = false;
-        array_remaining_ = 0;
-        array_mode_      = ArrayIterMode::None;
+        value_pending_      = false;
+        array_remaining_    = 0;
+        array_mode_         = ArrayIterMode::None;
         array_final_number_ = false;
 
         if (!path || len == 0) [[unlikely]] {
@@ -664,8 +660,7 @@ class Session {
                 // Segmen pertama = kunci root: pemecah lewat indeks lazy
                 // (bila sudah terbangun) atau sekuensial berhitung; segmen
                 // berjalan tetap sekuensial murni.
-                const types::StringView root_seg
-                    (path + start, i - start);
+                const types::StringView root_seg(path + start, i - start);
                 if (start == 0) {
                     if (!resolve_root_key(root_seg)) {
                         return NOT_FOUND;
@@ -891,8 +886,9 @@ class Session {
                 //                   terakhir menyusul; ditangani call
                 //                   berikutnya lewat cabang ']').
                 ondemand::JsonIterator& it = doc_.iter();
-                const types::size_t nxt = it.index() + 1;
-                if (it.peek_char_at(nxt) == ']' && !it.has_inline_number_at(nxt)) {
+                const types::size_t nxt    = it.index() + 1;
+                if (it.peek_char_at(nxt) == ']' &&
+                    !it.has_inline_number_at(nxt)) {
                     array_final_number_ = true;
                 }
                 value_pending_ = true;
@@ -1060,9 +1056,9 @@ create_session(
 // tetap kompatibel (binding jatuh ke create_session otomatis).
 
 enum ScannerVariant : zuu::types::int32_t {
-    SCANNER_AUTO   = 0, // fallback platform (LE 64-bit → paralel, lainnya skalar)
+    SCANNER_AUTO = 0, // fallback platform (LE 64-bit → paralel, lainnya skalar)
     SCANNER_SCALAR = 1, // scanner8 — pass validator UTF-8 terpisah
-    SCANNER_WIDE   = 2, // scanner64/scanner32 — fallback skalar bila tak tersedia
+    SCANNER_WIDE = 2, // scanner64/scanner32 — fallback skalar bila tak tersedia
 };
 
 #if ZE_JSON_VERSION_NUMBER >= 2026000105

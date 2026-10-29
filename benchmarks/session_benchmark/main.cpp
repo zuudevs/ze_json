@@ -334,7 +334,7 @@ struct SizedCase {
 };
 
 // Sabuk ukuran payload (KiB) — kelipatan mengikuti tepi blok SWAR 4 KiB.
-constexpr int kSizeCount = 5;
+constexpr int kSizeCount           = 5;
 const size_t kSizesKib[kSizeCount] = {1, 16, 64, 256, 512};
 
 SizedCase&
@@ -365,8 +365,7 @@ BM_CreateSession_Sizes(benchmark::State& state) {
             sized.json.data(), sized.json.size(), sized.tape.data(),
             sized.tape.size(), sized.arena, err);
         if (!session || err != static_cast<int32_t>(zuu::api::OK)) {
-            state.SkipWithError(
-                "payload sintetis tidak lolos create_session.");
+            state.SkipWithError("payload sintetis tidak lolos create_session.");
             return;
         }
         reset_arena(sized.arena);
@@ -490,7 +489,7 @@ using zuu::types::int32_t;
 using zuu::types::int64_t;
 using zuu::types::uint64_t;
 
-constexpr int kWidthCount = 3;
+constexpr int kWidthCount            = 3;
 const size_t kRootWidth[kWidthCount] = {16, 128, 1024};
 
 std::string
@@ -515,7 +514,8 @@ struct WideRootCase {
     resize_for(size_t width) {
         json = "{";
         for (size_t i = 0; i < width; ++i) {
-            if (i != 0) json += ",";
+            if (i != 0)
+                json += ",";
             json += "\"" + make_field_label(i) + "\":\"value-" +
                     std::to_string(i) + "\"";
         }
@@ -539,7 +539,8 @@ get_wide_root_case(int width_index) {
     if (!wide.session) {
         wide.resize_for(kRootWidth[width_index]);
         if (!wide.session) {
-            std::fprintf(stderr, "session lebar gagal (width %d)\n",
+            std::fprintf(
+                stderr, "session lebar gagal (width %d)\n",
                 width_index); // Kegagalan diam-diam diteruskan via null.
         }
     }
@@ -554,8 +555,8 @@ BM_RootWide_PathQuery(benchmark::State& state) {
     const int case_index  = id % 3;
 
     const size_t width = kRootWidth[width_index];
-    const size_t target
-        = case_index == 0 ? 0 : (case_index == 1 ? width / 2 : width - 1);
+    const size_t target =
+        case_index == 0 ? 0 : (case_index == 1 ? width / 2 : width - 1);
     std::string label = make_field_label(target);
 
     WideRootCase& wide = get_wide_root_case(width_index);
@@ -565,12 +566,12 @@ BM_RootWide_PathQuery(benchmark::State& state) {
     }
 
     for (auto _ : state) {
-        int32_t err   = static_cast<int32_t>(zuu::api::OK);
+        int32_t err      = static_cast<int32_t>(zuu::api::OK);
         const char* data = nullptr;
         size_t len       = 0;
         get_string_at(
-            wide.session, label.data(), static_cast<size_t>(label.size()),
-            data, len, err);
+            wide.session, label.data(), static_cast<size_t>(label.size()), data,
+            len, err);
         if (err != static_cast<int32_t>(zuu::api::OK)) {
             state.SkipWithError("get_string_at gagal pada root lebar.");
             return;
@@ -601,7 +602,7 @@ BENCHMARK(BM_RootWide_PathQuery)
 // (array_next selalu return 0 bila belum dihitung); benchmark membuktikan.
 
 namespace {
-constexpr int kArrCount = 3;
+constexpr int kArrCount           = 3;
 const size_t kArrayLen[kArrCount] = {8, 128, 1024};
 
 struct ArrayCase {
@@ -615,7 +616,8 @@ struct ArrayCase {
     resize_for(size_t elements) {
         json = "{\"colors\":[";
         for (size_t i = 0; i < elements; ++i) {
-            if (i != 0) json += ",";
+            if (i != 0)
+                json += ",";
             json += "\"v-" + std::to_string(i) + "\"";
         }
         json += "]}";
@@ -670,8 +672,8 @@ array_read_common(benchmark::State& state, bool streamed) {
         // Rewind via find_path per iterasi (me-rewind sendiri, murni
         // memposisikan kursor pada nilai '['); indeks root lazy
         // menjadikannya O(1) pasca-warmup.
-        const int32_t st
-            = static_cast<int32_t>(find_path(cs.session, "colors", 6));
+        const int32_t st =
+            static_cast<int32_t>(find_path(cs.session, "colors", 6));
         if (st != static_cast<int32_t>(zuu::api::OK)) {
             state.SkipWithError("find_path colors gagal.");
             return;
@@ -729,7 +731,7 @@ BENCHMARK(BM_ArrayRead_Streaming)
 // kueri karena find_path me-rewind dari root. Satu session lintas iterasi.
 
 namespace {
-constexpr int kItemsWidth = 3;
+constexpr int kItemsWidth           = 3;
 const size_t kItemsLen[kItemsWidth] = {16, 128, 1024};
 
 std::string
@@ -753,7 +755,8 @@ struct ItemsCase {
     resize_for(size_t elements) {
         json = "{\"items\":[";
         for (size_t i = 0; i < elements; ++i) {
-            if (i != 0) json += ",";
+            if (i != 0)
+                json += ",";
             json += "\"" + make_item_label(i) + "\"";
         }
         json += "]}";
@@ -787,8 +790,8 @@ BM_ArrayIndex_PathQuery(benchmark::State& state) {
     const int case_index  = id % 3;
 
     const size_t width = kItemsLen[width_index];
-    const size_t target
-        = case_index == 0 ? 0 : (case_index == 1 ? width / 2 : width - 1);
+    const size_t target =
+        case_index == 0 ? 0 : (case_index == 1 ? width / 2 : width - 1);
 
     ItemsCase& cs = get_items_case(width_index);
     if (!cs.session) {
@@ -803,8 +806,7 @@ BM_ArrayIndex_PathQuery(benchmark::State& state) {
         int32_t err      = static_cast<int32_t>(zuu::api::OK);
         const char* data = nullptr;
         size_t len       = 0;
-        get_string_at(
-            cs.session, path.data(), path.size(), data, len, err);
+        get_string_at(cs.session, path.data(), path.size(), data, len, err);
         if (err != static_cast<int32_t>(zuu::api::OK)) {
             state.SkipWithError("get_string_at items[K] gagal.");
             return;
@@ -851,7 +853,7 @@ make_synth_json_utf8(size_t target_bytes) {
     return json;
 }
 
-constexpr int kUtf8SizeCount = 2;
+constexpr int kUtf8SizeCount               = 2;
 const size_t kUtf8SizesKib[kUtf8SizeCount] = {16, 64};
 
 struct Utf8Case {
@@ -942,8 +944,7 @@ BM_Pipeline_SeparateValidator(benchmark::State& state) {
 
     for (auto _ : state) {
         reset_arena(sized.arena);
-        if (!zuu::utils::Utf8Validator(
-                sized.json.data(), sized.json.size())) {
+        if (!zuu::utils::Utf8Validator(sized.json.data(), sized.json.size())) {
             state.SkipWithError("validator menolak payload valid.");
             return;
         }
@@ -1023,16 +1024,17 @@ BENCHMARK(BM_Pipeline_Utf8_SeparateValidator)
 // ===========================================================================
 namespace {
 
-namespace fs = std::filesystem;
+namespace fs  = std::filesystem;
 namespace grm = grammar_replica;
 
-bool        g_gram_ok = true;
+bool g_gram_ok = true;
 std::string g_gram_detail;
 
 const fs::path kGramRootDir =
-    fs::path(__FILE__).parent_path().parent_path().parent_path();
+    fs::path(SAMPLE_DIR);
 
-[[nodiscard]] bool gram_read_file(const fs::path& p, std::string& out) {
+[[nodiscard]] bool
+gram_read_file(const fs::path& p, std::string& out) {
     std::error_code ec;
     const auto size = fs::file_size(p, ec);
     if (ec) {
@@ -1051,7 +1053,8 @@ const fs::path kGramRootDir =
 }
 
 // Loader dataset nyata (idiom get_span_real_dataset — cache file in-proses).
-[[nodiscard]] const std::string& get_gram_dataset(const std::string& name) {
+[[nodiscard]] const std::string&
+get_gram_dataset(const std::string& name) {
     static std::unordered_map<std::string, std::string> cache;
     auto it = cache.find(name);
     if (it != cache.end()) {
@@ -1059,7 +1062,9 @@ const fs::path kGramRootDir =
     }
     auto& data = cache[name];
     std::string buf;
-    if (!gram_read_file(kGramRootDir / "samples" / name, buf)) {
+    // Dataset sampel (github_events, canada, ...) tinggal di samples/;
+    // kGramRootDir menunjuk korpus JSON_Checker di bawahnya.
+    if (!gram_read_file(kGramRootDir.parent_path() / name, buf)) {
         std::println(stderr, "Gagal memuat dataset {}", name);
         return data; // kosong → SkipWithError pada pemanggil
     }
@@ -1069,15 +1074,24 @@ const fs::path kGramRootDir =
 
 // Payload sintetis token-padat: pola generatif literal/angka/string dengan
 // whitespace — biaya validator konsentrasi penuh di hot-path O(token).
-[[nodiscard]] const std::string& get_gram_synthetic() {
+[[nodiscard]] const std::string&
+get_gram_synthetic() {
     static const std::string json = [] {
         std::string out = "{\"v\":[";
         for (size_t k = 0; k < 16384; ++k) {
             switch (k % 4) {
-            case 0: out += "true, "; break;
-            case 1: out += "1230, "; break;
-            case 2: out += "\"x\", "; break;
-            default: out += "null, 2.5e-3, "; break;
+            case 0:
+                out += "true, ";
+                break;
+            case 1:
+                out += "1230, ";
+                break;
+            case 2:
+                out += "\"x\", ";
+                break;
+            default:
+                out += "null, 2.5e-3, ";
+                break;
             }
         }
         out += "-7]}";
@@ -1089,7 +1103,8 @@ const fs::path kGramRootDir =
 // Uji satu payload: scanner64 dulu (struktural/UTF-8), lalu validator
 // tape-walk pada tape hasilnya. Return false bila salah satu menolak;
 // `why` mengisi alasan teks untuk diagnostik gerbang.
-[[nodiscard]] bool gram_actual_accept(
+[[nodiscard]] bool
+gram_actual_accept(
     const std::string& json, std::vector<zuu::types::uint64_t>& tape,
     std::string& why) {
     tape.assign(json.size(), 0);
@@ -1102,8 +1117,8 @@ const fs::path kGramRootDir =
               std::to_string(static_cast<int>(scan.error())) + ")";
         return false;
     }
-    size_t rpos = 0;
-    int rstate  = -1;
+    size_t rpos   = 0;
+    int rstate    = -1;
     const bool ok = grm::validate_grammar_tapewalk_dbg(
         json.data(), json.size(), tape.data(), scan.value(), &rpos, &rstate);
     if (!ok) {
@@ -1117,14 +1132,15 @@ const fs::path kGramRootDir =
     return true;
 }
 
-void run_gram_gate() {
+void
+run_gram_gate() {
     std::vector<zuu::types::uint64_t> tape;
     std::string json;
     std::string why;
 
     // --- 1) korpus json.org -------------------------------------------------
     for (const auto& entry : fs::directory_iterator(
-             kGramRootDir / "tests" / "JSON_checker_test" / "corpus")) {
+             kGramRootDir)) {
         if (!entry.is_regular_file() || entry.path().extension() != ".json") {
             continue;
         }
@@ -1137,7 +1153,7 @@ void run_gram_gate() {
             // fail15/17/25/26/27/28 = escape liar/kontrol DI DALAM string
             // (string opak = 2 entri), fail18 = depth 21 << kMaxDepth.
             const std::string num = stem.substr(4);
-            int n = 0;
+            int n                 = 0;
             for (const char ch : num) {
                 if (ch < '0' || ch > '9') {
                     n = -1;
@@ -1152,15 +1168,15 @@ void run_gram_gate() {
         }
         if (!gram_read_file(entry.path(), json)) {
             g_gram_detail = "korpus gagal dibaca: " + stem;
-            g_gram_ok = false;
+            g_gram_ok     = false;
             return;
         }
         if (gram_actual_accept(json, tape, why) != expect_accept) {
-            g_gram_detail = "gerbang: " + stem + " (path=" +
-                entry.path().string() + ") → " +
-                (expect_accept ? "harus accept" : "harus reject") +
-                " | hasil: " + why;
-            g_gram_ok = false;
+            g_gram_detail = "gerbang: " + stem +
+                            " (path=" + entry.path().string() + ") → " +
+                            (expect_accept ? "harus accept" : "harus reject") +
+                            " | hasil: " + why;
+            g_gram_ok     = false;
             return;
         }
     }
@@ -1175,13 +1191,13 @@ void run_gram_gate() {
         const std::string& data = get_gram_dataset(name);
         if (data.empty()) {
             g_gram_detail = std::string("dataset kosong: ") + name;
-            g_gram_ok = false;
+            g_gram_ok     = false;
             return;
         }
         if (!gram_actual_accept(data, tape, why)) {
             g_gram_detail = std::string("gerbang: dataset ") + name +
-                " harus accept | validator: " + why;
-            g_gram_ok = false;
+                            " harus accept | validator: " + why;
+            g_gram_ok     = false;
             return;
         }
     }
@@ -1189,14 +1205,15 @@ void run_gram_gate() {
     // --- 3) payload sintetis token-padat wajib ACCEPT ------------------------
     if (!gram_actual_accept(get_gram_synthetic(), tape, why)) {
         g_gram_detail = "gerbang: sintetis harus accept | validator: " + why;
-        g_gram_ok = false;
+        g_gram_ok     = false;
         return;
     }
 }
 
 const bool g_gram_gate_result = (run_gram_gate(), g_gram_ok);
 
-void gram_run(
+void
+gram_run(
     benchmark::State& state, const std::string& json, const size_t cap,
     const bool validating) {
     if (!g_gram_gate_result) {
@@ -1249,22 +1266,22 @@ void gram_run(
         state.iterations() * static_cast<int64_t>(json.size()));
 }
 
-#define REGISTER_GRAM_PAIR(FAMILY, FILE_NAME, CAPACITY)                     \
-    static void BM_GRAM_Base_##FAMILY(benchmark::State& state) {            \
-        static const std::string& json = get_gram_dataset(FILE_NAME);       \
-        gram_run(state, json, (CAPACITY), false);                           \
-    }                                                                       \
-    BENCHMARK(BM_GRAM_Base_##FAMILY)                                        \
-        ->Unit(benchmark::kNanosecond)                                      \
-        ->MinTime(15)                                                       \
-        ->MinWarmUpTime(3);                                                 \
-    static void BM_GRAM_Tapewalk_##FAMILY(benchmark::State& state) {        \
-        static const std::string& json = get_gram_dataset(FILE_NAME);       \
-        gram_run(state, json, (CAPACITY), true);                            \
-    }                                                                       \
-    BENCHMARK(BM_GRAM_Tapewalk_##FAMILY)                                    \
-        ->Unit(benchmark::kNanosecond)                                      \
-        ->MinTime(15)                                                       \
+#define REGISTER_GRAM_PAIR(FAMILY, FILE_NAME, CAPACITY)                        \
+    static void BM_GRAM_Base_##FAMILY(benchmark::State& state) {               \
+        static const std::string& json = get_gram_dataset(FILE_NAME);          \
+        gram_run(state, json, (CAPACITY), false);                              \
+    }                                                                          \
+    BENCHMARK(BM_GRAM_Base_##FAMILY)                                           \
+        ->Unit(benchmark::kNanosecond)                                         \
+        ->MinTime(15)                                                          \
+        ->MinWarmUpTime(3);                                                    \
+    static void BM_GRAM_Tapewalk_##FAMILY(benchmark::State& state) {           \
+        static const std::string& json = get_gram_dataset(FILE_NAME);          \
+        gram_run(state, json, (CAPACITY), true);                               \
+    }                                                                          \
+    BENCHMARK(BM_GRAM_Tapewalk_##FAMILY)                                       \
+        ->Unit(benchmark::kNanosecond)                                         \
+        ->MinTime(15)                                                          \
         ->MinWarmUpTime(3);
 
 #if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1

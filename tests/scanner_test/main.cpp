@@ -196,8 +196,8 @@ TEST_F(ScannerTest, Scanner64TapeMatchesScanner8) {
     besar.pop_back();
     besar += "]}";
 
-    auto [big_ok8, big_tape8]     = run_scanner(besar);
-    auto [big_ok64, big_tape64]   = run_scanner64(besar);
+    auto [big_ok8, big_tape8]   = run_scanner(besar);
+    auto [big_ok64, big_tape64] = run_scanner64(besar);
     ASSERT_TRUE(big_ok8);
     ASSERT_TRUE(big_ok64);
     EXPECT_EQ(big_tape8.size(), big_tape64.size());
@@ -246,16 +246,17 @@ TEST_F(ScannerTest, Scanner64ErrorsMatchScanner8) {
     // Kontrak kebalikan: payload yang ditolak scanner8 wajib ditolak
     // scanner64 dengan keputusan yang sama (wajib sama-sama gagal).
     const std::string_view rejects[] = {
-        R"({"a":"x")",                  // Payload terpotong: kontainer buka
-        R"({"a":{"b":1}}})",            // Tutup berlebihan tanpa pembuka
-        R"({"key":"unclosed)",                // Tanda kutip tanpa penutup
-        R"({"back":"ends with \")",           // Backslash menjadikan kutip terakhir ter-escape
-        R"({"nested":{"open":[{"tight":1))",  // Kontainer gagal sepihak
+        R"({"a":"x")",              // Payload terpotong: kontainer buka
+        R"({"a":{"b":1}}})",        // Tutup berlebihan tanpa pembuka
+        R"({"key":"unclosed)",      // Tanda kutip tanpa penutup
+        R"({"back":"ends with \")", // Backslash menjadikan kutip terakhir
+                                    // ter-escape
+        R"({"nested":{"open":[{"tight":1))", // Kontainer gagal sepihak
     };
 
     for (const auto& json : rejects) {
-        auto [ok8, _8]     = run_scanner(json);
-        auto [ok64, _64]   = run_scanner64(json);
+        auto [ok8, _8]   = run_scanner(json);
+        auto [ok64, _64] = run_scanner64(json);
         EXPECT_FALSE(ok8) << "scanner8 malah lolos: " << json;
         EXPECT_EQ(ok8, ok64) << "payload: " << json;
     }
@@ -344,8 +345,8 @@ TEST_F(ScannerTest, MergedUtf8ValidationRejectsAcrossBoundaries) {
     };
 
     for (const auto& json : rejects) {
-        auto [ok8, _8]     = run_scanner(json);
-        auto [ok64, _64]   = run_scanner64(json);
+        auto [ok8, _8]   = run_scanner(json);
+        auto [ok64, _64] = run_scanner64(json);
         EXPECT_FALSE(ok8) << "scanner8 malah lolos: " << json;
         EXPECT_FALSE(ok64) << "scanner64 malah lolos: " << json;
     }

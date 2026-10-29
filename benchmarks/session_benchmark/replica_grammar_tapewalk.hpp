@@ -54,8 +54,8 @@
 namespace grammar_replica {
 
 using zuu::types::size_t;
-using zuu::types::uint8_t;
 using zuu::types::uint64_t;
+using zuu::types::uint8_t;
 
 // Cadangan batas kedalaman: dokumen sah lebih dalam dari ini akan ditolak
 // (dokumentasi keterbatasan eksplisit — fail18 berkedalaman 21 lolos erat).
@@ -139,19 +139,18 @@ literal_matches(
     bool ok = false;
     switch (src[pos]) {
     case 't':
-        ok = pos + 4 <= src_size && src[pos + 1] == 'r' &&
-             src[pos + 2] == 'u' && src[pos + 3] == 'e';
+        ok   = pos + 4 <= src_size && src[pos + 1] == 'r' &&
+               src[pos + 2] == 'u' && src[pos + 3] == 'e';
         mlen = 4;
         break;
     case 'f':
         ok = pos + 5 <= src_size && src[pos + 1] == 'a' &&
-             src[pos + 2] == 'l' && src[pos + 3] == 's' &&
-             src[pos + 4] == 'e';
+             src[pos + 2] == 'l' && src[pos + 3] == 's' && src[pos + 4] == 'e';
         mlen = 5;
         break;
     case 'n':
-        ok = pos + 4 <= src_size && src[pos + 1] == 'u' &&
-             src[pos + 2] == 'l' && src[pos + 3] == 'l';
+        ok   = pos + 4 <= src_size && src[pos + 1] == 'u' &&
+               src[pos + 2] == 'l' && src[pos + 3] == 'l';
         mlen = 4;
         break;
     default:
@@ -161,8 +160,9 @@ literal_matches(
         return ok;
     }
     const char t = src[pos + mlen];
-    return !((t >= 'a' && t <= 'z') || (t >= 'A' && t <= 'Z') ||
-             (t >= '0' && t <= '9') || t == '_');
+    return !(
+        (t >= 'a' && t <= 'z') || (t >= 'A' && t <= 'Z') ||
+        (t >= '0' && t <= '9') || t == '_');
 }
 
 enum class St : uint8_t {
@@ -199,9 +199,9 @@ pop_state(const uint8_t* const stack, size_t& depth) NOEXCEPT {
 
 [[nodiscard]] inline bool
 validate_grammar_tapewalk_dbg(
-    const char* const src, const size_t src_size,
-    const uint64_t* const tape, const size_t tape_len,
-    size_t* const out_pos, int* const out_state) NOEXCEPT {
+    const char* const src, const size_t src_size, const uint64_t* const tape,
+    const size_t tape_len, size_t* const out_pos,
+    int* const out_state) NOEXCEPT {
     if (tape_len == 0) {
         if (out_pos) {
             *out_pos = 0;
@@ -220,15 +220,15 @@ validate_grammar_tapewalk_dbg(
     St st           = St::Root;
 
     // Penolakan berbasis tag — argumen hanya di tulis pada jalur gagal.
-#define GR_FAIL(TAG)                                                          \
-    do {                                                                      \
-        if (out_pos) {                                                        \
-            *out_pos = pos;                                                   \
-        }                                                                     \
-        if (out_state) {                                                      \
-            *out_state = static_cast<int>(st);                                \
-        }                                                                     \
-        return false;                                                         \
+#define GR_FAIL(TAG)                                                           \
+    do {                                                                       \
+        if (out_pos) {                                                         \
+            *out_pos = pos;                                                    \
+        }                                                                      \
+        if (out_state) {                                                       \
+            *out_state = static_cast<int>(st);                                 \
+        }                                                                      \
+        return false;                                                          \
     } while (0)
 
     while (i < tape_len) {
@@ -240,11 +240,11 @@ validate_grammar_tapewalk_dbg(
 
         // Entri-0: gap = [0, pos); entri lain: [prev_pos+1, pos), efektif
         // mulai tail-literal bila ada (tail sah HANYA entri pertama).
-        const size_t lo =
-            tail != 0 && tail > prev_pos + 1 ? tail
-                                             : (i == 0 ? 0 : prev_pos + 1);
-        tail     = 0;
-        size_t jump = 1;   // penambahan entri iterasi ini
+        const size_t lo = tail != 0 && tail > prev_pos + 1
+                              ? tail
+                              : (i == 0 ? 0 : prev_pos + 1);
+        tail            = 0;
+        size_t jump     = 1;   // penambahan entri iterasi ini
         size_t last_pos = pos; // posisi entri terakhir yang dikonsumsi
 
         // Konsumsi nilai berbasis entri: gap wajib ws-only yang SUDAH diuji
@@ -267,9 +267,9 @@ validate_grammar_tapewalk_dbg(
                 st             = St::OOpen;
                 return true;
             case '"':
-                if (i + 1 >= tape_len ||                     // NOLINT
-                    static_cast<size_t>(tape[i + 1]) >=      // NOLINT
-                        src_size) [[unlikely]] {             // NOLINT
+                if (i + 1 >= tape_len ||                // NOLINT
+                    static_cast<size_t>(tape[i + 1]) >= // NOLINT
+                        src_size) [[unlikely]] {        // NOLINT
                     GR_FAIL("string-pair-ujung");
                 }
                 if (src[static_cast<size_t>(tape[i + 1])] != '"') {
@@ -489,8 +489,8 @@ validate_grammar_tapewalk_dbg(
 
 [[nodiscard]] inline bool
 validate_grammar_tapewalk(
-    const char* const src, const size_t src_size,
-    const uint64_t* const tape, const size_t tape_len) NOEXCEPT {
+    const char* const src, const size_t src_size, const uint64_t* const tape,
+    const size_t tape_len) NOEXCEPT {
     return validate_grammar_tapewalk_dbg(
         src, src_size, tape, tape_len, nullptr, nullptr);
 }
