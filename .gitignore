@@ -51,8 +51,14 @@ node_modules/
 # Python — venv lokal untuk scripts/analyze_result/main.py
 .venv/
 
+# Installer scripts/install_JSON_checker — cache unduhan sementara
+/scripts/install_JSON_checker/.tmp/
+
 # Hasil analisis (scripts/analyze_result/main.py) — turunan artefak, regenerable
 /out/analysis/
+
+# Hasil coverage LLVM llvm-cov HTML — regenerable
+/out/results/coverage_html/
 
 # version.hpp — DIGENERASI cmake/templates/version.hpp.in oleh
 # cmake/modules/generator.cmake saat configure (jangan di-commit)

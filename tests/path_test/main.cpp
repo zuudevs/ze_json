@@ -2,8 +2,8 @@
 // C ABI (find_path / get_*_at): kedalaman origin, object dalam array,
 // tipe salah, indeks luar jangkauan, overflow sintaks, dan pemakaian
 // ulang Session.
-#include <gtest/gtest.h>
 #include <cstdio>
+#include <gtest/gtest.h>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -237,11 +237,12 @@ TEST_F(PathTest, RootWideIndexPathQueries) {
     // pemanggil (hasil & status identik).
     std::string json = "{";
     for (int n = 0; n < 128; ++n) {
-        if (n != 0) json += ",";
+        if (n != 0)
+            json += ",";
         char label[8];
         std::snprintf(label, sizeof(label), "k%04d", n);
-        json += std::string("\"") + label + "\":\"" + std::to_string(1000 + n)
-            + "\"";
+        json += std::string("\"") + label + "\":\"" + std::to_string(1000 + n) +
+                "\"";
     }
     json += "}";
 
@@ -251,7 +252,7 @@ TEST_F(PathTest, RootWideIndexPathQueries) {
     std::vector<types::uint64_t> wide_tape(json.size());
 
     types::int32_t err = api::OK;
-    auto* session = create_session(
+    auto* session      = create_session(
         json.data(), json.size(), wide_tape.data(), wide_tape.size(), arena,
         err);
     ASSERT_NE(session, nullptr);
@@ -322,7 +323,8 @@ TEST_F(PathTest, RootWideIndexDuplicateKeyKeepsFirst) {
     // indeks dibangun.
     std::string json = "{";
     for (int n = 0; n < 48; ++n) {
-        if (n != 0) json += ",";
+        if (n != 0)
+            json += ",";
         json += "\"dup\":\"v" + std::to_string(n) + "\"";
     }
     json += "}";
@@ -332,7 +334,7 @@ TEST_F(PathTest, RootWideIndexDuplicateKeyKeepsFirst) {
     std::vector<types::uint64_t> wide_tape(json.size());
 
     types::int32_t err = api::OK;
-    auto* session = create_session(
+    auto* session      = create_session(
         json.data(), json.size(), wide_tape.data(), wide_tape.size(), arena,
         err);
     ASSERT_NE(session, nullptr);
@@ -366,11 +368,12 @@ TEST_F(PathTest, RootWideIndexNestedObjects) {
     // dipegang sekuensial — path "kXXXX.v" tetap benar.
     std::string json = "{";
     for (int n = 0; n < 64; ++n) {
-        if (n != 0) json += ",";
+        if (n != 0)
+            json += ",";
         char label[8];
         std::snprintf(label, sizeof(label), "k%04d", n);
-        json += std::string("\"") + label + "\":{\"v\":" + std::to_string(n)
-            + "}";
+        json +=
+            std::string("\"") + label + "\":{\"v\":" + std::to_string(n) + "}";
     }
     json += "}";
 
@@ -379,7 +382,7 @@ TEST_F(PathTest, RootWideIndexNestedObjects) {
     std::vector<types::uint64_t> wide_tape(json.size());
 
     types::int32_t err = api::OK;
-    auto* session = create_session(
+    auto* session      = create_session(
         json.data(), json.size(), wide_tape.data(), wide_tape.size(), arena,
         err);
     ASSERT_NE(session, nullptr);
@@ -416,7 +419,8 @@ TEST_F(PathTest, RootWideIndexEscapeKeyUnchanged) {
     // fallback sekuensial supaya hasil identik di semua mode.
     std::string json = "{";
     for (int n = 0; n < 32; ++n) {
-        if (n != 0) json += ",";
+        if (n != 0)
+            json += ",";
         json += "\"f" + std::to_string(n) + "\":\"" + std::to_string(n) + "\"";
     }
     json += R"(,"na\ty":"on-time"})";
@@ -426,7 +430,7 @@ TEST_F(PathTest, RootWideIndexEscapeKeyUnchanged) {
     std::vector<types::uint64_t> wide_tape(json.size());
 
     types::int32_t err = api::OK;
-    auto* session = create_session(
+    auto* session      = create_session(
         json.data(), json.size(), wide_tape.data(), wide_tape.size(), arena,
         err);
     ASSERT_NE(session, nullptr);
@@ -467,7 +471,8 @@ TEST_F(PathTest, ArrayIndexPathQueries) {
     // sekuensial murni, kedua membangun tabel posisi, berikutnya O(1).
     std::string json = "{\"items\":[";
     for (int n = 0; n < 128; ++n) {
-        if (n != 0) json += ",";
+        if (n != 0)
+            json += ",";
         char label[8];
         std::snprintf(label, sizeof(label), "v%04d", n);
         json += std::string("\"") + label + "\"";
@@ -480,7 +485,7 @@ TEST_F(PathTest, ArrayIndexPathQueries) {
     std::vector<types::uint64_t> wide_tape(json.size());
 
     types::int32_t err = api::OK;
-    auto* session = create_session(
+    auto* session      = create_session(
         json.data(), json.size(), wide_tape.data(), wide_tape.size(), arena,
         err);
     ASSERT_NE(session, nullptr);
@@ -547,7 +552,8 @@ TEST_F(PathTest, ArrayIndexMixedTypesAndNumbers) {
     // gap angka). Pola 7 elemen diulang 8× (indeks 0..55).
     std::string json = "{\"mix\":[";
     for (int b = 0; b < 8; ++b) {
-        if (b != 0) json += ",";
+        if (b != 0)
+            json += ",";
         json += R"(1,"two",true,null,[7,8],{"k":4},-8.5)";
     }
     json += "],\"after\":5}";
@@ -557,7 +563,7 @@ TEST_F(PathTest, ArrayIndexMixedTypesAndNumbers) {
     std::vector<types::uint64_t> wide_tape(json.size());
 
     types::int32_t err = api::OK;
-    auto* session = create_session(
+    auto* session      = create_session(
         json.data(), json.size(), wide_tape.data(), wide_tape.size(), arena,
         err);
     ASSERT_NE(session, nullptr);
@@ -620,14 +626,16 @@ TEST_F(PathTest, ArrayIndexSwitchArrays) {
     // (blok arena dipakai ulang) — hasil tidak pernah nyasar antar array.
     std::string json = "{\"a\":[";
     for (int n = 0; n < 40; ++n) {
-        if (n != 0) json += ",";
+        if (n != 0)
+            json += ",";
         char label[8];
         std::snprintf(label, sizeof(label), "v%04d", n);
         json += std::string("\"") + label + "\"";
     }
     json += "],\"b\":[";
     for (int n = 0; n < 40; ++n) {
-        if (n != 0) json += ",";
+        if (n != 0)
+            json += ",";
         char label[8];
         std::snprintf(label, sizeof(label), "w%04d", n);
         json += std::string("\"") + label + "\"";
@@ -639,7 +647,7 @@ TEST_F(PathTest, ArrayIndexSwitchArrays) {
     std::vector<types::uint64_t> wide_tape(json.size());
 
     types::int32_t err = api::OK;
-    auto* session = create_session(
+    auto* session      = create_session(
         json.data(), json.size(), wide_tape.data(), wide_tape.size(), arena,
         err);
     ASSERT_NE(session, nullptr);
@@ -721,7 +729,8 @@ TEST_F(PathTest, ArrayIndexNumberOnlyAndAmbiguity) {
     // arah + elemen terakhir (']' + gap angka) wajib benar.
     std::string json = "{\"big\":[";
     for (int n = 0; n < 100; ++n) {
-        if (n != 0) json += ",";
+        if (n != 0)
+            json += ",";
         json += std::to_string(n);
     }
     json += "],\"after\":5}";
@@ -730,7 +739,7 @@ TEST_F(PathTest, ArrayIndexNumberOnlyAndAmbiguity) {
     memory::Arena* arena = create_arena(buffer.data(), buffer.size());
     std::vector<types::uint64_t> wide_tape(json.size());
 
-    err = api::OK;
+    err     = api::OK;
     session = create_session(
         json.data(), json.size(), wide_tape.data(), wide_tape.size(), arena,
         err);

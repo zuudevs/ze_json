@@ -36,6 +36,27 @@ versi mengikuti [SemVer](https://semver.org/). Rilis npm
   matplotlib disimpan ke `out/analysis/figures/*.png` alih-alih
   membuka jendela interaktif; di Jupyter tetap inline.
 
+### Diubah
+
+- **Struktur proyek**: `JSON_checker` di-vendor ke
+  `third_party/JSON_checker/` (target CMake `json_checker` dengan
+  `SAMPLE_DIR` PUBLIC → `samples/JSON_Checker`); korpus json.org
+  dipindah dari `tests/JSON_checker_test/corpus/` ke submodule
+  `samples/JSON_Checker`; `scripts/invoke_JSON_checker/` diganti
+  `scripts/install_JSON_checker/` — installer/downloader json.org
+  (sumber → `third_party/`, korpus → `samples/`).
+- **Toolchain CMake dimodularisasi**: modul baru `exporter.cmake`
+  (`add_export_benchmark/test_target`), `coverage.cmake` (llvm-cov),
+  `profiler.cmake` (7 config AMDuProf CLI), `optimizations.cmake`
+  restrukturisasi ke `add_optimizations_target` + dukungan PGO
+  (`pgo.cmake`, auto-detect `merged.profdata`) + `-march=native`;
+  preset baru `native-release-with-debug-info` dan
+  `wasm{32,64}-release-with-debug-info` (RelWithDebInfo, untuk
+  profiling bersimbol); `src/CMakeLists.txt` pakai
+  `$<BUILD_INTERFACE>`/`$<INSTALL_INTERFACE>`. Tanpa perubahan
+  semantik `src/` (sisa diff = clang-format, terverifikasi `git
+  diff -w`).
+
 ## [0.1.6] — 2026-10-26
 
 ### Diperbaiki

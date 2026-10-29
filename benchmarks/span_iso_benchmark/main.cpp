@@ -157,7 +157,7 @@ constexpr types::uint64_t kSpaceRep =
     utils::repeat_byte_v<types::uint64_t, 0x20_u8>;
 constexpr types::uint64_t kColonRep =
     utils::repeat_byte_v<types::uint64_t, 0x3A_u8>;
-constexpr size_t         kBlock = sizeof(types::uint64_t);
+constexpr size_t kBlock = sizeof(types::uint64_t);
 
 // SET terminator PERSIS memori kStructural != 0 — 10 karakter berikut,
 // tanpa satu pun predikat yang hanya "mungkin-skip".
@@ -168,31 +168,31 @@ terminator_set_mask(types::uint64_t block) NOEXCEPT {
     return swar_has_zero_byte(
                block ^ repeat_byte_v<types::uint64_t, 0x22_u8>) // '"' quote
            | swar_has_zero_byte(
-               block ^ repeat_byte_v<types::uint64_t, 0x2C_u8>) // ','
+                 block ^ repeat_byte_v<types::uint64_t, 0x2C_u8>) // ','
            | swar_has_zero_byte(
-               block ^ repeat_byte_v<types::uint64_t, 0x3A_u8>) // ':'
+                 block ^ repeat_byte_v<types::uint64_t, 0x3A_u8>) // ':'
            | swar_has_zero_byte(
-               block ^ repeat_byte_v<types::uint64_t, 0x5B_u8>) // '['
+                 block ^ repeat_byte_v<types::uint64_t, 0x5B_u8>) // '['
            | swar_has_zero_byte(
-               block ^ repeat_byte_v<types::uint64_t, 0x5D_u8>) // ']'
+                 block ^ repeat_byte_v<types::uint64_t, 0x5D_u8>) // ']'
            | swar_has_zero_byte(
-               block ^ repeat_byte_v<types::uint64_t, 0x7B_u8>) // '{'
+                 block ^ repeat_byte_v<types::uint64_t, 0x7B_u8>) // '{'
            | swar_has_zero_byte(
-               block ^ repeat_byte_v<types::uint64_t, 0x7D_u8>) // '}'
+                 block ^ repeat_byte_v<types::uint64_t, 0x7D_u8>) // '}'
            | swar_has_zero_byte(
-               block ^ repeat_byte_v<types::uint64_t, 0x74_u8>) // 't'
+                 block ^ repeat_byte_v<types::uint64_t, 0x74_u8>) // 't'
            | swar_has_zero_byte(
-               block ^ repeat_byte_v<types::uint64_t, 0x66_u8>) // 'f'
+                 block ^ repeat_byte_v<types::uint64_t, 0x66_u8>) // 'f'
            | swar_has_zero_byte(
-               block ^ repeat_byte_v<types::uint64_t, 0x6E_u8>); // 'n'
+                 block ^ repeat_byte_v<types::uint64_t, 0x6E_u8>); // 'n'
 }
 
 // Ekor skalar VERBATIM loop span scanner64. ptr berakhir di terminator
 // ATAU end. return: 0 = invalid-utf8 (ptr kena error; pemanggil bail),
 // 1 = sehat.
 [[nodiscard]] inline int
-scalar_span_tail(const char*& ptr, const char* end, types::uint32_t& utf8)
-    NOEXCEPT {
+scalar_span_tail(
+    const char*& ptr, const char* end, types::uint32_t& utf8) NOEXCEPT {
     while (ptr < end &&
            lookups::kStructural[static_cast<types::uint8_t>(*ptr)] == 0) {
         if (utf8 != 0 || (*ptr & 0x80) != 0) [[unlikely]] {
@@ -227,7 +227,7 @@ byte_loop_replica(
     types::uint32_t utf8 = 0;
     size_t found         = 0;
 
-    auto ptr  = src;
+    auto ptr       = src;
     const auto end = src + src_size;
 
     while (ptr < end) {
@@ -274,7 +274,7 @@ swar_set_replica(
     types::uint32_t utf8 = 0;
     size_t found         = 0;
 
-    auto ptr      = src;
+    auto ptr       = src;
     const auto end = src + src_size;
 
     while (ptr < end) {
@@ -335,7 +335,7 @@ swar_advance_replica(
     types::uint32_t utf8 = 0;
     size_t found         = 0;
 
-    auto ptr      = src;
+    auto ptr       = src;
     const auto end = src + src_size;
 
     while (ptr < end) {
@@ -418,7 +418,7 @@ swar_hybrid_replica(
     // realita terukur: aproximasi tidak mengubah semantik apa pun.
     size_t prev_span_len = kBlock;
 
-    auto ptr      = src;
+    auto ptr       = src;
     const auto end = src + src_size;
 
     while (ptr < end) {
@@ -476,12 +476,11 @@ swar_hybrid_replica(
 // ---------------------------------------------------------------------------
 namespace {
 
-using ScanFn =
-    types::Result<size_t, core::JsonErrc>(*)(
-        const char* const RESTRICT, size_t,
-        types::size_t* RESTRICT, size_t) NOEXCEPT;
+using ScanFn = types::Result<size_t, core::JsonErrc> (*)(
+    const char* const RESTRICT, size_t, types::size_t* RESTRICT,
+    size_t) NOEXCEPT;
 
-bool        g_gate_ok    = true;
+bool g_gate_ok = true;
 std::string g_gate_detail;
 
 [[nodiscard]] bool
@@ -496,24 +495,24 @@ check_corpus(
     const auto base =
         oracle(corpus.data(), corpus.size(), tape.data(), tape.size());
 
-    const auto rep = replica(
-        corpus.data(), corpus.size(), tape.data(), tape.size());
+    const auto rep =
+        replica(corpus.data(), corpus.size(), tape.data(), tape.size());
 
     if (bool(base) != bool(rep)) {
         g_gate_detail = std::string(corpus_name) + " | " + replica_name +
-            ": status berbeda (" + (base ? "OK" : "ERROR") + " vs " +
-            (rep ? "OK" : "ERROR") + ")";
+                        ": status berbeda (" + (base ? "OK" : "ERROR") +
+                        " vs " + (rep ? "OK" : "ERROR") + ")";
         return false;
     }
     if (base.has_error()) {
         return true; // kedua-duanya error — konsisten
     }
-    if (static_cast<size_t>(base.value()) != static_cast<size_t>(rep.value()))
-    {
+    if (static_cast<size_t>(base.value()) != static_cast<size_t>(rep.value())) {
         g_gate_detail = std::string(corpus_name) + " | " + replica_name +
-            ": count " + std::to_string(static_cast<size_t>(rep.value())) +
-            " != tape scanner64 " +
-            std::to_string(static_cast<size_t>(base.value()));
+                        ": count " +
+                        std::to_string(static_cast<size_t>(rep.value())) +
+                        " != tape scanner64 " +
+                        std::to_string(static_cast<size_t>(base.value()));
         return false;
     }
     return true;
@@ -534,7 +533,9 @@ run_gate() {
         span_replica::swar_hybrid_replica,
     };
     const char* replica_names[] = {
-        "ByteLoopReplica", "SWARSetReplica", "SWARAdvanceReplica",
+        "ByteLoopReplica",
+        "SWARSetReplica",
+        "SWARAdvanceReplica",
         "SWARHybridReplica",
     };
 
@@ -543,15 +544,15 @@ run_gate() {
         const std::string ws  = make_span_payload(FillKind::WS, pad);
         const std::string num = make_span_payload(FillKind::NUM, pad);
 
-        std::string name_ws  =
-            "FillWS/Pad:" + std::to_string(pad);
-        std::string name_num =
-            "FillNum/Pad:" + std::to_string(pad);
+        std::string name_ws  = "FillWS/Pad:" + std::to_string(pad);
+        std::string name_num = "FillNum/Pad:" + std::to_string(pad);
 
         for (size_t r = 0; r < std::size(replicas); ++r) {
-            if (!check_corpus(ws, name_ws.c_str(), oracle, replicas[r],
+            if (!check_corpus(
+                    ws, name_ws.c_str(), oracle, replicas[r],
                     replica_names[r]) ||
-                !check_corpus(num, name_num.c_str(), oracle, replicas[r],
+                !check_corpus(
+                    num, name_num.c_str(), oracle, replicas[r],
                     replica_names[r])) {
                 g_gate_ok = false;
                 return;
@@ -561,8 +562,8 @@ run_gate() {
 
     const std::string mixed = make_mixed_gate_corpus();
     for (size_t r = 0; r < std::size(replicas); ++r) {
-        if (!check_corpus(mixed, "Mixed", oracle, replicas[r],
-                replica_names[r])) {
+        if (!check_corpus(
+                mixed, "Mixed", oracle, replicas[r], replica_names[r])) {
             g_gate_ok = false;
             return;
         }
@@ -570,7 +571,8 @@ run_gate() {
 
     const std::string invalid = make_invalid_utf8_corpus();
     for (size_t r = 0; r < std::size(replicas); ++r) {
-        if (!check_corpus(invalid, "InvalidUtf8", oracle, replicas[r],
+        if (!check_corpus(
+                invalid, "InvalidUtf8", oracle, replicas[r],
                 replica_names[r])) {
             g_gate_ok = false;
             return;
@@ -585,14 +587,13 @@ const bool g_gate_result = (run_gate(), g_gate_ok);
 //  bersebelahan (urutan registrasi = urutan eksekusi Google Benchmark)
 // ---------------------------------------------------------------------------
 void
-span_iso_run(
-    benchmark::State& state, FillKind kind, ScanFn scan) {
+span_iso_run(benchmark::State& state, FillKind kind, ScanFn scan) {
     if (!g_gate_result) {
         state.SkipWithError(g_gate_detail);
         return;
     }
 
-    const size_t pad = static_cast<size_t>(state.range(0));
+    const size_t pad       = static_cast<size_t>(state.range(0));
     const std::string json = make_span_payload(kind, pad);
     std::vector<types::size_t> tape_idx(json.size());
 
@@ -617,55 +618,45 @@ span_iso_run(
 
 #if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
 void
-BM_SpanIso_Scanner64_FillWS(benchmark::State& state)
-{
+BM_SpanIso_Scanner64_FillWS(benchmark::State& state) {
     span_iso_run(state, FillKind::WS, zuu::scanner::scanner64);
 }
 void
-BM_SpanIso_Scanner64_FillNum(benchmark::State& state)
-{
+BM_SpanIso_Scanner64_FillNum(benchmark::State& state) {
     span_iso_run(state, FillKind::NUM, zuu::scanner::scanner64);
 }
 #endif
 
 void
-BM_SpanIso_ByteLoopReplica_FillWS(benchmark::State& state)
-{
+BM_SpanIso_ByteLoopReplica_FillWS(benchmark::State& state) {
     span_iso_run(state, FillKind::WS, span_replica::byte_loop_replica);
 }
 void
-BM_SpanIso_ByteLoopReplica_FillNum(benchmark::State& state)
-{
+BM_SpanIso_ByteLoopReplica_FillNum(benchmark::State& state) {
     span_iso_run(state, FillKind::NUM, span_replica::byte_loop_replica);
 }
 void
-BM_SpanIso_SWARSetReplica_FillWS(benchmark::State& state)
-{
+BM_SpanIso_SWARSetReplica_FillWS(benchmark::State& state) {
     span_iso_run(state, FillKind::WS, span_replica::swar_set_replica);
 }
 void
-BM_SpanIso_SWARSetReplica_FillNum(benchmark::State& state)
-{
+BM_SpanIso_SWARSetReplica_FillNum(benchmark::State& state) {
     span_iso_run(state, FillKind::NUM, span_replica::swar_set_replica);
 }
 void
-BM_SpanIso_SWARAdvanceReplica_FillWS(benchmark::State& state)
-{
+BM_SpanIso_SWARAdvanceReplica_FillWS(benchmark::State& state) {
     span_iso_run(state, FillKind::WS, span_replica::swar_advance_replica);
 }
 void
-BM_SpanIso_SWARAdvanceReplica_FillNum(benchmark::State& state)
-{
+BM_SpanIso_SWARAdvanceReplica_FillNum(benchmark::State& state) {
     span_iso_run(state, FillKind::NUM, span_replica::swar_advance_replica);
 }
 void
-BM_SpanIso_SWARHybridReplica_FillWS(benchmark::State& state)
-{
+BM_SpanIso_SWARHybridReplica_FillWS(benchmark::State& state) {
     span_iso_run(state, FillKind::WS, span_replica::swar_hybrid_replica);
 }
 void
-BM_SpanIso_SWARHybridReplica_FillNum(benchmark::State& state)
-{
+BM_SpanIso_SWARHybridReplica_FillNum(benchmark::State& state) {
     span_iso_run(state, FillKind::NUM, span_replica::swar_hybrid_replica);
 }
 
@@ -674,26 +665,30 @@ BM_SpanIso_SWARHybridReplica_FillNum(benchmark::State& state)
 // Registrasi bersebelahan per Pasangan: Scanner -> ByteLoop -> SWARSet ->
 // SWARAdvance. Scanner64 hadir di SEMUA Pasangan {0,8,64,256}; replika di
 // {8,64,256} (Pasangan 0 adalah dasar slope scanner64 tanpa filler).
-#define REGISTER_PADED(FUNC_NAME, PAD)                                  \
-    BENCHMARK(FUNC_NAME)->ArgName("Pad")->Args({PAD})->Unit(            \
-        benchmark::kNanosecond)->MinTime(15)->MinWarmUpTime(3);
+#define REGISTER_PADED(FUNC_NAME, PAD)                                         \
+    BENCHMARK(FUNC_NAME)                                                       \
+        ->ArgName("Pad")                                                       \
+        ->Args({PAD})                                                          \
+        ->Unit(benchmark::kNanosecond)                                         \
+        ->MinTime(15)                                                          \
+        ->MinWarmUpTime(3);
 
 #if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
-#define REGISTER_SPAN_GROUP(FILL_TAG, PAD)                              \
-    REGISTER_PADED(BM_SpanIso_Scanner64_Fill##FILL_TAG, PAD)            \
-    REGISTER_PADED(BM_SpanIso_ByteLoopReplica_Fill##FILL_TAG, PAD)      \
-    REGISTER_PADED(BM_SpanIso_SWARSetReplica_Fill##FILL_TAG, PAD)       \
-    REGISTER_PADED(BM_SpanIso_SWARAdvanceReplica_Fill##FILL_TAG, PAD)   \
+#define REGISTER_SPAN_GROUP(FILL_TAG, PAD)                                     \
+    REGISTER_PADED(BM_SpanIso_Scanner64_Fill##FILL_TAG, PAD)                   \
+    REGISTER_PADED(BM_SpanIso_ByteLoopReplica_Fill##FILL_TAG, PAD)             \
+    REGISTER_PADED(BM_SpanIso_SWARSetReplica_Fill##FILL_TAG, PAD)              \
+    REGISTER_PADED(BM_SpanIso_SWARAdvanceReplica_Fill##FILL_TAG, PAD)          \
     REGISTER_PADED(BM_SpanIso_SWARHybridReplica_Fill##FILL_TAG, PAD)
 #else
-#define REGISTER_SPAN_GROUP(FILL_TAG, PAD)                              \
-    REGISTER_PADED(BM_SpanIso_ByteLoopReplica_Fill##FILL_TAG, PAD)      \
-    REGISTER_PADED(BM_SpanIso_SWARSetReplica_Fill##FILL_TAG, PAD)       \
-    REGISTER_PADED(BM_SpanIso_SWARAdvanceReplica_Fill##FILL_TAG, PAD)   \
+#define REGISTER_SPAN_GROUP(FILL_TAG, PAD)                                     \
+    REGISTER_PADED(BM_SpanIso_ByteLoopReplica_Fill##FILL_TAG, PAD)             \
+    REGISTER_PADED(BM_SpanIso_SWARSetReplica_Fill##FILL_TAG, PAD)              \
+    REGISTER_PADED(BM_SpanIso_SWARAdvanceReplica_Fill##FILL_TAG, PAD)          \
     REGISTER_PADED(BM_SpanIso_SWARHybridReplica_Fill##FILL_TAG, PAD)
 #endif
 
-REGISTER_PADED(BM_SpanIso_Scanner64_FillWS, 0)   // dasar slope tanpa filler
+REGISTER_PADED(BM_SpanIso_Scanner64_FillWS, 0) // dasar slope tanpa filler
 REGISTER_PADED(BM_SpanIso_Scanner64_FillNum, 0)
 // Hybrid ikut diukur pada Pasangan 0 — pengujian regresi-tanpa-filler:
 // gate probe adaptif harus menyala-mati tanpa overhead di region padat.
@@ -716,7 +711,8 @@ REGISTER_SPAN_GROUP(Num, 256)
 #if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
 
 const fs::path SAMPLES_DIR =
-    fs::path(__FILE__).parent_path().parent_path().parent_path() / "samples";[[nodiscard]] const std::string&
+    fs::path(__FILE__).parent_path().parent_path().parent_path() / "samples";
+[[nodiscard]] const std::string&
 get_span_real_dataset(const std::string& name) {
     static std::unordered_map<std::string, std::string> cache;
     if (!cache.contains(name)) {
@@ -734,48 +730,54 @@ get_span_real_dataset(const std::string& name) {
     return cache[name];
 }
 
-#define REGISTER_SPAN_REAL_PAIR(FAMILY, FILE_NAME, CAPACITY)                \
-    static void BM_SpanReal_Hybrid_##FAMILY(benchmark::State& state) {      \
-        static const std::string& json =                                    \
-            get_span_real_dataset(FILE_NAME);                               \
-        if (json.empty()) { state.SkipWithError("Dataset gagal"); return; } \
-        std::vector<types::size_t> tape((CAPACITY));                        \
-        for (auto _ : state) {                                              \
-            auto res = zuu::scanner::scanner64(                             \
-                json.data(), json.size(), tape.data(), tape.size());        \
-            benchmark::DoNotOptimize(res);                                  \
-            benchmark::ClobberMemory();                                     \
-        }                                                                   \
-        state.SetBytesProcessed(                                            \
-            state.iterations() * static_cast<int64_t>(json.size()));        \
-    }                                                                       \
-    BENCHMARK(BM_SpanReal_Hybrid_##FAMILY)->Unit(                           \
-        benchmark::kNanosecond)->MinTime(15)->MinWarmUpTime(3);             \
-    static void BM_SpanReal_PreHybrid_##FAMILY(benchmark::State& state) {   \
-        static const std::string& json =                                    \
-            get_span_real_dataset(FILE_NAME);                               \
-        if (json.empty()) { state.SkipWithError("Dataset gagal"); return; } \
-        std::vector<types::size_t> tape((CAPACITY));                        \
-        for (auto _ : state) {                                              \
-            auto res = replica_span_prehybrid::                             \
-                scanner64_prehybrid_span_replica(                           \
-                    json.data(), json.size(),                               \
-                    tape.data(), tape.size());                              \
-            benchmark::DoNotOptimize(res);                                  \
-            benchmark::ClobberMemory();                                     \
-        }                                                                   \
-        state.SetBytesProcessed(                                            \
-            state.iterations() * static_cast<int64_t>(json.size()));        \
-    }                                                                       \
-    BENCHMARK(BM_SpanReal_PreHybrid_##FAMILY)->Unit(                        \
-        benchmark::kNanosecond)->MinTime(15)->MinWarmUpTime(3);
+#define REGISTER_SPAN_REAL_PAIR(FAMILY, FILE_NAME, CAPACITY)                   \
+    static void BM_SpanReal_Hybrid_##FAMILY(benchmark::State& state) {         \
+        static const std::string& json = get_span_real_dataset(FILE_NAME);     \
+        if (json.empty()) {                                                    \
+            state.SkipWithError("Dataset gagal");                              \
+            return;                                                            \
+        }                                                                      \
+        std::vector<types::size_t> tape((CAPACITY));                           \
+        for (auto _ : state) {                                                 \
+            auto res = zuu::scanner::scanner64(                                \
+                json.data(), json.size(), tape.data(), tape.size());           \
+            benchmark::DoNotOptimize(res);                                     \
+            benchmark::ClobberMemory();                                        \
+        }                                                                      \
+        state.SetBytesProcessed(                                               \
+            state.iterations() * static_cast<int64_t>(json.size()));           \
+    }                                                                          \
+    BENCHMARK(BM_SpanReal_Hybrid_##FAMILY)                                     \
+        ->Unit(benchmark::kNanosecond)                                         \
+        ->MinTime(15)                                                          \
+        ->MinWarmUpTime(3);                                                    \
+    static void BM_SpanReal_PreHybrid_##FAMILY(benchmark::State& state) {      \
+        static const std::string& json = get_span_real_dataset(FILE_NAME);     \
+        if (json.empty()) {                                                    \
+            state.SkipWithError("Dataset gagal");                              \
+            return;                                                            \
+        }                                                                      \
+        std::vector<types::size_t> tape((CAPACITY));                           \
+        for (auto _ : state) {                                                 \
+            auto res =                                                         \
+                replica_span_prehybrid::scanner64_prehybrid_span_replica(      \
+                    json.data(), json.size(), tape.data(), tape.size());       \
+            benchmark::DoNotOptimize(res);                                     \
+            benchmark::ClobberMemory();                                        \
+        }                                                                      \
+        state.SetBytesProcessed(                                               \
+            state.iterations() * static_cast<int64_t>(json.size()));           \
+    }                                                                          \
+    BENCHMARK(BM_SpanReal_PreHybrid_##FAMILY)                                  \
+        ->Unit(benchmark::kNanosecond)                                         \
+        ->MinTime(15)                                                          \
+        ->MinWarmUpTime(3);
 
 REGISTER_SPAN_REAL_PAIR(github_events, "github_events.json", 316 * 1024)
-REGISTER_SPAN_REAL_PAIR(mesh,        "mesh.json",        352 * 1024)
-REGISTER_SPAN_REAL_PAIR(twitter,     "twitter.json",     648 * 1024)
+REGISTER_SPAN_REAL_PAIR(mesh, "mesh.json", 352 * 1024)
+REGISTER_SPAN_REAL_PAIR(twitter, "twitter.json", 648 * 1024)
 REGISTER_SPAN_REAL_PAIR(citm_catalog, "citm_catalog.json", 1768 * 1024)
 REGISTER_SPAN_REAL_PAIR(update_center, "update-center.json", 3214 * 1024)
-REGISTER_SPAN_REAL_PAIR(canada,      "canada.json",      2256 * 1024)
-REGISTER_SPAN_REAL_PAIR(jeopardy,    "jeopardy.json",    54 * 1024 * 1024)
+REGISTER_SPAN_REAL_PAIR(canada, "canada.json", 2256 * 1024)
+REGISTER_SPAN_REAL_PAIR(jeopardy, "jeopardy.json", 54 * 1024 * 1024)
 #endif
-

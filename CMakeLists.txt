@@ -47,6 +47,7 @@ include("${CMAKE_SOURCE_DIR}/cmake/tools/git.cmake")
 add_subdirectory("${CMAKE_SOURCE_DIR}/src")
 add_subdirectory("${CMAKE_SOURCE_DIR}/tests")
 add_subdirectory("${CMAKE_SOURCE_DIR}/benchmarks")
+add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/JSON_checker")
 
 find_program(CLANG_FORMAT_EXE NAMES clang-format)
 

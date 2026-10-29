@@ -64,11 +64,25 @@
 				"CMAKE_BUILD_TYPE": "Release"
 			}
 		}, {
+			"name": "native-release-with-debug-info",
+			"inherits": "native",
+			"displayName": "Native Release with debug info",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "RelWithDebInfo"
+			}
+		}, {
 			"name": "wasm32-debug",
 			"inherits": "wasm32",
 			"displayName": "WASM x32 Debug",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Debug"
+			}
+		}, {
+			"name": "wasm32-release-with-debug-info",
+			"inherits": "wasm32",
+			"displayName": "WASM x32 Release with debug info",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "RelWithDebInfo"
 			}
 		}, {
 			"name": "wasm32-release",
@@ -85,6 +99,13 @@
 				"CMAKE_BUILD_TYPE": "Debug"
 			}
 		}, {
+			"name": "wasm64-release-with-debug-info",
+			"inherits": "wasm64",
+			"displayName": "WASM x64 Release with debug info",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "RelWithDebInfo"
+			}
+		}, {
 			"name": "wasm64-release",
 			"inherits": "wasm64",
 			"displayName": "WASM x64 Release",
@@ -98,19 +119,26 @@
 			"name": "native-debug",
 			"configurePreset": "native-debug"
 		}, {
+			"name": "native-release-with-debug-info",
+			"configurePreset": "native-release-with-debug-info"
+		}, {
 			"name": "native-release",
 			"configurePreset": "native-release"
-		},
-		{
+		}, {
 			"name": "wasm32-debug",
 			"configurePreset": "wasm32-debug"
 		}, {
 			"name": "wasm32-release",
 			"configurePreset": "wasm32-release"
-		},
-		{
+		}, {
+			"name": "wasm32-release-with-debug-info",
+			"configurePreset": "wasm32-release-with-debug-info"
+		}, {
 			"name": "wasm64-debug",
 			"configurePreset": "wasm64-debug"
+		}, {
+			"name": "wasm64-release-with-debug-info",
+			"configurePreset": "wasm64-release-with-debug-info"
 		}, {
 			"name": "wasm64-release",
 			"configurePreset": "wasm64-release"

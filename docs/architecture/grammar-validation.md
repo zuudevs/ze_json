@@ -82,7 +82,7 @@ tertolak penuh, SAMPAI. string-lazy (6 file) & fail18 (sengaja) tetap.
   antar-proses (hukum pertama).
 - GERBANG kebenaran (sekali jalankan di start-up, суда gagal = semua
   benchmark `SkipWithError`):
-  * korpus json.org (`tests/JSON_checker_test/corpus`): pass → ACCEPT;
+  * korpus json.org (`samples/JSON_Checker`): pass → ACCEPT;
     fail → TOLAK kecuali daftar lazy/string&fail18 di atas.
   * seluruh `samples/*.json` → ACCEPT.
 - Angka target yang layak adopsi `src/`: Δ in-run ≤ beberapa persen pada

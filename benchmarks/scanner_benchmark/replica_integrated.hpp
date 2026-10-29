@@ -20,8 +20,7 @@
 namespace {
 
 constexpr bool
-utf8_step_replica(
-    zuu::types::uint32_t& state, const char* byte_ptr) noexcept {
+utf8_step_replica(zuu::types::uint32_t& state, const char* byte_ptr) noexcept {
     const auto type =
         zuu::lookups::kUtf8Dfa[static_cast<zuu::types::uint8_t>(*byte_ptr)];
     state = zuu::lookups::kUtf8Dfa[256 + state + type];
@@ -33,8 +32,8 @@ utf8_step_replica(
 //   Ini algoritma yang menurunkan throughput skalar -27..43%.
 zuu::types::Result<zuu::types::size_t, zuu::core::JsonErrc>
 scanner8_integrated_replica(
-    const char* src, zuu::types::size_t src_size,
-    zuu::types::size_t* dst, zuu::types::size_t dst_size) noexcept {
+    const char* src, zuu::types::size_t src_size, zuu::types::size_t* dst,
+    zuu::types::size_t dst_size) noexcept {
     using namespace zuu;
     if (!src || src_size <= 1) {
         return types::Unexpected{core::JsonErrc::InvalidJson};
@@ -50,7 +49,7 @@ scanner8_integrated_replica(
 
     types::int64_t curly_depth  = 0;
     types::int64_t square_depth = 0;
-    types::uint32_t utf8         = 0;
+    types::uint32_t utf8        = 0;
 
     while (ptr < end && cursor < end_cursor) {
         while (ptr < end &&
@@ -149,8 +148,8 @@ scanner8_integrated_replica(
 //   Identik dengan scanner64 saat ini KECUALI satu counter agregat.
 zuu::types::Result<zuu::types::size_t, zuu::core::JsonErrc>
 scanner64_untyped_replica(
-    const char* src, zuu::types::size_t src_size,
-    zuu::types::size_t* dst, zuu::types::size_t dst_size) noexcept {
+    const char* src, zuu::types::size_t src_size, zuu::types::size_t* dst,
+    zuu::types::size_t dst_size) noexcept {
     using namespace zuu;
     if (!src || src_size <= 1) {
         return types::Unexpected{core::JsonErrc::InvalidJson};
@@ -207,17 +206,15 @@ scanner64_untyped_replica(
                     types::uint64_t block;
                     __builtin_memcpy(&block, ptr, sizeof(types::uint64_t));
 
-                    if (utf8 == 0 &&
-                        (block & 0x8080808080808080ULL) == 0) {
+                    if (utf8 == 0 && (block & 0x8080808080808080ULL) == 0) {
                         types::uint64_t mask =
                             utils::swar_has_zero_byte(
                                 block ^
-                                utils::repeat_byte_v<types::uint64_t,
-                                                    0x22_u8>) |
+                                utils::
+                                    repeat_byte_v<types::uint64_t, 0x22_u8>) |
                             utils::swar_has_zero_byte(
                                 block ^
-                                utils::repeat_byte_v<types::uint64_t,
-                                                    0x5C_u8>);
+                                utils::repeat_byte_v<types::uint64_t, 0x5C_u8>);
 
                         if (mask != 0) {
                             ptr += __builtin_ctzll(mask) >> 3;

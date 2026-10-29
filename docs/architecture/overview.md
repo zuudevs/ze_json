@@ -69,11 +69,12 @@ ze_json/
 ├── examples/js/example.mjs demo end-to-end di JS
 ├── scripts/                agregator metrik (test_metrics.js, benchmark_metrics.js)
 │                           + analyze_result/ (notebook analisis artefak)
-│                           + invoke_JSON_checker/ (pengunduh korpus reference)
+│                           + install_JSON_checker/ (pengunduh reference json.org)
+├── third_party/            vendored: JSON_checker (validator reference C)
 ├── cmake/                  preset CMake (C++23, LLVM/clang, helper vcpkg)
 ├── out/results/            artefak metrik ter-commit (JSON + Markdown)
-└── samples/                SUBMODULE — korpus simdjson ~61 MB (gitlink;
-                            https://github.com/zuudevs/ze_json_sample)
+└── samples/                SUBMODULE — korpus simdjson ~61 MB + JSON_Checker
+                            (gitlink; https://github.com/zuudevs/ze_json_sample)
 ```
 
 ## Prinsip desain

@@ -53,9 +53,10 @@ scanner64_prehybrid_span_replica(
     zuu::types::uint32_t utf8 = 0;
 
     while (ptr < end && cursor < end_cursor) {
-        while (ptr < end &&
-               zuu::lookups::kStructural[static_cast<zuu::types::uint8_t>(
-                   *ptr)] == 0) {
+        while (
+            ptr < end &&
+            zuu::lookups::kStructural[static_cast<zuu::types::uint8_t>(*ptr)] ==
+                0) {
             if (utf8 != 0 || (*ptr & 0x80) != 0) [[unlikely]] {
                 if (!utf8_step(utf8, ptr)) [[unlikely]] {
                     return zuu::types::Unexpected{
@@ -71,8 +72,7 @@ scanner64_prehybrid_span_replica(
 
         if (utf8 != 0 || (*ptr & 0x80) != 0) [[unlikely]] {
             if (!utf8_step(utf8, ptr)) [[unlikely]] {
-                return zuu::types::Unexpected{
-                    zuu::core::JsonErrc::InvalidUtf8};
+                return zuu::types::Unexpected{zuu::core::JsonErrc::InvalidUtf8};
             }
         }
 
@@ -111,17 +111,15 @@ scanner64_prehybrid_span_replica(
                     uint64_t block;
                     __builtin_memcpy(&block, ptr, sizeof(uint64_t));
 
-                    if (utf8 == 0 &&
-                        (block & 0x8080808080808080ULL) == 0) [[likely]] {
+                    if (utf8 == 0 && (block & 0x8080808080808080ULL) == 0)
+                        [[likely]] {
                         zuu::types::uint64_t mask =
                             zuu::utils::swar_has_zero_byte(
                                 block ^
-                                zuu::utils::repeat_byte_v<uint64_t,
-                                                          0x22_u8>) |
+                                zuu::utils::repeat_byte_v<uint64_t, 0x22_u8>) |
                             zuu::utils::swar_has_zero_byte(
                                 block ^
-                                zuu::utils::repeat_byte_v<uint64_t,
-                                                          0x5C_u8>);
+                                zuu::utils::repeat_byte_v<uint64_t, 0x5C_u8>);
 
                         if (mask != 0) {
                             ptr += __builtin_ctzll(mask) >> 3;
