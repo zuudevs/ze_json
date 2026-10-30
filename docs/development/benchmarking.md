@@ -2,7 +2,8 @@
 
 > Bagian dari [docs/development/](.) — lihat juga
 > [workflow.md](workflow.md) · [testing.md](testing.md) ·
-> [naming.md](naming.md). Bukti historis 4 tahap optimasi:
+> [naming.md](naming.md) ·
+> [research-integration.md](research-integration.md). Bukti historis 4 tahap optimasi:
 > [docs/architecture/optimizations.md](../architecture/optimizations.md).
 
 ## Hukum pertama: jam lintas-proses di mesin ini TIDAK SAH
@@ -78,6 +79,19 @@ validasi di dalam loop gagal. Jangan pernah mencatat angka ini.
 - Ringkasan penuh: `node scripts/benchmark_metrics.js native-release`
   (→ `summary_<hash>.{json,md}`; `--parse-only` untuk merangkum ulang JSON
   yang ada tanpa menjalankan ulang).
+
+### Artefak vs run berprovenance
+
+Artefak `out/results/` cocok untuk eksplorasi dan perbandingan before/after
+lokal. Untuk angka yang akan dipakai di laporan/skripsi, jalankan melalui repo
+[`research/`](../../research/) sehingga commit, digest dataset, hash binary,
+hasil test pada commit sama, dan perintah terekam:
+[research-integration.md](research-integration.md).
+
+Bedanya bukan administratif: artefak `out/results/` tidak bisa membuktikan
+dataset yang dipakai sama, binary tidak basi, atau suite test lulus saat angka
+itu diambil. Gerbang korektness di repo research menolak run performa bila
+bukti test pada commit yang sama belum ada.
 
 ## Benchmark JS
 

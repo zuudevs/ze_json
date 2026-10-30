@@ -2,7 +2,8 @@
 
 > Bagian dari [docs/development/](.) — lihat juga
 > [workflow.md](workflow.md) · [naming.md](naming.md) ·
-> [benchmarking.md](benchmarking.md).
+> [benchmarking.md](benchmarking.md) ·
+> [research-integration.md](research-integration.md).
 
 ## Filosofi
 
@@ -131,3 +132,25 @@ cd js && npm test
 
 Untuk perubahan performa, tambahkan benchmark before/after —
 disiplinnya di [benchmarking.md](benchmarking.md).
+
+## Bukti test yang bisa dipertanggungjawabkan
+
+`ctest` menjawab "apakah hijau sekarang". Ia tidak menjawab "apakah hijau
+pada commit yang menjadi dasar angka performa itu". Untuk yang kedua,
+jalankan suite lewat eksperimen `correctness-gtest-suite` di repo
+[`research/`](../../research/):
+
+```powershell
+ze-research run --experiment correctness-gtest-suite
+ze-research ingest --run-id <RUN_ID>
+```
+
+Run itu merekam per kasuS: nama suite, nama kasus, status, dan durasi, plus
+commit source, hash binary, dan digest korpus `samples/JSON_checker`.
+Eksperimen performa di registry yang sama mendeklarasikan
+`correctness_gate`, sehingga **ditolak** bila tidak ada run test VERIFIED pada
+commit yang identik.
+
+Efek praktisnya: angka performa dan bukti korektness terhubung lewat commit,
+bukan lewat ingatan pelaku perubahan. Detail: 
+[research-integration.md](research-integration.md).
