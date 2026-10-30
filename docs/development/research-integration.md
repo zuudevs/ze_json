@@ -83,7 +83,12 @@ ze-research export --experiment scanner-width-comparison    # untuk notebook
 Urutan ini bukan formalitas. `scanner-width-comparison` mendeklarasikan
 `correctness_gate` terhadap `correctness-gtest-suite`, sehingga run performa
 **ditolak** bila tidak ada run test VERIFIED pada commit yang sama. Itu
-mencegah klaim "lewat 20%" pada library yang suite test-nya gagal.
+mencegah klaim "lewat 20%" pada library yang suite test-nya gagah.
+
+Penting: commit yang dibandingkan adalah commit **repo induk**, yang ikut
+berubah ketika pointer submodule `research/` bergerak. Jadi setiap perubahan
+kode atau definisi eksperimen membutuhkan run korektness baru. Susun semua
+definisi dan perbaikan dulu, baru jalankan korektness, lalu performa.
 
 `--strict` menolak ingest bila ada baris hasil yang tidak terpetakan ke tepat
 satu varian. Lebih baik gagal ingest daripada punya angka yang salah label.
