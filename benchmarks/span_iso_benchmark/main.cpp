@@ -703,7 +703,8 @@ REGISTER_SPAN_GROUP(WS, 256)
 REGISTER_SPAN_GROUP(Num, 256)
 
 // ---------------------------------------------------------------------------
-//  TAHAP-6: pasangan TERSEBELAHAN pada dataset nyata (samples/) — library
+//  TAHAP-6: pasangan TERSEBELAHAN pada dataset nyata (samples/commons/) —
+//  library
 //  scanner64 (span probe-hybrid) vs replika pra-hybrid beku. Adjacency
 //  eksplisit per dataset: dua slot konsekutif = mitigasi getaran jam
 //  antar-benchmark (bergetar 15-45% terdokumentasi).
@@ -711,7 +712,8 @@ REGISTER_SPAN_GROUP(Num, 256)
 #if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
 
 const fs::path SAMPLES_DIR =
-    fs::path(__FILE__).parent_path().parent_path().parent_path() / "samples";
+    fs::path(__FILE__).parent_path().parent_path().parent_path() / "samples" /
+    "commons";
 [[nodiscard]] const std::string&
 get_span_real_dataset(const std::string& name) {
     static std::unordered_map<std::string, std::string> cache;

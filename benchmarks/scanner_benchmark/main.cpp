@@ -17,7 +17,8 @@ namespace fs = std::filesystem;
 using namespace zuu;
 
 const fs::path DATASET_DIR =
-    fs::path(__FILE__).parent_path().parent_path().parent_path() / "samples";
+    fs::path(__FILE__).parent_path().parent_path().parent_path() / "samples" /
+    "commons";
 
 [[nodiscard]] bool
 load_dataset(std::string& dst, const fs::path& path) {

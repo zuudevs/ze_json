@@ -1019,7 +1019,7 @@ BENCHMARK(BM_Pipeline_Utf8_SeparateValidator)
 //    - korpus json.org: pass1..3 → ACCEPT; fail*.json → REJECT KECUALI
 //      fail15/17/25/26/27/28 (escape liar/kontrol di dalam string —
 //      dilazy-kan ke string-read) dan fail18 (depth 21 << kMaxDepth).
-//    - seluruh samples/*.json (7 dataset nyata) → ACCEPT.
+//    - seluruh samples/commons/*.json (7 dataset nyata) → ACCEPT.
 //    - payload sintetis token-padat → ACCEPT.
 // ===========================================================================
 namespace {
@@ -1062,9 +1062,9 @@ get_gram_dataset(const std::string& name) {
     }
     auto& data = cache[name];
     std::string buf;
-    // Dataset sampel (github_events, canada, ...) tinggal di samples/;
-    // kGramRootDir menunjuk korpus JSON_Checker di bawahnya.
-    if (!gram_read_file(kGramRootDir.parent_path() / name, buf)) {
+    // Dataset sampel (github_events, canada, ...) tinggal di samples/commons/;
+    // kGramRootDir menunjuk korpus JSON_Checker di bawah samples/.
+    if (!gram_read_file(kGramRootDir.parent_path() / "commons" / name, buf)) {
         std::println(stderr, "Gagal memuat dataset {}", name);
         return data; // kosong → SkipWithError pada pemanggil
     }

@@ -1,0 +1,69 @@
+{
+  "file_count": 10,
+  "files": [
+    {
+      "name": "canada.json",
+      "path": "samples/commons/canada.json",
+      "sha256": "bfbc12b8b6da35cdcc15046304be1739a82a335de17ef9959ea3dd75225467a4",
+      "size_bytes": 2251060
+    },
+    {
+      "name": "citm_catalog.json",
+      "path": "samples/commons/citm_catalog.json",
+      "sha256": "cab62e56bcf8540f65df42bffdf3cce279d68e2d5dfbeb46120dea982032fb12",
+      "size_bytes": 1777672
+    },
+    {
+      "name": "github_events.json",
+      "path": "samples/commons/github_events.json",
+      "sha256": "cfdc77cb9208ad72b049ed5a87fdc2f4bba49d70cebefeb2fc61522c3afaec95",
+      "size_bytes": 323229
+    },
+    {
+      "name": "jeopardy.json",
+      "path": "samples/commons/jeopardy.json",
+      "sha256": "e93247fed3511e025b9f4c7d3a6ab3334c77546401fb1d64f4d558af09506308",
+      "size_bytes": 55554625
+    },
+    {
+      "name": "literal.json",
+      "path": "samples/commons/literal.json",
+      "sha256": "59ab0369bc27c37e6497b6d2a40325486df119288a59ac470d711efcacae148e",
+      "size_bytes": 411
+    },
+    {
+      "name": "mesh.json",
+      "path": "samples/commons/mesh.json",
+      "sha256": "710d5562115006eb30c2be50143f449414a26bad63c955fb574a8dd100b43f4c",
+      "size_bytes": 343548
+    },
+    {
+      "name": "tiny.json",
+      "path": "samples/commons/tiny.json",
+      "sha256": "5efdba33955601fd7b79d7b004d84413b6d0cef5c6c63b2be074ad58b1cc35dd",
+      "size_bytes": 160
+    },
+    {
+      "name": "tiny_compacted.json",
+      "path": "samples/commons/tiny_compacted.json",
+      "sha256": "782b0f2a55f1b843ea41aec600ed86499198f97869388cb1d260ba8dcd1f44ab",
+      "size_bytes": 121
+    },
+    {
+      "name": "twitter.json",
+      "path": "samples/commons/twitter.json",
+      "sha256": "49d38a0b3db9557ae7fa1cf094dabc1205b65fb0a61cc1f8e7fb50864d0104a9",
+      "size_bytes": 646997
+    },
+    {
+      "name": "update-center.json",
+      "path": "samples/commons/update-center.json",
+      "sha256": "72d59197d175ec613206a723082d7fde98540677814d0d2f2600265dd7848a3f",
+      "size_bytes": 3290585
+    }
+  ],
+  "generator": "scripts/research/dataset-digests.py",
+  "schema_version": 1,
+  "set_sha256": "0012df6c30a89e0b026750dfba0489551596925e96f2737816d05b98744e5cf6",
+  "source_dir": "samples/commons"
+}
