@@ -123,3 +123,21 @@ itu kuat secara urutan registrasi, tetap bukan interleave per-iterasi.
 **eksternal** di bawah `ZE_JSON_RESEARCH_HOME`. Ini perlu karena preset
 proyek menaruh `binaryDir` di dalam repo — yang dilarang aturan research, dan
 juga akan mengotori working tree sehingga gerbang clean-worktree menolak run.
+
+## Tiga penghalang sebelum run pertama
+
+Ketiganya bukan warning: run ditolak sebelum satu perintah pun dijalankan.
+
+1. **Working tree harus bersih.** `git status --porcelain --untracked-files=all`
+   harus kosong. Repo Git bersarang di dalam checkout (mis. folder `thesis/`
+   yang punya `.git` sendiri) muncul sebagai untracked dan memblokir run —
+   abaikan lewat `.gitignore` atau pindahkan keluar checkout.
+2. **Dataset harus ada dan sesuai digest.** Setiap `dataset_path` harus hash-nya
+   sama dengan `dataset_sha256` yang tercatat. Submodule yang ter-checkout pada
+   commit berbeda dianggap drift.
+3. **Gate korektness harus terpenuhi.** Eksperimen performa menolak jalan bila
+   belum ada run VERIFIED dari eksperimen korektness pada commit sama — dan
+   pencariannya butuh database yang sudah ada (`ze-research init`).
+
+Pastikan `VCPKG_ROOT` juga sudah diset; definisi memakai placeholder
+`{vcpkg_root}` dan run ditolak bila kosong, bukan membangun toolchain rusak.
