@@ -90,6 +90,36 @@ Batas interpretasi: registrasi dijalankan berurutan dalam satu proses
 (`same_process_sequential`), **bukan** interleaved per-iterasi; median diambil
 dari baris iterasi karena baris agregat tidak direkam satu kali.
 
+## Snapshot empat eksperimen tambahan
+
+Semuanya berjalan pada commit `5352587` dengan run korektness VERIFIED pada commit
+yang sama (gate mencatat run `20261030T145002-97508c84d608`), dan seluruh ingest
+`--strict` lolos tanpa baris tak terpetakan.
+
+| Eksperimen | Run | Baris | Hasil utama |
+|---|---|---|---|
+| `parser-ondemand` | `20261030T144043-c9f0e4fb40f7` | 9 | find field pertama vs terakhir pada object 512 field: **20,27 ns → 8.188,51 ns (rasio 404×)** — pencarian linear terkonfirmasi |
+| `span-hybrid` | `20261030T145123-774a2abe752c` | 48 | hybrid vs replika pra-hybrid: menang di 5 dataset (−5,0% … −22,7%), **kalah** di twitter (+30,3%), update_center (+6,3%), jeopardy (+5,2%) |
+| `session-api` (pasangan GRAM) | `20261030T162357-c0de848da815` | 64 | tape-walk **1,9×–3,8× lebih lambat** dari Base (+89%…+281%) — konsisten dengan catatan hasil negatif Tahap-7 |
+| `js-parse-saq` | `20261030T151906-6ffee7ec5b7e` | 6 baris µs/op | median 0,829 µs (assistants) … 2,609 µs (globalConfig); digest tiap payload terekam, interpreter Node v24.19.0 |
+
+Tiga temuan yang **membantah klaim sederhana**, dan karena itu justru layak dikutip:
+
+1. **Span hybrid bukan perbaikan menyeluruh.** Arahnya bergantung dataset; pada
+   twitter justru 30% lebih lambat. Klaim "probe-hybrid lebih cepat" tanpa
+   menyebut dataset tidak sesuai data ini.
+2. **Parser linear search terkonfirmasi kuantitatif**: 404× bukan 512×, karena
+   pencarian berhenti saat kunci tengah/akhir ditemukan — bukan faktor tetap.
+3. **Baseline JS tidak monoton terhadap ukuran**: `globalConfig` (261 B) lebih
+   lambat dari `reports` (428 B). Struktur yang menentukan, bukan byte. Payload
+   `assistants`/`schedules` juga punya koefisien variasi 46%/51%, jadi angka itu
+   perlu dibaca bersama rentainya.
+
+Catatan `js-parse-saq`: snapshot bertipe `synthetic_dummy` (satu rekaman dummy per
+repositori), sehingga hasilnya **bukan** sampel beban kerja produksi SAQ Report.
+Sumber otoritatif tetap berkas laporan di
+`D:\kuliah_\7_semester\skripsi\research-data\reports\`.
+
 ## Eksperimen yang tersedia
 
 | ID | Yang diukur | Catatan |
