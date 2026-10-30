@@ -50,7 +50,45 @@ ze-research validate                    # validasi seluruh eksperimen
 
 Data root **harus** di luar repo induk maupun repo research. Jangan taruh di
 `D:\kuliah_\7_semester\skripsi\v3\research-data` kalau folder `v3` itu sendiri
-repok Git — build tree dan dataset 55 MB akan masuk Git.
+repo Git — build tree dan dataset 55 MB akan masuk Git.
+
+## Snapshot hasil pertama
+
+Dua run formal sudah terekam di `D:\kuliah_\7_semester\skripsi\research-data`:
+
+| Run | Eksperimen | Status | Hasil |
+|---|---|---|---|
+| `20261030T091602-f2c7d18d11b1` | `correctness-gtest-suite` | COMPLETED / VERIFIED | **51 kasus lulus**, 8 biner di-hash, korpus 37 berkas cocok |
+| `20261030T091653-1337119c867e` | `scanner-width-comparison` | COMPLETED / VERIFIED | 21 baris benchmark, **0 tak terpetakan**, gate menunjuk run korektness di commit sama `a206cbf1bf08` |
+
+Angka yang dapat dikutip (median dari baris `run_type == "iteration"`):
+
+| Workload | scanner8 (ns/op) | scanner64 (ns/op) | Rasio | Selisih |
+|---|---:|---:|---:|---:|
+| `tiny.json` | 154.80 | 219.66 | 1,419 | **scanner8 −41,9% lebih cepat** |
+| `literal.json` | 335.76 | 601.17 | 1,790 | **scanner8 −79,0% lebih cepat** |
+| `github_events.json` | 296.837 | 310.374 | 1,046 | scanner8 −4,6% lebih cepat |
+| `synthetic-256k` | 263.005 | 265.560 | 1,010 | praktis imbang |
+| `update-center.json` | 3.252.497 | 2.556.021 | 0,786 | **scanner64 −21,4% lebih cepat** |
+| `jeopardy.json` | 62.040.284 | 40.641.836 | 0,655 | **scanner64 −34,5% lebih cepat** |
+
+Arahnya **berbalik sesuai ukuran payload**, jadi klaim "{yang} lebih cepat"
+tanpa menyebut workload tidak sesuai dengan data ini. `H1` pada definisi
+(scanner64 latency lebih rendah) hanya benar untuk payload besar.
+
+Sumber otoritatif adalah berkas laporan, bukan tabel di atas:
+
+```powershell
+Get-Content D:\kuliah_\7_semester\skripsi\research-data\reports\scanner-width-comparison-report.json
+```
+
+Laporan membawa `run_ids`, `definition_sha256`, `dataset_sha256`, hash
+manifest, dan `gates` untuk setiap baris. Batch ini direkam dengan pasangan
+`scanner8-library:scanner64-library` dan `--run-ids 20261030T091653-1337119c867e`.
+
+Batas interpretasi: registrasi dijalankan berurutan dalam satu proses
+(`same_process_sequential`), **bukan** interleaved per-iterasi; median diambil
+dari baris iterasi karena baris agregat tidak direkam satu kali.
 
 ## Eksperimen yang tersedia
 
