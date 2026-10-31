@@ -329,6 +329,7 @@ sejak run korektness.
 | `pengulangan N/M berstatus FAILED` | langkah gagal di pengulangan itu; loop berhenti | baca log langkah pada run yang disebut; perbaiki, lalu ulangi dari korektness |
 | `outlier_run_ids` memuat sebuah run | jam menyimpang pada run itu (gejala yang dikhawatirkan) | kutip median antar-run; jangan rata-ratakan run itu |
 | `cv_across_runs` sangat besar | sebaran antar-run melebihi jangkauan 15–45% | tambah pengulangan; periksa ada beban lain di mesin |
+| Sesi latar terputus di tengah pengulangan | batas waktu shell membunuh runner; run terakhir tanpa manifest | run tanpa manifest dibuang (bukan run), lalu ulangi; 2 run sebelumnya tetap sah |
 
 ---
 

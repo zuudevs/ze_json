@@ -124,6 +124,86 @@ repositori), sehingga hasilnya **bukan** sampel beban kerja produksi SAQ Report.
 Sumber otoritatif tetap berkas laporan di
 `D:\kuliah_\7_semester\skripsi\research-data\reports\`.
 
+## Snapshot repeat: bukti tiap klaim kini berdiri di 3 sampel
+
+Sebelum bagian ini, kelima eksperimen performa hanya punya **satu** run masing-masing.
+Pada commit `b0f8140` dijalankan satu run korektness plus `--repeat 3` untuk setiap
+eksperimen performa, sehingga setiap klaim kini berdiri di tiga sampel pada satu
+commit yang sama.
+
+| Eksperimen | Run | Baris |
+|---|---|---|
+| `parser-ondemand` | `043940`, `044529`, `045120` | 9 × 3 |
+| `js-parse-saq` | `045933`, `045940`, `045947` | 6 baris µs/op × 3 |
+| `span-hybrid` | `050118`, `052802`, `055408` | 48 × 3 |
+| `scanner-width-comparison` | `062120`, `063543`, `064959` | 21 × 3 |
+| `session-api` | `070614`, `080019`, `111152` | 64 × 3 |
+
+Ke-16 run itu semua `COMPLETED`/`VERIFIED`, semuanya pada
+`source.git_commit = b0f81401…`, dan setiap run performa mencatat `gates` menunjuk
+run korektness `20261031T043834-e7f9a0e761c3` pada **commit yang sama**.
+
+### Apa yang repeat ubah dari kesimpulan
+
+Inilah alasan sesi ini bernilai — bukan lagi "satu angka", melainkan "seberapa
+konsisten, dan apakah arahnya bertahan":
+
+| Perbandingan | Rasio (median antar-run) | Rentang | Arah bertahan di 3 run? |
+|---|---:|---|---|
+| **span**: prehybrid → hybrid, `jeopardy` | 0,988 | 0,963–0,997 | **ya** |
+| **span**: prehybrid → hybrid, `twitter` | 0,992 | 0,908–0,998 | **ya** |
+| **span**: prehybrid → hybrid, `canada` | 1,016 | 0,978–1,047 | tidak (menyeberangi 1) |
+| **span**: prehybrid → hybrid, `github-events` | 1,015 | 0,985–1,017 | tidak |
+| **span**: `citm-catalog` / `mesh` / `update-center` | 1,004 / 0,995 / 0,996 | 0,993–1,088 | tidak |
+| **scanner**: scanner8 → scanner64, `update-center` | 0,693 | 0,675–0,874 | **ya** |
+| **scanner**: scanner8 → scanner64, `github-events` | 0,834 | 0,811–0,959 | **ya** |
+| **scanner**: scanner8 → scanner64, `tiny` | 1,067 | 1,058–1,071 | tidak (scanner8 lebih cepat) |
+| **scanner**: scanner8 → scanner64, `literal` | 1,339 | 1,325–1,481 | tidak (scanner8 lebih cepat) |
+| **scanner**: `jeopardy` | 0,875 | 0,786–1,293 | tidak (rentang sangat lebar) |
+| **session**: gram Base → tapewalk | 1,861–3,021 | 1,653–3,137 | tidak — tapi **arah selalu tapewalk lebih lambat** |
+
+Tiga hal yang hanya terlihat setelah pengulangan:
+
+1. **`jeopardy` pada scanner bukan klaim yang kuat.** Sebelumnya satu run memberi
+   −34,5%; dengan tiga run rentangnya 0,786–1,293 — menyeberangi 1. Ini bukan
+   "scanner64 lebih cepat", ini "bervariasi, perlu lebih banyak sampel".
+   `literal` (+1,339) dan `tiny` (+1,067) justru konsisten mengarah ke scanner8.
+2. **`session` tapewalk memang jauh lebih lambat, dan itu konsisten.** Median
+   1,861×–3,021× dengan rentang sempit per workload; arah "tapewalk lebih lambat"
+   bertahan di **setiap run** untuk **setiap** workload. Ini klaim terkuat yang
+   dimiliki data saat ini.
+3. **Span hybrid hampir impar.** Rasio mengerucut ke sekitar 1,00 (0,988–1,016), dan
+   hanya `jeopardy`/`twitter` yang bertahan satu arah. Klaim "probe-hybrid lebih
+   cepat" tidak didukung data berulang; yang dapat diklaim adalah "tidak berbeda
+   nyata pada mayoritas dataset, lebih baik pada dua yang besar".
+
+### Noise floor dari run-run yang benar-benar identik commit-nya
+
+Ini pertama kalinya lantai noise diukur dari run pada **commit yang sama**
+(sebelumnya dua run scanner berada pada commit berbeda, sehingga sebarannya
+tercampur perubahan kode):
+
+| Eksperimen | Konteks | Median CV antar-run | Median rentang |
+|---|---:|---:|---:|
+| `parser-ondemand` | 9 | 8,9% | 17,6% |
+| `span-hybrid` | 48 | 8,8% | 16,5% |
+| `scanner-width-comparison` | 21 | 9,1% | 16,8% |
+| `session-api` | 64 | 13,6% | 25,9% |
+
+Bandingkan dengan rentang 15–45% yang terdokumentasi di
+[benchmarking.md](benchmarking.md): rentang **terukur** dari run identik-commit
+adalah 8,8–13,6% untuk CV — artinya sebagian besar jangkauan 15–45% itu berasal dari
+perubahan lintas-commit/lingkungan, bukan dari komposer jam sesungguhnya pada
+mesin ini. Ini kembali memperkuat aturan: selisih kecil dari satu run tetap tidak
+dapat diklaim sebagai efek.
+
+Catatan jujur: `session-api` memiliki 2 run `rep 1/3`+`rep 2/3` dan 1 run tunggal
+(`111152`) — pengulangan ketiga terputus ketika batas waktu shell membunuh runner
+setelah benchmark menulis JSON tetapi sebelum manifest ditulis. Run tanpa manifest
+dibuang sesuai kontrak sistem, lalu diulang secara tunggal. Bidang `repeat` di
+manifest menggambarkan hal ini apa adanya, dan agregasi tetap sah karena ketiga run
+berada pada commit dan definisi yang sama.
+
 ## Membaca hasil lewat notebook
 
 Notebook [`scripts/analyze_result/main.py`](../../scripts/analyze_result/main.py)
@@ -149,7 +229,7 @@ Yang berubah dari segi data, bukan sekadar tampilan:
 - Baseline JS dimuat sebagai skema tersendiri (`research_js_parse`) agar baris
   µs/op tidak menyamar sebagai baris ns/op Google Benchmark.
 
-### Lantai noise terukur (bukan diklaim)
+### Lantai noise terukur (bukan diklaim) — lihat bagian repeat di atas
 
 Notebook mengukur sebaran antar-run langsung dari dua run formal
 `scanner-width-comparison` pada dua commit (`c7d7b6b0e7c0` dan `a206cbf1bf08`) —
