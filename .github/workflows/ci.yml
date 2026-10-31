@@ -71,3 +71,14 @@ jobs:
       # gtest_discover_tests() registers each group as ctest entries.
       - name: Run Tests (ctest)
         run: ctest --test-dir build/${{ matrix.preset }} --output-on-failure
+
+      # A README that documents an experiment registration goes stale silently:
+      # the snippet only fails when a reader tries it, long after .github/workflows
+      # landed. This re-validates every yaml block that declares `execution:`
+      # against the research registry schema, using only the checked-out sources.
+      - name: Validate documented experiment snippets
+        shell: bash
+        run: |
+          python -m pip install --quiet PyYAML
+          python scripts/research/check_readme_snippet.py \
+            benchmarks/json_baseline/README.md

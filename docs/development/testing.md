@@ -3,7 +3,8 @@
 > Bagian dari [docs/development/](.) — lihat juga
 > [workflow.md](workflow.md) · [naming.md](naming.md) ·
 > [benchmarking.md](benchmarking.md) ·
-> [research-integration.md](research-integration.md).
+> [research-integration.md](research-integration.md) ·
+> [research-walkthrough.md](research-walkthrough.md).
 
 ## Filosofi
 

@@ -9,6 +9,10 @@ repo [`research/`](../../research/) agar angka di laporan/skripsi dapat
 dipertanggungjawabkan. Artefak lama di `out/results/` tetap berguna untuk
 eksplorasi; jalur formal memakai repo research.
 
+Baru pertama kali? Mulai dari
+[research-walkthrough.md](research-walkthrough.md) — panduan langkah-demi-langkah
+dari shell bersih sampai angka yang bisa dikutip, termasuk tabel pemecahan masalah.
+
 ## Mengapa dua lokasi berbeda
 
 Artefak di `out/results/` hanya berisi angka. Ia tidak mencatat commit source,

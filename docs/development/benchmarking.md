@@ -3,7 +3,8 @@
 > Bagian dari [docs/development/](.) — lihat juga
 > [workflow.md](workflow.md) · [testing.md](testing.md) ·
 > [naming.md](naming.md) ·
-> [research-integration.md](research-integration.md). Bukti historis 4 tahap optimasi:
+> [research-integration.md](research-integration.md) ·
+> [research-walkthrough.md](research-walkthrough.md). Bukti historis 4 tahap optimasi:
 > [docs/architecture/optimizations.md](../architecture/optimizations.md).
 
 ## Hukum pertama: jam lintas-proses di mesin ini TIDAK SAH
