@@ -204,6 +204,43 @@ berbalik menurut ukuran payload, dan `BM_SpanReal_Hybrid_*` justru lebih lambat
 di `twitter`. Ringkasannya di
 [research-integration.md](research-integration.md).
 
+### Pengulangan: wajib sebelum mengutip selisih
+
+Satu run tidak bisa menentukan apakah sebuah selisih nyata, karena jam
+antar-proses di mesin ini bergetar **15–45%**. Selisih 21% yang diukur sekali
+tidak dapat dibedakan dari noise-nya.
+
+```powershell
+$exp = "scanner-width-comparison"
+$pair = "scanner8-library:scanner64-library"
+
+# N=3 adalah titik awal yang wajar; naikkan untuk klaim utama
+$summaries = @()
+foreach ($i in 1..3) {
+  $runId = (ze-research run --experiment $exp | ConvertFrom-Json).run_id
+  ze-research ingest --run-id $runId --strict
+  $summaries += $runId
+}
+# atau sekali jalan (berurutan, tak pernah paralel):
+ze-research run --experiment $exp --repeat 3
+ze-research report --experiment $exp --across-runs --pair $pair
+```
+
+Yang dibaca dari laporan antar-run:
+
+| Field | Pertanyaan yang dijawab |
+|---|---|
+| `n_runs`, `per_run_medians` | dari run mana saja angkanya |
+| `median_of_run_medians`, `range_percent` | seberapa konsisten antar-run |
+| `cv_across_runs` | apakah sebarannya masuk akal dibanding 15–45% |
+| `outlier_run_ids` | run mana yang jamnya menyimpang (bernama, bukan dirata-rata) |
+| `candidate_is_faster_in_all_runs` | apakah arahnya bertahan di semua pengulangan |
+| `ratio_basis: "per_run"` | rasio dihitung per-run, bukan dari median gabungan |
+
+`--repeat 1` ditolak agar flag tidak menyiratkan ada pekerjaan yang tidak
+terjadi, dan pengulangan **tidak pernah paralel** — benchmark bersamaan saling
+mengotori pengukuran.
+
 ---
 
 ## 6. Ekspor untuk notebook
@@ -244,6 +281,12 @@ Aturan praktisnya: **commit lebih dulu, run kemudian; dokumentasi terakhir.**
 Jika Anda harus memperbaiki kode di tengah sesi run, hentikan, perbaiki, commit,
 lalu mulai lagi dari langkah korektness.
 
+Khusus pengulangan: seluruh set harus berada pada **satu commit**. Karena
+`--repeat N` menjalankan semuanya dalam satu sesi, ini otomatis terpenuhi —
+asalkan Anda tidak commit di antaranya. Bila sebuah pengulangan tertolak gate,
+penyebabnya bukan pengulangan itu yang rusak, melainkan commit yang bergerak
+sejak run korektness.
+
 ---
 
 ## 8. Tabel pemecahan masalah
@@ -267,6 +310,10 @@ lalu mulai lagi dari langkah korektness.
 | `0 ns, iters=1` pada artefak | binary menaut library basi | `cmake --build … --target <target>` |
 | Laporan exit code 1 | baris tak terpetakan atau pasangan tak lengkap | baca `unmapped_rows`/`unverifiable_comparisons` |
 | `export` tanpa `--experiment` | aman: eksperimen tanpa baris benchmark hanya dilewati | tidak perlu tindakan; lihat `skipped_experiments` |
+| `--repeat 1 tidak diizinkan` | N=1 hanyalah default tanpa flag | hapus flagnya, atau pakai N >= 2 |
+| `pengulangan N/M berstatus FAILED` | langkah gagal di pengulangan itu; loop berhenti | baca log langkah pada run yang disebut; perbaiki, lalu ulangi dari korektness |
+| `outlier_run_ids` memuat sebuah run | jam menyimpang pada run itu (gejala yang dikhawatirkan) | kutip median antar-run; jangan rata-ratakan run itu |
+| `cv_across_runs` sangat besar | sebaran antar-run melebihi jangkauan 15–45% | tambah pengulangan; periksa ada beban lain di mesin |
 
 ---
 
