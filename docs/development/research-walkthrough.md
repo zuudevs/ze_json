@@ -253,6 +253,21 @@ ze-research export --experiment scanner-width-comparison
 Berkas itu memuat seluruh provenance per baris. Berkas ini — bukan tabel yang
 ditulis ulang di dokumen — yang sebaiknya dipakai sebagai sumber grafik skripsi.
 
+Notebook analisis bisa membaca data root research **langsung**, bersama artefak
+lama `out/results/`:
+
+```powershell
+$env:ZE_JSON_RESEARCH_HOME = "D:\kuliah_\7_semester\skripsi\research-data"
+$env:MPLBACKEND = "Agg"
+python .\scripts\analyze_result\main.py
+```
+
+Akibatnya dari segi data: setiap run research menjadi satu "file" bagi pair
+engine (pasangan tetap dalam satu run), baris membawa `provenance`, `run_id`, dan
+`revision` (commit dari manifest), dan lantai noise mengelompokkan pengulangan
+satu eksperimen lewat `replica_group`. Notebook kini juga menemukan 10 run
+research dan melaporkan 6 baris baseline JS dalam µs/op.
+
 ---
 
 ## 7. Aturan commit di antara run

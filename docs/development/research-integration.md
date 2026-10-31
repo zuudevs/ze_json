@@ -124,6 +124,54 @@ repositori), sehingga hasilnya **bukan** sampel beban kerja produksi SAQ Report.
 Sumber otoritatif tetap berkas laporan di
 `D:\kuliah_\7_semester\skripsi\research-data\reports\`.
 
+## Membaca hasil lewat notebook
+
+Notebook [`scripts/analyze_result/main.py`](../../scripts/analyze_result/main.py)
+kini membaca **dua** sumber sekaligus: artefak lama `out/results/` **dan** data
+root research. Jalankan:
+
+```powershell
+$env:ZE_JSON_RESEARCH_HOME = "D:\kuliah_\7_semester\skripsi\research-data"
+$env:MPLBACKEND = "Agg"      # shell non-interaktif
+python .\scripts\analyze_result\main.py
+```
+
+Yang berubah dari segi data, bukan sekadar tampilan:
+
+- Setiap run research menjadi **satu "file" tersendiri** bagi pair engine, jadi
+  sebuah pasangan tetap lahir di dalam satu run (kondisi same-process yang
+  diinginkan), bukan campuran dua run.
+- Kolom `provenance` memisahkan baris `research` dari `local`; `run_id` dan
+  `revision` (commit dari manifest, bukan tebakan nama berkas) menempel pada
+  setiap baris.
+- Lantai noise mengelompokkan pengulangan satu eksperimen lewat `replica_group`
+  dari manifest — bukan lagi menebak dari pola nama berkas.
+- Baseline JS dimuat sebagai skema tersendiri (`research_js_parse`) agar baris
+  µs/op tidak menyamar sebagai baris ns/op Google Benchmark.
+
+### Lantai noise terukur (bukan diklaim)
+
+Notebook mengukur sebaran antar-run langsung dari dua run formal
+`scanner-width-comparison` pada dua commit (`c7d7b6b0e7c0` dan `a206cbf1bf08`) —
+21 konteks benchmark:
+
+| Ukuran | Nilai |
+|---|---|
+| Median sebaran antar-run | **24,0%** |
+| Rentang | 3,7% … 77,8% |
+| Kuartil ke-10 / ke-90 | 5,5% … 51,6% |
+| Konteks dengan sebaran > 45% | **6 dari 21** |
+
+Dua implikasi praktis untuk skripsi: rentang 15–45% yang terdokumentasi memang
+terukur, dan **ekornya nyata** — `BM_Scanner8_IntegratedReplica_Jeopardy` sampai
+77,8% dan `BM_Scanner8_GithubEvents` 55,8%. Jadi selisih di bawah ±25% dari satu
+run tidak dapat diklaim sebagai efek; itulah alasan `run --repeat N` plus
+`report --across-runs` ada.
+
+Catatan kejujuran: kedua run itu pada **commit berbeda**, jadi kelompok ini juga
+memuat perubahan kode. Ukurannya tetap sah sebagai lantai noise karena setiap
+pasangan dibandingkan dalam run yang sama.
+
 ## Eksperimen yang tersedia
 
 | ID | Yang diukur | Catatan |

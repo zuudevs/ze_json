@@ -1,20 +1,36 @@
 # %% [markdown]
 # # Analisis hasil benchmark dan test `ze_json`
 #
-# Notebook ini membaca artefak lokal dari `out/results/benchmark/` dan
-# `out/results/test/`. Ia mendukung Google Benchmark JSON, ringkasan benchmark,
-# metrik JavaScript, laporan Google Test individual, dan ringkasan lintas preset.
+# Notebook ini membaca tiga sumber:
+#
+# 1. `out/results/benchmark/` dan `out/results/test/` - artefak lokal lama.
+# 2. Data root **`ze_json_research`** (`$ZE_JSON_RESEARCH_HOME`) - run formal yang
+#    direkam repo [`research/`](../../research/). Setiap run membawa manifest:
+#    commit source, status verifikasi, gerbang korektness, dan digest input yang
+#    dihashing saat run.
+# 3. Metrik JavaScript dan ringkasan lintas preset seperti sebelumnya.
+#
+# Ia mendukung Google Benchmark JSON, ringkasan benchmark, metrik JavaScript,
+# laporan Google Test individual, dan ringkasan lintas preset.
 #
 # **Catatan metodologis:** grafik tren lintas file bersifat deskriptif. Dokumen
 # `docs/development/benchmarking.md` di repo memperingatkan agar angka absolut
 # lintas proses tidak diperlakukan sebagai bukti kausal. Untuk perbandingan,
 # notebook menyediakan: pasangan eksperimen APAPUN dari file/run yang sama
+# **Run research memperkuat, bukan menggantikan.** Barisnya membawa run_id,
+# commit, dan provenance = "research", sehingga sebuah angka dapat ditelusuri
+# ke manifestnya. Lantai noise mengelompokkan pengulangan satu eksperimen lewat
+# replica_group dari manifest, bukan lagi menebak dari nama berkas. Jalankan
+# ze-research report --across-runs untuk agregasi yang sama di sisi CLI;
+# notebook ini menampilkan detail per barisnya.
+#
 # (pair engine §5, bukan hanya Scanner8/64), lantai noise yang DIUKUR dari
 # artefak run-ulang (§3b), dan perbandingan antar-revisi berstatus deskriptif
 # (§6b). Angka JS `ops/s` dan `µs/op` juga tidak dicampur.
 
 # %%
 import json
+import os
 import re
 import math
 import sys
@@ -84,29 +100,44 @@ REPO_ROOT_OVERRIDE = Path(__file__).resolve().parents[2]
 
 
 def find_repo_root(start: Path | None = None) -> Path:
+    """Locate the ze_json checkout.
+
+    `out/results/` is optional: it only exists on checkouts that still carry the
+    legacy artifacts. Raising here would make the notebook unusable on a
+    checkout that has moved its measurements into ze_json_research, which is
+    exactly the case this notebook now supports.
+    """
     if REPO_ROOT_OVERRIDE:
-        candidate = Path(REPO_ROOT_OVERRIDE).expanduser().resolve()
-        if not (candidate / "out" / "results").is_dir():
-            raise FileNotFoundError(f"REPO_ROOT_OVERRIDE tidak memiliki out/results: {candidate}")
-        return candidate
+        return Path(REPO_ROOT_OVERRIDE).expanduser().resolve()
 
     start = (start or Path.cwd()).resolve()
     for candidate in (start, *start.parents):
         if (candidate / "out" / "results" / "benchmark").is_dir() and (candidate / "out" / "results" / "test").is_dir():
             return candidate
 
-    raise FileNotFoundError(
-        "Root repo tidak ditemukan. Buka Jupyter dari root ze_json atau isi REPO_ROOT_OVERRIDE."
-    )
+    # Fall back to this notebook's own repository so research runs can be read
+    # even when no legacy artifact directory exists.
+    return Path(__file__).resolve().parents[2]
 
 
 REPO_ROOT = find_repo_root()
 BENCH_DIR = REPO_ROOT / "out" / "results" / "benchmark"
 TEST_DIR = REPO_ROOT / "out" / "results" / "test"
 
+# --- Data root ze_json_research -------------------------------------------
+# Runs recorded through the research harness live outside both repositories.
+# Each run directory holds a manifest that names the commit, the verification
+# result, the correctness gate, and the digests of every declared input.
+RESEARCH_HOME = Path(
+    os.environ.get("ZE_JSON_RESEARCH_HOME")
+    or Path.home() / "ResearchData" / "ze_json_research"
+).expanduser()
+RESEARCH_RUNS_DIR = RESEARCH_HOME / "runs"
+
 print(f"Repo       : {REPO_ROOT}")
 print(f"Benchmark  : {BENCH_DIR} | exists={BENCH_DIR.is_dir()}")
 print(f"Test       : {TEST_DIR} | exists={TEST_DIR.is_dir()}")
+print(f"Research   : {RESEARCH_HOME} | exists={RESEARCH_HOME.is_dir()}")
 
 # %% [markdown]
 # ## 2. Inventaris file dan deteksi skema
@@ -123,6 +154,93 @@ UNIT_TO_NS = {
     "ms": 1_000_000.0,
     "s": 1_000_000_000.0,
 }
+
+
+def load_research_runs(runs_dir: Path) -> dict:
+    """Read every finished research run under the data root.
+
+    The manifest is what makes a research number defensible: it names the source
+    commit, the verification result, the correctness gate that permitted the run,
+    and the digests of the inputs that were hashed before execution.
+    """
+    runs: dict[str, dict] = {}
+    if not runs_dir.is_dir():
+        return runs
+    for run_dir in sorted(runs_dir.iterdir()):
+        manifest_path = run_dir / "manifest.json"
+        if not manifest_path.is_file():
+            continue
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(manifest, dict):
+            continue
+        runs[run_dir.name] = {
+            "run_id": manifest.get("run_id", run_dir.name),
+            "experiment_id": manifest.get("experiment_id"),
+            "status": manifest.get("status"),
+            "verification_status": manifest.get("verification_status"),
+            "started_at": manifest.get("started_at"),
+            "git_commit": (manifest.get("source") or {}).get("git_commit"),
+            "worktree_clean": (manifest.get("source") or {}).get("worktree_clean"),
+            "submodule_status": (manifest.get("source") or {}).get("submodule_status"),
+            "definition_sha256": manifest.get("definition_sha256"),
+            "manifest_sha256": None,  # filled by the caller that read the file
+            "build_mode": (manifest.get("build") or {}).get("mode"),
+            "interpreter_version": (manifest.get("build") or {}).get("interpreter_version"),
+            "gates": manifest.get("gates") or [],
+            "inputs": manifest.get("inputs") or [],
+            "repeat": manifest.get("repeat"),
+            "run_dir": run_dir,
+        }
+    return runs
+
+
+def research_raw_dirs(runs: dict) -> list[tuple[str, Path, Path]]:
+    """Return (run_id, raw_dir, run_dir) for every run that produced artifacts."""
+    entries = []
+    for run_id, info in runs.items():
+        raw_dir = info["run_dir"] / "raw"
+        if raw_dir.is_dir():
+            entries.append((run_id, raw_dir, info["run_dir"]))
+    return entries
+
+
+def source_label(path: Path, run_id: str | None) -> str:
+    """Label a source file with its run when it lives outside the repository.
+
+    Run directories are outside the ze_json checkout by design, so a repo
+    relative path does not exist for them. The label keeps the run id visible
+    because that is what ties a number back to its manifest.
+    """
+    try:
+        return path.resolve().relative_to(REPO_ROOT.resolve()).as_posix()
+    except ValueError:
+        try:
+            relative = path.resolve().relative_to(RESEARCH_HOME.resolve()).as_posix()
+        except ValueError:
+            relative = path.name
+        return f"research://{run_id}/{relative}" if run_id else f"research://{relative}"
+
+
+RESEARCH_RUNS = load_research_runs(RESEARCH_RUNS_DIR)
+RESEARCH_RAW = research_raw_dirs(RESEARCH_RUNS)
+print(f"Run research ditemukan: {len(RESEARCH_RUNS)} (dengan artefak mentah: {len(RESEARCH_RAW)})")
+if RESEARCH_RUNS:
+    display(pd.DataFrame([
+        {
+            "run_id": info["run_id"][:21],
+            "experiment_id": info["experiment_id"],
+            "status": info["status"],
+            "verification_status": info["verification_status"],
+            "git_commit": (info["git_commit"] or "")[:12],
+            "build_mode": info["build_mode"],
+            "gates": len(info["gates"]),
+            "inputs": len(info["inputs"]),
+        }
+        for info in RESEARCH_RUNS.values()
+    ]).sort_values(["experiment_id", "run_id"]))
 
 
 def classify_json(path: Path, obj: object) -> str:
@@ -155,7 +273,11 @@ def relpath(path: Path) -> str:
 
 JSON_RECORDS = []
 INVENTORY_ROWS = []
-for base_dir in (BENCH_DIR, TEST_DIR):
+
+# Local artifact directories first, then the research data root. A research run
+# contributes a record per raw artifact so the existing pair engine sees each
+# run as its own file, which is what keeps a pair inside a single measurement.
+for base_dir, area in ((BENCH_DIR, "benchmark"), (TEST_DIR, "test")):
     if not base_dir.is_dir():
         continue
     for file_path in sorted(base_dir.rglob("*.json")):
@@ -176,12 +298,81 @@ for base_dir in (BENCH_DIR, TEST_DIR):
             "data": payload,
             "schema": schema,
             "parse_error": parse_error,
+            "area": area,
+            "provenance": "local",
+            "run_id": None,
+            # Left for the benchmark-row builder, which runs after the helpers
+            # that derive a revision from a file name.
+            "revision": None,
+            "replica_group": None,
         }
         JSON_RECORDS.append(record)
         INVENTORY_ROWS.append({
             "source_file": record["source_file"],
-            "area": "benchmark" if BENCH_DIR in file_path.parents else "test",
+            "area": area,
             "schema": schema,
+            "run_id": None,
+            "size_bytes": file_path.stat().st_size,
+            "valid_json": parse_error is None,
+            "parse_error": parse_error,
+        })
+
+for run_id, raw_dir, run_dir in RESEARCH_RAW:
+    info = RESEARCH_RUNS[run_id]
+    for file_path in sorted([*raw_dir.rglob("*.json"), *raw_dir.rglob("*.jsonl")]):
+        # Skip the run's own staged copy of inputs: those are bytes that were
+        # hashed before execution, not measurements.
+        if file_path == run_dir / "metadata" / "inputs.json":
+            continue
+        try:
+            if file_path.suffix.lower() == ".jsonl":
+                # The JavaScript baseline writes one summarized record per
+                # payload. Those are microsecond medians, not nanosecond
+                # iteration rows, so they get their own schema instead of
+                # masquerading as a Google Benchmark report.
+                lines = [
+                    json.loads(line)
+                    for line in file_path.read_text(encoding="utf-8").splitlines()
+                    if line.strip()
+                ]
+                payload = {"records": lines}
+                schema = "research_js_parse"
+                parse_error = None
+            else:
+                with file_path.open("r", encoding="utf-8-sig") as handle:
+                    payload = json.load(handle)
+                schema = classify_json(file_path, payload)
+                parse_error = None
+        except Exception as exc:
+            payload = None
+            schema = "invalid_json"
+            parse_error = f"{type(exc).__name__}: {exc}"
+
+        record = {
+            "path": file_path,
+            "source_file": source_label(file_path, run_id),
+            # A run-scoped stem keeps artifacts from different runs distinct, so
+            # the pair engine keeps a pair inside the run that measured it.
+            "artifact_stem": f"{file_path.stem}@{run_id}",
+            "data": payload,
+            "schema": schema,
+            "parse_error": parse_error,
+            "area": "research",
+            "provenance": "research",
+            "run_id": run_id,
+            # The manifest's commit is a better revision than parsing a filename.
+            "revision": info["git_commit"],
+            # Repetitions of one experiment are the replica group: that is what
+            # the noise floor measures, rather than guessing from a file name.
+            "replica_group": info["experiment_id"],
+            "experiment_id": info["experiment_id"],
+        }
+        JSON_RECORDS.append(record)
+        INVENTORY_ROWS.append({
+            "source_file": record["source_file"],
+            "area": "research",
+            "schema": schema,
+            "run_id": run_id,
             "size_bytes": file_path.stat().st_size,
             "valid_json": parse_error is None,
             "parse_error": parse_error,
@@ -268,7 +459,9 @@ for rec in JSON_RECORDS:
         BENCH_ROWS.append({
             "source_file": rec["source_file"],
             "artifact_stem": rec["artifact_stem"],
-            "revision": revision_from(rec["artifact_stem"], payload),
+            # Research runs carry the manifest's commit, which is a revision in
+            # the sense that matters; local artifacts fall back to the filename.
+            "revision": rec.get("revision") or revision_from(rec["artifact_stem"], payload),
             "run_date": date_value,
             "host_name": context.get("host_name"),
             "num_cpus": to_float(context.get("num_cpus")),
@@ -292,6 +485,11 @@ for rec in JSON_RECORDS:
             "scanner_variant": scanner_match.group(1) if scanner_match else None,
             "scanner_pair_key": re.sub(r"Scanner(?:8|64)", "ScannerX", name, flags=re.IGNORECASE) if scanner_match else None,
             "scanner_dataset": dataset_match.group(1) if dataset_match else None,
+            # Provenance of the measurement itself, not of the file it came from.
+            "provenance": rec.get("provenance", "local"),
+            "run_id": rec.get("run_id"),
+            "experiment_id": rec.get("experiment_id"),
+            "replica_group": rec.get("replica_group"),
         })
 
 bench_df = pd.DataFrame(BENCH_ROWS)
@@ -301,8 +499,103 @@ if not bench_df.empty:
     print(f"Baris dengan pengukuran valid: {int(bench_df['valid_measurement'].sum()):,}")
     print(f"Baris error/tidak layak untuk analisis performa: {int((~bench_df['valid_measurement']).sum()):,}")
     display(bench_df.head(10))
+    if "provenance" in bench_df.columns:
+        display(bench_df.groupby(["provenance"], dropna=False).agg(
+            rows=("benchmark_name", "count"),
+            runs=("run_id", "nunique"),
+        ).reset_index())
 else:
     print("Tidak ada laporan Google Benchmark mentah yang berhasil dibaca.")
+
+# %% [markdown]
+# ## 2b. Provenance run ze_json_research
+#
+# Baris dari repo research membawa bukti yang tidak dimiliki artefak lokal:
+# commit source, status verifikasi, gate korektness, dan digest input yang
+# dihashing **saat run**. Tabel di bawah adalah jawaban "angka ini berasal dari
+# apa" — bukan hiasan.
+
+# %%
+RESEARCH_PROVENANCE_ROWS = []
+for run_id, info in RESEARCH_RUNS.items():
+    for gate in info["gates"]:
+        matched = gate.get("matched_run") or {}
+        RESEARCH_PROVENANCE_ROWS.append({
+            "run_id": run_id[:21],
+            "experiment_id": info["experiment_id"],
+            "status": info["status"],
+            "verification_status": info["verification_status"],
+            "git_commit": (info["git_commit"] or "")[:12],
+            "repeat": (info["repeat"] or {}).get("sequence"),
+            "build_mode": info["build_mode"],
+            "gate_experiment": gate.get("gate_experiment_id"),
+            "gate_run": (matched.get("run_id") or "")[:21],
+            "gate_verification": matched.get("verification_status"),
+            "gate_same_commit": matched.get("git_commit") == info["git_commit"],
+            "inputs": len(info["inputs"]),
+        })
+
+if RESEARCH_PROVENANCE_ROWS:
+    provenance_df = pd.DataFrame(RESEARCH_PROVENANCE_ROWS)
+    display(provenance_df.sort_values(["experiment_id", "run_id"]))
+    unverified = provenance_df[provenance_df["verification_status"] != "VERIFIED"]
+    if unverified.empty:
+        print("Semua run research berstatus VERIFIED.")
+    else:
+        print("PERINGATAN: ada run yang tidak VERIFIED — jangan dikutip:")
+        display(unverified)
+    broken_gates = provenance_df[
+        (provenance_df["gate_run"] != "") & (provenance_df["gate_same_commit"] != True)
+    ]
+    if not broken_gates.empty:
+        print("PERINGATAN: gate tidak menunjuk run pada commit yang sama:")
+        display(broken_gates)
+else:
+    print("Belum ada run research yang memakai gate.")
+
+# Input digests captured while each run executed, not recomputed afterwards.
+RESEARCH_INPUT_ROWS = []
+for run_id, info in RESEARCH_RUNS.items():
+    for entry in info["inputs"]:
+        RESEARCH_INPUT_ROWS.append({
+            "run_id": run_id[:21],
+            "experiment_id": info["experiment_id"],
+            "workload_id": entry.get("workload_id"),
+            "kind": entry.get("kind", "file"),
+            "sha256": (entry.get("sha256") or "")[:16],
+            "size_bytes": entry.get("size_bytes"),
+            "file_count": entry.get("file_count"),
+            "matches_definition": entry.get("matches_definition"),
+        })
+
+if RESEARCH_INPUT_ROWS:
+    display(pd.DataFrame(RESEARCH_INPUT_ROWS))
+
+# The JavaScript baseline is stored apart from the nanosecond rows on purpose.
+RESEARCH_JS_ROWS = []
+for rec in JSON_RECORDS:
+    if rec["schema"] != "research_js_parse":
+        continue
+    info = RESEARCH_RUNS.get(rec.get("run_id") or "", {})
+    for entry in (rec["data"] or {}).get("records", []):
+        RESEARCH_JS_ROWS.append({
+            "run_id": (rec.get("run_id") or "")[:21],
+            "experiment_id": info.get("experiment_id"),
+            "git_commit": (info.get("git_commit") or "")[:12],
+            "payload_id": entry.get("payload_id"),
+            "median_us_per_op": entry.get("median_us_per_op"),
+            "mean_us_per_op": entry.get("mean_us_per_op"),
+            "coefficient_of_variation_percent": entry.get("coefficient_of_variation_percent"),
+            "sample_count": entry.get("sample_count"),
+            "payload_bytes_utf8": entry.get("payload_bytes_utf8"),
+            "payload_sha256": (entry.get("payload_sha256") or "")[:16],
+            "interpreter_version": info.get("interpreter_version"),
+        })
+
+if RESEARCH_JS_ROWS:
+    js_baseline_df = pd.DataFrame(RESEARCH_JS_ROWS)
+    print(f"Baris baseline JavaScript (µs/op): {len(js_baseline_df)}")
+    display(js_baseline_df.sort_values(["payload_id", "run_id"]))
 
 # %% [markdown]
 # ## 3b. Lantai noise dari artefak run-ulang
@@ -336,8 +629,15 @@ noise_band_by_family = {}
 if not bench_df.empty:
     bench_stems = set(bench_df["artifact_stem"])
     bench_valid_noise = bench_df[bench_df["valid_measurement"]].copy()
-    bench_valid_noise["replica_group"] = bench_valid_noise["artifact_stem"].apply(
-        lambda s: replica_group_key(s, bench_stems))
+    # Research runs declare their experiment as the replica group, so
+    # repetitions of one experiment are compared with each other. Local
+    # artifacts keep guessing the group from the file name.
+    bench_valid_noise["replica_group"] = bench_valid_noise.apply(
+        lambda row: row["replica_group"]
+        if isinstance(row.get("replica_group"), str) and row["replica_group"]
+        else replica_group_key(row["artifact_stem"], bench_stems),
+        axis=1,
+    )
 
     for (replica_group, name), sub in bench_valid_noise.groupby(["replica_group", "benchmark_name"]):
         file_medians = sub.groupby("source_file")["time_ns"].median()
