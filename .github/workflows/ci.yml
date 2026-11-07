@@ -135,8 +135,8 @@ jobs:
       - name: Install JSON checker
         shell: bash
         env:
-            TEMP: '$RUNNER_TEMP'
-            ZE_JSON: '${{ github.workspace }}/ze_json'
+            TEMP: ${{ runner.temp }}
+            ZE_JSON: ${{ github.workspace }}/ze_json
         run: | 
           python -m pip install --upgrade pip
           python -m pip install -r ze_json/scripts/install_json_checker/requirements.txt

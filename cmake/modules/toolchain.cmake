@@ -8,17 +8,19 @@ if(NOT DEFINED ENV{TOOLCHAINS_DIR} OR "$ENV{TOOLCHAINS_DIR}" STREQUAL "")
     set(ENV{TOOLCHAINS_DIR} "${ZUU_ROOT_DIR}/.toolchains")
 endif()
 
+file(TO_CMAKE_PATH "$ENV{TOOLCHAINS_DIR}" TOOLCHAINS_DIR_CMAKE)
+
 if(CMAKE_HOST_WIN32)
     set(ZUU_EXT ".exe")
 else()
     set(ZUU_EXT "")
 endif()
 
-set(CMAKE_MAKE_PROGRAM "$ENV{TOOLCHAINS_DIR}/ninja/ninja${ZUU_EXT}" CACHE PATH "Path to make program" FORCE)
-set(CMAKE_C_COMPILER "$ENV{TOOLCHAINS_DIR}/llvm/bin/clang${ZUU_EXT}" CACHE FILEPATH "C compiler" FORCE)
-set(CMAKE_CXX_COMPILER "$ENV{TOOLCHAINS_DIR}/llvm/bin/clang++${ZUU_EXT}" CACHE FILEPATH "C++ compiler" FORCE)
-set(CMAKE_RC_COMPILER "$ENV{TOOLCHAINS_DIR}/llvm/bin/llvm-rc${ZUU_EXT}" CACHE FILEPATH "RC compiler" FORCE)
-set(CMAKE_LINKER "$ENV{TOOLCHAINS_DIR}/llvm/bin/lld${ZUU_EXT}" CACHE FILEPATH "Linker" FORCE)
+set(CMAKE_MAKE_PROGRAM "${TOOLCHAINS_DIR_CMAKE}/ninja/ninja${ZUU_EXT}" CACHE PATH "Path to make program" FORCE)
+set(CMAKE_C_COMPILER "${TOOLCHAINS_DIR_CMAKE}/llvm/bin/clang${ZUU_EXT}" CACHE FILEPATH "C compiler" FORCE)
+set(CMAKE_CXX_COMPILER "${TOOLCHAINS_DIR_CMAKE}/llvm/bin/clang++${ZUU_EXT}" CACHE FILEPATH "C++ compiler" FORCE)
+set(CMAKE_RC_COMPILER "${TOOLCHAINS_DIR_CMAKE}/llvm/bin/llvm-rc${ZUU_EXT}" CACHE FILEPATH "RC compiler" FORCE)
+set(CMAKE_LINKER "${TOOLCHAINS_DIR_CMAKE}/llvm/bin/lld${ZUU_EXT}" CACHE FILEPATH "Linker" FORCE)
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
     message(STATUS "[*] Target: WebAssembly (${CMAKE_SYSTEM_PROCESSOR})")
@@ -31,10 +33,10 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
 else()
     message(STATUS "[*] Target: Native")
 
-	get_filename_component(LLVM_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
-	set(LLVM_BIN_DIR "${LLVM_BIN_DIR}" CACHE INTERNAL "directory path LLVM binary")
+    get_filename_component(LLVM_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
+    set(LLVM_BIN_DIR "${LLVM_BIN_DIR}" CACHE INTERNAL "directory path LLVM binary")
 
-    set(CMAKE_LINKER "lld")
+    # Perbaikan Override: Menghapus set(CMAKE_LINKER "lld") yang merusak absolute path dari cache
     set(CMAKE_EXE_LINKER_FLAGS_INIT "-fuse-ld=lld")
     set(CMAKE_SHARED_LINKER_FLAGS_INIT "-fuse-ld=lld")
     set(CMAKE_MODULE_LINKER_FLAGS_INIT "-fuse-ld=lld")
