@@ -77,24 +77,6 @@
 			"displayName": "Native Debug",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Debug"
-			},
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Linux"
-			}
-		},
-		{
-			"name": "native-debug",
-			"inherits": "native-windows",
-			"displayName": "Native Debug",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Debug"
-			},
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Windows"
 			}
 		},
 		{
@@ -103,24 +85,6 @@
 			"displayName": "Native Release",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Release"
-			},
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Linux"
-			}
-		},
-		{
-			"name": "native-release",
-			"inherits": "native-windows",
-			"displayName": "Native Release",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Release"
-			},
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Windows"
 			}
 		},
 		{
@@ -129,24 +93,6 @@
 			"displayName": "Native Release with debug info",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "RelWithDebInfo"
-			},
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Linux"
-			}
-		},
-		{
-			"name": "native-release-with-debug-info",
-			"inherits": "native-windows",
-			"displayName": "Native Release with debug info",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "RelWithDebInfo"
-			},
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Windows"
 			}
 		},
 		{
@@ -155,54 +101,16 @@
 			"displayName": "Native Sanitize (ASan + UBSan)",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "RelWithDebInfo",
-				"ZE_ENABLE_SANITIZERS": "ON"
-			},
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Linux"
-			}
-		},
-		{
-			"name": "native-sanitize",
-			"inherits": "native-windows",
-			"displayName": "Native Sanitize (ASan + UBSan)",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "RelWithDebInfo",
-				"ZE_ENABLE_SANITIZERS": "ON"
-			},
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Windows"
+				"ENABLE_SANITIZERS": "ON"
 			}
 		},
 		{
 			"name": "native-pgo",
 			"inherits": "native",
-			"displayName": "Native PGO (auto generate->use via merged.profdata)",
+			"displayName": "Native PGO",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Release",
 				"ENABLE_PGO": "ON"
-			},
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Linux"
-			}
-		},
-		{
-			"name": "native-pgo",
-			"inherits": "native-windows",
-			"displayName": "Native PGO (auto generate->use via merged.profdata)",
-			"cacheVariables": {
-				"CMAKE_BUILD_TYPE": "Release",
-				"ENABLE_PGO": "ON"
-			},
-			"condition": {
-				"type": "equals",
-				"lhs": "${hostSystemName}",
-				"rhs": "Windows"
 			}
 		},
 		{
