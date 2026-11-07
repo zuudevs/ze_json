@@ -20,12 +20,12 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-    
+      
       - name: Set Environment Variable
         shell: bash
         run: |
-          echo "CORPUS_DIR=${{ github.workspace }}/corpus" >> $GITHUB_ENV
-          echo "TOOLCHAINS_DIR=${{ github.workspace }}/.toolchains" >> $GITHUB_ENV
+          echo "CORPUS_DIR=${{ github.workspace }}/ze_json/corpus" >> $GITHUB_ENV
+          echo "TOOLCHAINS_DIR=${{ github.workspace }}/ze_json/.toolchains" >> $GITHUB_ENV
 
       - name: Install CMake 4.4.4
         shell: bash
@@ -41,8 +41,10 @@ jobs:
             tar xf "$RUNNER_TEMP/cmake.tgz" -C "$RUNNER_TEMP"
             echo "$RUNNER_TEMP/cmake-4.4.4-linux-x86_64/bin" >> "$GITHUB_PATH"
           fi
+
       - name: Setup .toolchains Directory & Ninja/Vcpkg
         shell: bash
+        working-directory: ze_json
         run: |
           mkdir -p .toolchains
           
@@ -56,19 +58,8 @@ jobs:
           else
             sudo apt-get update -qq
             sudo apt-get install -y -qq ninja-build
-            cp "$(which ninja)" .toolchains/ninja.exe
+            cp "$(which ninja)" .toolchains/ninja
             cd .toolchains/vcpkg-2026.10.16 && ./bootstrap-vcpkg.sh
-          fi
-          ninja --version
-
-      - name: Install Ninja
-        shell: bash
-        run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            choco install ninja --no-progress -y
-          else
-            sudo apt-get update -qq
-            sudo apt-get install -y -qq ninja-build
           fi
           ninja --version
 
@@ -77,29 +68,28 @@ jobs:
         with: 
           python-version: '3.12'
           cache: 'pip'
-          cache-dependency-path: 'scripts/install_json_checker/requirements.txt'
+          cache-dependency-path: 'ze_json/scripts/install_json_checker/requirements.txt'
 
       - name: Install JSON checker
         shell: bash
-        env:
-            TEMP: '$RUNNER_TEMP'
-            ZE_JSON: '${{ github.workspace }}'
+        working-directory: ze_json
         run: | 
           python -m pip install --upgrade pip
           python -m pip install -r scripts/install_json_checker/requirements.txt
           python scripts/install_json_checker/main.py
           
       - name: Configure CMake (preset ${{ matrix.preset }})
-        shell: bash
-        env:
-          VCPKG_ROOT: ${{ runner.os == 'Windows' && 'C:\vcpkg' || '/usr/local/share/vcpkg' }}
+        working-directory: ze_json
         run: cmake --preset ${{ matrix.preset }}
 
       - name: Build
+        working-directory: ze_json
         run: cmake --build build/${{ matrix.preset }}
 
       - name: Version Check
+        working-directory: ze_json
         run: python scripts/ValidateVersion.py
 
       - name: Run Tests (ctest)
+        working-directory: ze_json
         run: ctest --test-dir build/${{ matrix.preset }} --output-on-failure
