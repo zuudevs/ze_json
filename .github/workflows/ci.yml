@@ -27,7 +27,7 @@ jobs:
         shell: bash
         run: |
           echo "CORPUS_DIR=${{ github.workspace }}/ze_json/data/corpus" >> $GITHUB_ENV
-          echo "TOOLCHAINS_DIR=${{ github.workspace }}/../.toolchains" >> $GITHUB_ENV
+          echo "TOOLCHAINS_DIR=${{ github.workspace }}/.toolchains" >> $GITHUB_ENV
 
       - name: Setup Toolchains Directory
         shell: bash
@@ -37,7 +37,7 @@ jobs:
           mkdir -p "$TOOLCHAINS_DIR/llvm"
           mkdir -p "$TOOLCHAINS_DIR/vcpkg"
 
-      - name: Install CMake 4.4.5
+      - name: Install CMake
         shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
