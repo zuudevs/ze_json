@@ -1,0 +1,65 @@
+name: npm publish (@zuudevs/ze-json -> GitHub Packages)
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: Build wasm64 & publish to GitHub Packages
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node 24 (registry GitHub Packages)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@zuudevs"
+
+      - name: Install CMake 4.4.4
+        run: |
+          curl -Lf -o "$RUNNER_TEMP/cmake.tgz" \
+            https://github.com/Kitware/CMake/releases/download/v4.4.4/cmake-4.4.4-linux-x86_64.tar.gz
+          tar xf "$RUNNER_TEMP/cmake.tgz" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/cmake-4.4.4-linux-x86_64/bin" >> $GITHUB_PATH
+
+      - name: Install Ninja
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ninja-build
+          ninja --version
+
+      - name: Install LLVM/Clang 23
+        run: |
+          wget -q https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 23
+          sudo ln -sf /usr/bin/clang-23  /usr/bin/clang
+          sudo ln -sf /usr/bin/clang++-23 /usr/bin/clang++
+          clang --version | grep -q "clang version 23" \
+            || { echo "::error::clang 23 tidak aktif:"; clang --version; exit 1; }
+          clang --version
+
+      - name: Configure wasm64 (preset)
+        run: cmake --preset wasm64-release
+
+      - name: Build wasm64 core
+        run: cmake --build build/wasm64-release --target ze_json_core
+
+      - name: Smoke test the public API
+        run: node bindings/js/test/main.mjs
+
+      - name: Publish to GitHub Packages
+        working-directory: bindings/js
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_PACKAGE_TOKEN }}

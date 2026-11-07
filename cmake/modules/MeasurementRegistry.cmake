@@ -1,0 +1,4 @@
+cmake_host_system_information(RESULT HOSTNAME QUERY HOSTNAME)
+string(REGEX REPLACE "[^a-zA-Z0-9._-]+" "-" HOSTNAME "${HOSTNAME}")
+string(TIMESTAMP CONFIG_STAMP "%Y%m%d%H%M%S")
+set(RUN_ID "${HOSTNAME}-${CONFIG_STAMP}-${GIT_COMMIT_HASH}")

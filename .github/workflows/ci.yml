@@ -1,0 +1,84 @@
+name: C++ CI Build & Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    name: Build & Test (${{ matrix.os }} / ${{ matrix.preset }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        preset: [native-debug, native-release]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+    
+      - name: Set Environment Variable
+        shell: bash
+        run: echo "SAMPLE=${{ github.workspace }}/data/sample" >> $GITHUB_ENV
+
+      - name: Install CMake 4.4.4
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            curl -Lf -o "$RUNNER_TEMP/cmake.zip" \
+              https://github.com/Kitware/CMake/releases/download/v4.4.4/cmake-4.4.4-windows-x86_64.zip
+            unzip -q "$RUNNER_TEMP/cmake.zip" -d "$RUNNER_TEMP/cmake"
+            echo "$RUNNER_TEMP/cmake/cmake-4.4.4-windows-x86_64/bin" >> "$GITHUB_PATH"
+          else
+            curl -Lf -o "$RUNNER_TEMP/cmake.tgz" \
+              https://github.com/Kitware/CMake/releases/download/v4.4.4/cmake-4.4.4-linux-x86_64.tar.gz
+            tar xf "$RUNNER_TEMP/cmake.tgz" -C "$RUNNER_TEMP"
+            echo "$RUNNER_TEMP/cmake-4.4.4-linux-x86_64/bin" >> "$GITHUB_PATH"
+          fi
+
+      - name: Install Ninja
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            choco install ninja --no-progress -y
+          else
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ninja-build
+          fi
+          ninja --version
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with: 
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 'scripts/install_JSON_checker/requirements.txt'
+
+      - name: Install JSON checker
+        shell: bash
+        env:
+            TEMP: '$RUNNER_TEMP'
+            ZE_JSON: '${{ github.workspace }}'
+        run: | 
+          python -m pip install --upgrade pip
+          python -m pip install -r scripts/install_JSON_checker/requirements.txt
+          python scripts/install_JSON_checker/main.py
+          
+      - name: Configure CMake (preset ${{ matrix.preset }})
+        shell: bash
+        env:
+          VCPKG_ROOT: ${{ runner.os == 'Windows' && 'C:\vcpkg' || '/usr/local/share/vcpkg' }}
+        run: cmake --preset ${{ matrix.preset }}
+
+      - name: Build
+        run: cmake --build build/${{ matrix.preset }}
+
+      - name: Version Check
+        run: python scripts/ValidateVersion.py
+
+      - name: Run Tests (ctest)
+        run: ctest --test-dir build/${{ matrix.preset }} --output-on-failure

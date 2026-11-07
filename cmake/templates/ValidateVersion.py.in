@@ -1,0 +1,42 @@
+from pathlib import Path
+import re
+
+ZE_JSON_VERSION = '@CMAKE_PROJECT_VERSION@'
+VCPKG_JSON_PATH = Path('@CMAKE_SOURCE_DIR@').resolve() / 'vcpkg.json'
+PACKAGE_JSON_PATH = Path('@BINDING_DIR@/js').resolve() / 'package.json'
+
+def read_version_in_vcpkg_json() -> str | None:
+    with open(VCPKG_JSON_PATH, 'r', encoding='utf-8') as r:
+        content = r.read()
+        pattern = r'\s+"version":\s*"(\d+\.\d+.\d+)",'
+        matched = re.search(pattern, content)
+        if matched:
+            return matched.group(1)
+    return None
+
+def read_version_in_package_json() -> str | None:
+    with open(PACKAGE_JSON_PATH, 'r', encoding='utf-8') as r:
+        content = r.read()
+        pattern = r'\s+"version":\s*"(\d+\.\d+.\d+)",'
+        matched = re.search(pattern, content)
+        if matched:
+            return matched.group(1)
+    return None
+
+def main():
+    if ZE_JSON_VERSION == read_version_in_vcpkg_json():
+        print('[+] vcpkg version match!')
+        exit(0)
+    else:
+        print('[-] vcpkg version mismatch!')
+        exit(1)
+        
+    if ZE_JSON_VERSION == read_version_in_package_json():
+        print('[+] package version match!')
+        exit(0)
+    else:
+        print('[-] package version mismatch!')
+        exit(1)
+
+if __name__ == '__main__':
+    main()
