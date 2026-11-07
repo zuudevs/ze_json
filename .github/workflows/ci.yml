@@ -85,22 +85,26 @@ jobs:
           if [ "$RUNNER_OS" == "Windows" ]; then
             mkdir -p "$TOOLCHAINS_DIR"
             LLVM_SOURCE="C:/Program Files/LLVM"
-            cmd //c "if exist \"$(cygpath -w "$TOOLCHAINS_DIR/llvm" | tr '/' '\\')\" rmdir /s /q \"$(cygpath -w "$TOOLCHAINS_DIR/llvm" | tr '/' '\\')\""
+            
+            rm -rf "$TOOLCHAINS_DIR/llvm"
+            
             if [ -d "$LLVM_SOURCE" ]; then
               echo "[+] Symlinking pre-installed LLVM on Windows runner..."
-              cmd //c mklink /D "$(cygpath -w "$TOOLCHAINS_DIR/llvm" | tr '/' '\\')" "$(cygpath -w "$LLVM_SOURCE" | tr '/' '\\')"
+              WIN_TARGET="$(cygpath -w "$TOOLCHAINS_DIR/llvm")"
+              WIN_SOURCE="$(cygpath -w "$LLVM_SOURCE")"
+              
+              MSYS_NO_PATHCONV=1 cmd.exe /c mklink /D "$WIN_TARGET" "$WIN_SOURCE"
             else
               echo "[-] Pre-installed LLVM not found!"
               exit 1
             fi
           else
             echo "[+] Symlinking pre-installed LLVM on Linux runner..."
-            # Ambil versi LLVM tertinggi yang ada di Github Actions Ubuntu
             LLVM_SOURCE=$(ls -d /usr/lib/llvm-* 2>/dev/null | sort -V | tail -n 1)
             if [ -z "$LLVM_SOURCE" ]; then
-              # Fallback jika struktur berbeda
               LLVM_SOURCE="/usr" 
             fi
+            echo "Menggunakan source: $LLVM_SOURCE"
             rm -rf "$TOOLCHAINS_DIR/llvm"
             ln -s "$LLVM_SOURCE" "$TOOLCHAINS_DIR/llvm"
           fi
@@ -116,11 +120,13 @@ jobs:
             if [ ! -d "$MSVC_SOURCE" ]; then
               MSVC_SOURCE="C:/Program Files/Microsoft Visual Studio/2022/Professional"
             fi
-
-            cmd //c "if exist \"$(cygpath -w "$TOOLCHAINS_DIR/MSVC" | tr '/' '\\')\" rmdir /s /q \"$(cygpath -w "$TOOLCHAINS_DIR/MSVC" | tr '/' '\\')\""
+            rm -rf "$TOOLCHAINS_DIR/MSVC"
+            
             if [ -d "$MSVC_SOURCE" ]; then
               echo "[+] Symlinking pre-installed MSVC Build Tools on Windows runner..."
-              cmd //c mklink /D "$(cygpath -w "$TOOLCHAINS_DIR/MSVC" | tr '/' '\\')" "$(cygpath -w "$MSVC_SOURCE" | tr '/' '\\')"
+              WIN_TARGET="$(cygpath -w "$TOOLCHAINS_DIR/MSVC")"
+              WIN_SOURCE="$(cygpath -w "$MSVC_SOURCE")" 
+              MSYS_NO_PATHCONV=1 cmd.exe /c mklink /D "$WIN_TARGET" "$WIN_SOURCE"
             else
               echo "[-] MSVC pre-installed path not found!"
               exit 1
@@ -155,7 +161,7 @@ jobs:
 
       - name: Version Check
         working-directory: ze_json
-        run: python scripts/ValidateValidateVersion.py || python scripts/ValidateVersion.py
+        run: python build/${{ matrix.preset }}/generated/ValidateVersion.py
 
       - name: Run Tests (ctest)
         working-directory: ze_json
