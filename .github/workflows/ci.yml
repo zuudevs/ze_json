@@ -23,7 +23,7 @@ jobs:
     
       - name: Set Environment Variable
         shell: bash
-        run: echo "CORPUS=${{ github.workspace }}/data/CORPUS" >> $GITHUB_ENV
+        run: echo "CORPUS_DIR=${{ github.workspace }}/corpus" >> $GITHUB_ENV
 
       - name: Install CMake 4.4.4
         shell: bash
