@@ -7,9 +7,9 @@
 			"generator": "Ninja",
 			"binaryDir": "${sourceDir}/build/${presetName}",
 			"cacheVariables": {
-				"CMAKE_MAKE_PROGRAM": "${sourceParentDir}/.toolchains/ninja.exe",
-				"CMAKE_C_COMPILER": "${sourceParentDir}/.toolchains/clang+llvm-23.1.5-x86_64-pc-windows-msvc/bin/clang.exe",
-                "CMAKE_CXX_COMPILER": "${sourceParentDir}/.toolchains/clang+llvm-23.1.5-x86_64-pc-windows-msvc/bin/clang++.exe",
+				"CMAKE_MAKE_PROGRAM": "${sourceParentDir}/.toolchains/ninja",
+				"CMAKE_C_COMPILER": "${sourceParentDir}/.toolchains/clang+llvm-23.1.5-x86_64-pc-windows-msvc/bin/clang",
+                "CMAKE_CXX_COMPILER": "${sourceParentDir}/.toolchains/clang+llvm-23.1.5-x86_64-pc-windows-msvc/bin/clang++",
 				"CMAKE_CXX_STANDARD": "23",
 				"CMAKE_CXX_STANDARD_REQUIRED": "ON",
 				"CMAKE_CXX_EXTENSIONS": "OFF",
