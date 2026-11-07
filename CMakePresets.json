@@ -7,9 +7,6 @@
 			"generator": "Ninja",
 			"binaryDir": "${sourceDir}/build/${presetName}",
 			"cacheVariables": {
-				"CMAKE_MAKE_PROGRAM": "${sourceDir}/../.toolchains/ninja/ninja$hostSystemName;Windows:.exe",
-				"CMAKE_C_COMPILER": "${sourceDir}/../.toolchains/llvm/bin/clang$hostSystemName;Windows:.exe",
-				"CMAKE_CXX_COMPILER": "${sourceDir}/../.toolchains/llvm/bin/clang++$hostSystemName;Windows:.exe",
 				"CMAKE_CXX_STANDARD": "23",
 				"CMAKE_CXX_STANDARD_REQUIRED": "ON",
 				"CMAKE_CXX_EXTENSIONS": "OFF",
@@ -31,7 +28,7 @@
 			"inherits": "base",
 			"hidden": true,
 			"cacheVariables": {
-				"CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/modules/toolchain.cmake",
+				"CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/modules/ToolChain.cmake",
 				"CMAKE_SYSTEM_NAME": "Generic",
 				"CMAKE_TRY_COMPILE_TARGET_TYPE": "STATIC_LIBRARY"
 			}
