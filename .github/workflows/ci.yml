@@ -34,7 +34,6 @@ jobs:
         run: |
           mkdir -p "$TOOLCHAINS_DIR/cmake"
           mkdir -p "$TOOLCHAINS_DIR/ninja"
-          mkdir -p "$TOOLCHAINS_DIR/llvm"
           mkdir -p "$TOOLCHAINS_DIR/vcpkg"
 
       - name: Install CMake
@@ -86,22 +85,24 @@ jobs:
           if [ "$RUNNER_OS" == "Windows" ]; then
             mkdir -p "$TOOLCHAINS_DIR"
             LLVM_SOURCE="C:/Program Files/LLVM"
-            # Hapus folder jika sudah ada menggunakan rmdir Windows
             cmd //c "if exist \"$(cygpath -w "$TOOLCHAINS_DIR/llvm" | tr '/' '\\')\" rmdir /s /q \"$(cygpath -w "$TOOLCHAINS_DIR/llvm" | tr '/' '\\')\""
             if [ -d "$LLVM_SOURCE" ]; then
               echo "[+] Symlinking pre-installed LLVM on Windows runner..."
               cmd //c mklink /D "$(cygpath -w "$TOOLCHAINS_DIR/llvm" | tr '/' '\\')" "$(cygpath -w "$LLVM_SOURCE" | tr '/' '\\')"
             else
-              echo "[-] Pre-installed LLVM not found, downloading..."
-              mkdir -p "$TOOLCHAINS_DIR/llvm"
-              curl.exe -Lf -o "$RUNNER_TEMP/llvm.tar.xz" https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.5/clang+llvm-23.1.5-x86_64-pc-windows-msvc.tar.xz
-              tar -xf "$RUNNER_TEMP/llvm.tar.xz" -C "$TOOLCHAINS_DIR/llvm" --strip-components=1
+              echo "[-] Pre-installed LLVM not found!"
+              exit 1
             fi
           else
-            echo "[+] Setting up LLVM for Linux in toolchains..."
-            mkdir -p "$TOOLCHAINS_DIR/llvm"
-            curl -Lf -o "$RUNNER_TEMP/llvm.tar.xz" https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.5/clang+llvm-23.1.5-x86_64-linux-gnu-ubuntu-22.04.tar.xz
-            tar -xf "$RUNNER_TEMP/llvm.tar.xz" -C "$TOOLCHAINS_DIR/llvm" --strip-components=1
+            echo "[+] Symlinking pre-installed LLVM on Linux runner..."
+            # Ambil versi LLVM tertinggi yang ada di Github Actions Ubuntu
+            LLVM_SOURCE=$(ls -d /usr/lib/llvm-* 2>/dev/null | sort -V | tail -n 1)
+            if [ -z "$LLVM_SOURCE" ]; then
+              # Fallback jika struktur berbeda
+              LLVM_SOURCE="/usr" 
+            fi
+            rm -rf "$TOOLCHAINS_DIR/llvm"
+            ln -s "$LLVM_SOURCE" "$TOOLCHAINS_DIR/llvm"
           fi
 
       - name: Setup MSVC Toolchain
@@ -122,6 +123,7 @@ jobs:
               cmd //c mklink /D "$(cygpath -w "$TOOLCHAINS_DIR/MSVC" | tr '/' '\\')" "$(cygpath -w "$MSVC_SOURCE" | tr '/' '\\')"
             else
               echo "[-] MSVC pre-installed path not found!"
+              exit 1
             fi
           fi
 
