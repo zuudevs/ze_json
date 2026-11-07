@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ze_json/traits/is_same.hpp>
+#include <ze_json/meta/is_same.hpp>
 #include <ze_json/core/integral.hpp>
 #include <ze_json/utils/move.hpp>
 
