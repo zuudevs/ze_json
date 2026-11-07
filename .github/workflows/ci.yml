@@ -23,7 +23,9 @@ jobs:
     
       - name: Set Environment Variable
         shell: bash
-        run: echo "CORPUS_DIR=${{ github.workspace }}/corpus" >> $GITHUB_ENV
+        run: |
+          echo "CORPUS_DIR=${{ github.workspace }}/corpus" >> $GITHUB_ENV
+          echo "TOOLCHAINS_DIR=${{ github.workspace }}/.toolchains" >> $GITHUB_ENV
 
       - name: Install CMake 4.4.4
         shell: bash
@@ -39,6 +41,25 @@ jobs:
             tar xf "$RUNNER_TEMP/cmake.tgz" -C "$RUNNER_TEMP"
             echo "$RUNNER_TEMP/cmake-4.4.4-linux-x86_64/bin" >> "$GITHUB_PATH"
           fi
+      - name: Setup .toolchains Directory & Ninja/Vcpkg
+        shell: bash
+        run: |
+          mkdir -p .toolchains
+          
+          # Clone vcpkg ke path lokal yang dicari oleh preset CMake
+          git clone https://github.com/microsoft/vcpkg.git .toolchains/vcpkg-2026.10.16
+          
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            choco install ninja --no-progress -y
+            cp "$(which ninja)" .toolchains/ninja.exe
+            cd .toolchains/vcpkg-2026.10.16 && ./bootstrap-vcpkg.bat
+          else
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ninja-build
+            cp "$(which ninja)" .toolchains/ninja.exe
+            cd .toolchains/vcpkg-2026.10.16 && ./bootstrap-vcpkg.sh
+          fi
+          ninja --version
 
       - name: Install Ninja
         shell: bash
