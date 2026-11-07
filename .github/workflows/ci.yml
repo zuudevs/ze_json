@@ -26,14 +26,15 @@ jobs:
       - name: Set Environment Variable
         shell: bash
         run: |
-          echo "CORPUS_DIR=${{ github.workspace }}/ze_json/data/CORPUS" >> $GITHUB_ENV
-          echo "TOOLCHAINS_DIR=${{ github.workspace }}/.toolchains" >> $GITHUB_ENV
+          echo "CORPUS_DIR=${{ github.workspace }}/ze_json/data/corpus" >> $GITHUB_ENV
+          echo "TOOLCHAINS_DIR=${{ github.workspace }}/../.toolchains" >> $GITHUB_ENV
 
       - name: Setup Toolchains Directory
         shell: bash
         run: |
           mkdir -p "$TOOLCHAINS_DIR/cmake"
           mkdir -p "$TOOLCHAINS_DIR/ninja"
+          mkdir -p "$TOOLCHAINS_DIR/llvm"
           mkdir -p "$TOOLCHAINS_DIR/vcpkg"
 
       - name: Install CMake 4.4.5
@@ -43,12 +44,12 @@ jobs:
             curl -Lf -o "$RUNNER_TEMP/cmake.zip" \
               https://github.com/Kitware/CMake/releases/download/v4.4.5/cmake-4.4.5-windows-x86_64.zip
             unzip -q "$RUNNER_TEMP/cmake.zip" -d "$TOOLCHAINS_DIR/cmake"
-            echo "$TOOLCHAINS_DIR/cmake/cmake-4.4.5-windows-x86_64/bin" >> "$GITHUB_PATH"
+            echo "$TOOLCHAINS_DIR/cmake/bin" >> "$GITHUB_PATH"
           else
             curl -Lf -o "$RUNNER_TEMP/cmake.tgz" \
               https://github.com/Kitware/CMake/releases/download/v4.4.5/cmake-4.4.5-linux-x86_64.tar.gz
             tar xf "$RUNNER_TEMP/cmake.tgz" -C "$TOOLCHAINS_DIR/cmake"
-            echo "$TOOLCHAINS_DIR/cmake/cmake-4.4.5-linux-x86_64/bin" >> "$GITHUB_PATH"
+            echo "$TOOLCHAINS_DIR/cmake/bin" >> "$GITHUB_PATH"
           fi
 
       - name: Install Ninja
@@ -70,14 +71,14 @@ jobs:
       - name: Setup Vcpkg in Toolchains
         shell: bash
         run: |
-          mkdir -p "$TOOLCHAINS_DIR/vcpkg-2026.10.16"
-          git clone https://github.com/microsoft/vcpkg.git "$TOOLCHAINS_DIR/vcpkg-2026.10.16"
+          mkdir -p "$TOOLCHAINS_DIR/vcpkg"
+          git clone https://github.com/microsoft/vcpkg.git "$TOOLCHAINS_DIR/vcpkg"
           if [ "$RUNNER_OS" == "Windows" ]; then
-            cd "$TOOLCHAINS_DIR/vcpkg-2026.10.16" && ./bootstrap-vcpkg.bat
+            cd "$TOOLCHAINS_DIR/vcpkg" && ./bootstrap-vcpkg.bat
           else
-            cd "$TOOLCHAINS_DIR/vcpkg-2026.10.16" && ./bootstrap-vcpkg.sh
+            cd "$TOOLCHAINS_DIR/vcpkg" && ./bootstrap-vcpkg.sh
           fi
-          echo "VCPKG_ROOT=$TOOLCHAINS_DIR/vcpkg-2026.10.16" >> $GITHUB_ENV
+          echo "VCPKG_ROOT=$TOOLCHAINS_DIR/vcpkg" >> $GITHUB_ENV
         
       - name: Setup LLVM Toolchain
         shell: bash
