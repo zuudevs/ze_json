@@ -84,11 +84,10 @@ jobs:
         run: |
           mkdir -p "$TOOLCHAINS_DIR/llvm"
           if [ "$RUNNER_OS" == "Windows" ]; then
-            echo "[+] Downloading LLVM for Windows..."
-            curl.exe -Lf -o "$RUNNER_TEMP/llvm.tar.xz" https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.5/clang+llvm-23.1.5-x86_64-pc-windows-msvc.tar.xz
-            tar -xf "$RUNNER_TEMP/llvm.tar.xz" -C "$TOOLCHAINS_DIR/llvm" --strip-components=1
+            curl.exe -Lf -o llvm.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.5/clang+llvm-23.1.5-x86_64-pc-windows-msvc.tar.xz
+            tar -xf llvm.tar.xz -C "$TOOLCHAINS_DIR/llvm" --strip-components=1
+            rm llvm.tar.xz
           else
-            echo "[+] Setting up Clang/LLVM for Linux..."
             sudo apt-get update -qq
             sudo apt-get install -y -qq clang llvm
           fi
@@ -98,7 +97,6 @@ jobs:
         run: |
           mkdir -p "$TOOLCHAINS_DIR/MSVC"
           if [ "$RUNNER_OS" == "Windows" ]; then
-            echo "[+] Downloading and Installing VS Build Tools to .toolchains/MSVC..."
             curl.exe -Lf -o "$RUNNER_TEMP/vs_buildtools.exe" https://aka.ms/vs/17/release/vs_buildtools.exe
             "$RUNNER_TEMP/vs_buildtools.exe" \
               --quiet --wait --norestart --nocache \
