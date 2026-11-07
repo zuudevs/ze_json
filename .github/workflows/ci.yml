@@ -113,19 +113,21 @@ jobs:
         shell: bash
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
-            MSVC_SOURCE="C:/Program Files/Microsoft Visual Studio/2022/Enterprise"
-            if [ ! -d "$MSVC_SOURCE" ]; then
-              MSVC_SOURCE="C:/Program Files/Microsoft Visual Studio/2022/Community"
+            VSWHERE="C:/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe"
+            
+            if [ -f "$VSWHERE" ]; then
+              MSVC_SOURCE=$("$VSWHERE" -latest -property installationPath | tr -d '\r' | tr '\\' '/')
+            else
+              MSVC_SOURCE="C:/Program Files/Microsoft Visual Studio/2022/Enterprise"
             fi
-            if [ ! -d "$MSVC_SOURCE" ]; then
-              MSVC_SOURCE="C:/Program Files/Microsoft Visual Studio/2022/Professional"
-            fi
+
+            echo "[*] Detected MSVC Path: $MSVC_SOURCE"
             rm -rf "$TOOLCHAINS_DIR/MSVC"
             
-            if [ -d "$MSVC_SOURCE" ]; then
+            if [ -n "$MSVC_SOURCE" ] && [ -d "$MSVC_SOURCE" ]; then
               echo "[+] Symlinking pre-installed MSVC Build Tools on Windows runner..."
               WIN_TARGET="$(cygpath -w "$TOOLCHAINS_DIR/MSVC")"
-              WIN_SOURCE="$(cygpath -w "$MSVC_SOURCE")" 
+              WIN_SOURCE="$(cygpath -w "$MSVC_SOURCE")"
               MSYS_NO_PATHCONV=1 cmd.exe /c mklink /D "$WIN_TARGET" "$WIN_SOURCE"
             else
               echo "[-] MSVC pre-installed path not found!"
