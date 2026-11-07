@@ -22,7 +22,7 @@
 			"inherits": "base",
 			"hidden": true,
 			"cacheVariables": {
-				"CMAKE_TOOLCHAIN_FILE": "${sourceDir}/../.toolchains/vcpkg-2026.10.16/scripts/buildsystems/vcpkg.cmake",
+				"CMAKE_TOOLCHAIN_FILE": "${sourceDir}/../.toolchains/vcpkg/scripts/buildsystems/vcpkg.cmake",
 				"VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/cmake/modules/toolchain.cmake"
 			}
 		},
