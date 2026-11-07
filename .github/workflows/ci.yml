@@ -84,10 +84,13 @@ jobs:
         run: |
           mkdir -p "$TOOLCHAINS_DIR/llvm"
           if [ "$RUNNER_OS" == "Windows" ]; then
+            echo "[+] Downloading LLVM for Windows..."
             curl.exe -Lf -o llvm.tar.xz https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.5/clang+llvm-23.1.5-x86_64-pc-windows-msvc.tar.xz
-            tar -xf llvm.tar.xz -C "$TOOLCHAINS_DIR/llvm" --strip-components=1
+            TARGET_DIR="$(cygpath -u "$TOOLCHAINS_DIR")/llvm"
+            tar -xf llvm.tar.xz -C "$TARGET_DIR" --strip-components=1
             rm llvm.tar.xz
           else
+            echo "[+] Setting up Clang/LLVM for Linux..."
             sudo apt-get update -qq
             sudo apt-get install -y -qq clang llvm
           fi
@@ -97,10 +100,12 @@ jobs:
         run: |
           mkdir -p "$TOOLCHAINS_DIR/MSVC"
           if [ "$RUNNER_OS" == "Windows" ]; then
+            echo "[+] Downloading and Installing VS Build Tools to .toolchains/MSVC..."
             curl.exe -Lf -o "$RUNNER_TEMP/vs_buildtools.exe" https://aka.ms/vs/17/release/vs_buildtools.exe
+            TARGET_MSVC="$(cygpath -u "$TOOLCHAINS_DIR")/MSVC"
             "$RUNNER_TEMP/vs_buildtools.exe" \
               --quiet --wait --norestart --nocache \
-              --installPath "$TOOLCHAINS_DIR/MSVC" \
+              --installPath "$TARGET_MSVC" \
               --add Microsoft.VisualStudio.Workload.VCTools \
               --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 \
               --add Microsoft.VisualStudio.Component.Windows11SDK.22621 || true
