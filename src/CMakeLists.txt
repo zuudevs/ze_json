@@ -1,22 +1,11 @@
-configure_file(
-	"${CMAKE_SOURCE_DIR}/cmake/templates/ValidateVersion.py.in" 
-	"${CMAKE_BINARY_DIR}/generated/ValidateVersion.py" 
-	@ONLY
+set(SOURCES
+	${CMAKE_CURRENT_SOURCE_DIR}/stubs/compiler_rt.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/ondemand/scalar.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/ondemand/parallel.cpp
 )
-
-configure_file(
-	${CMAKE_SOURCE_DIR}/cmake/templates/version.hpp.in
-	${CMAKE_BINARY_DIR}/generated/version.hpp
-	@ONLY
-)
-
-find_package(Python COMPONENTS Interpreter REQUIRED)
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
-    add_executable(
-		${LIBRARY_OUTPUT_NAME} 
-			${CMAKE_CURRENT_SOURCE_DIR}/stubs/compiler_rt.cpp
-	)
+    add_executable(${LIBRARY_OUTPUT_NAME} ${SOURCES})
 
 	target_include_directories(${LIBRARY_OUTPUT_NAME} PUBLIC
 		$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
@@ -44,10 +33,7 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
 		COMMENT "Exporting ${LIBRARY_OUTPUT_NAME}.wasm artifact to bindings/js..."
 	)
 elseif(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
-	add_library(
-		${LIBRARY_OUTPUT_NAME} 
-			${CMAKE_CURRENT_SOURCE_DIR}/stubs/compiler_rt.cpp
-	)
+	add_library(${LIBRARY_OUTPUT_NAME} ${SOURCES})
 
 	target_include_directories(${LIBRARY_OUTPUT_NAME} PUBLIC
 		$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
@@ -60,29 +46,4 @@ endif()
 
 add_clang_format_target(${LIBRARY_OUTPUT_NAME})
 
-if(Python_FOUND)
-    add_custom_command(
-        TARGET ${LIBRARY_OUTPUT_NAME} PRE_BUILD
-        COMMAND ${Python_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/GenerateLookups.py" "${CMAKE_BINARY_DIR}/generated/lookups.hpp"
-        COMMENT "Running GenerateLookups.py before building target..."
-        VERBATIM
-    )
-
-	if(NOT EXISTS ${JSON_CHECKER_INSTALLED_DIR} OR NOT EXISTS ${JSON_CHECKER_INSTALLED_DIR})
-		add_custom_command(
-			TARGET ${LIBRARY_OUTPUT_NAME} PRE_BUILD
-			COMMAND ${Python_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/InstallJsonChecker.py" 
-				--package-dir ${JSON_CHECKER_INSTALLED_DIR} 
-				--corpus-dir ${JSON_CHECKER_CORPUS_DIR}
-			COMMENT "Running InstallJsonChecker.py before building target..."
-			VERBATIM
-		)
-	endif()
-
-    add_custom_command(
-        TARGET ${LIBRARY_OUTPUT_NAME} PRE_BUILD
-        COMMAND ${Python_EXECUTABLE} "${CMAKE_BINARY_DIR}/generated/ValidateVersion.py"
-        COMMENT "Running ValidateVersion.py before building target..."
-        VERBATIM
-    )
-endif()
+add_dependencies(${LIBRARY_OUTPUT_NAME} generate_ze_json_headers)
