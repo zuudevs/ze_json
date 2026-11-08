@@ -17,7 +17,8 @@
     "benchmarks/"
   ],
   "scripts": {
-    "smoke": "node tests/main.mjs"
+    "smoke": "node tests/main.mjs",
+    "differential": "node tests/differential.mjs"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
