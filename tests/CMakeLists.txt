@@ -9,6 +9,12 @@
 # @cite 10.14778_3115404.3115416 (Mison structural indexing)
 # @cite 10.48550_arXiv.1902.08318 (simdjson staging)
 
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
+	# GTest/benchmark modules are native-only (root CMakeLists skips them for
+	# wasm targets); nothing to register here.
+	return()
+endif()
+
 set(ZE_JSON_CORPUS_DIR "${JSON_CHECKER_CORPUS_DIR}" CACHE PATH
 	"json_checker corpus directory consumed by the scanner tests")
 
