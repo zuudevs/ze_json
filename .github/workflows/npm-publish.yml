@@ -53,10 +53,10 @@ jobs:
         run: cmake --preset wasm64-release
 
       - name: Build wasm64 core
-        run: cmake --build build/wasm64-release --target ze_json_core
+        run: cmake --build build/wasm64-release --
 
       - name: Smoke test the public API
-        run: node bindings/js/test/main.mjs
+        run: node bindings/js/tests/main.mjs
 
       - name: Publish to GitHub Packages
         working-directory: bindings/js

@@ -18,10 +18,13 @@ if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
 	include("cmake/modules/Benchmark.cmake")
 endif()
 
+include("cmake/modules/Dependencies.cmake")
 include("cmake/modules/HandleProfiler.cmake")
 include("cmake/modules/CodeCoverage.cmake")
 include("cmake/modules/HandleDoxygen.cmake")
 include("cmake/modules/Packaging.cmake")
+
+enable_testing()
 
 add_subdirectory("src")
 add_subdirectory("tests")
@@ -36,11 +39,13 @@ message("C++ Standard           : ${CMAKE_CXX_STANDARD}")
 message("C++ Compiler           : ${CMAKE_CXX_COMPILER}")
 message("Compiler Architecture  : ${CMAKE_C_COMPILER_ARCHITECTURE_ID}")
 message("CMake Generator        : ${CMAKE_GENERATOR}")
+
 if(DEFINED GIT_COMMIT_HASH)
 	message("Git Commit Hash        : ${GIT_COMMIT_HASH}")
 else()
 	message(WARNING "Git Commit Hash not found!")
 endif()
+
 message("Run ID                 : ${RUN_ID}")
 
 if(ENABLE_AVX512)

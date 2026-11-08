@@ -5,13 +5,13 @@
 namespace zuu::core {
 
 enum class JsonErrc : uint8_t {
-    None,
-    EmptyJson,
-    InvalidJson,
-    UnexpectedQuote,
-    InvalidQuote,
-    InsufficientBuffer,
-    InvalidUtf8,
+  None,
+  EmptyJson,
+  InvalidJson,
+  UnexpectedQuote,
+  InvalidQuote,
+  InsufficientBuffer,
+  InvalidUtf8,
 };
 
 } // namespace zuu::core

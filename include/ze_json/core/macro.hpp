@@ -13,12 +13,12 @@
 #endif
 
 #if defined(__GNUC__) || defined(__clang__)
-#define RESTRICT          __restrict__
-#define ALIGNED(val)      __attribute__((aligned(val)))
+#define RESTRICT __restrict__
+#define ALIGNED(val) __attribute__((aligned(val)))
 #define HAS_COMPUTED_GOTO 1
 #elif defined(_MSC_VER)
-#define RESTRICT          __restrict
-#define ALIGNED(val)      __declspec(align(val)) // only affacted into variable
+#define RESTRICT __restrict
+#define ALIGNED(val) __declspec(align(val)) // only affacted into variable
 #define HAS_COMPUTED_GOTO 0
 #else
 #define RESTRICT
@@ -36,7 +36,7 @@
 
 #ifdef __cplusplus
 #define EXTERN_C_BEGIN extern "C" {
-#define EXTERN_C_END   }
+#define EXTERN_C_END }
 #else
 #define EXTERN_C_BEGIN
 #define EXTERN_C_END
