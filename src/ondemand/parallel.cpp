@@ -1,4 +1,5 @@
 #include <ze_json/core/lookups.hpp>
+#include <ze_json/core/simd.hpp>
 #include <ze_json/ondemand/scanner.hpp>
 #include <ze_json/utils/swar.hpp>
 #include <ze_json/utils/utf8_validator.hpp>
@@ -131,12 +132,16 @@ scanner64(const char *const RESTRICT src, core::size_t src_size,
 
     // SLOW: quote/backslash present — walk the block byte-serially.
     for (unsigned lane = 0; lane < 8; ++lane) {
-      walk_byte();
+      if (!walk_byte()) {
+        return core::JsonErrc::InsufficientBuffer;
+      }
     }
   }
 
   while (i < src_size) {
-    walk_byte();
+    if (!walk_byte()) {
+      return core::JsonErrc::InsufficientBuffer;
+    }
   }
 
   if (in_string) {
@@ -156,6 +161,137 @@ scanner32(const char *const RESTRICT src, core::size_t src_size,
 }
 #endif // __IS_64_BIT__ == 0
 #endif // __LITTLE_ENDIAN__ == 1
+
+#if defined(__SSE2__) && __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
+
+/**
+ * @brief SSE2 structural scanner (16-byte blocks).
+ *
+ * Same three-path structure as scanner64 (proven by the differential gate),
+ * with _mm_cmpeq_epi8 classification (one compare per class, 0.75 ops/byte
+ * vs ~3.6 for SWAR) and _mm_movemask_epi8 lane extraction:
+ *   FAST-A  outside a string, no quote/backslash in the block
+ *   FAST-B  inside a string, no quote/backslash in the block
+ *   SLOW    byte-serial walk of the block (exact reference semantics)
+ *
+ * @cite 10.48550_arXiv.1902.08318 simdjson: 128-bit block classification with
+ *       per-class vector compares and a carried string-state; the escape
+ *       chain stays serial (see scanner64 note) for differential-verifiable
+ *       correctness.
+ */
+core::Result<core::size_t, core::JsonErrc>
+scanner128(const char *const RESTRICT src, core::size_t src_size,
+           core::size_t *RESTRICT dst, core::size_t dst_cap) NOEXCEPT {
+  if (src_size == 0) {
+    return core::JsonErrc::EmptyJson;
+  }
+  if (src == nullptr) {
+    return core::JsonErrc::InvalidJson;
+  }
+  if (dst == nullptr || dst_cap == 0) {
+    return core::JsonErrc::InsufficientBuffer;
+  }
+
+  const core::vec128 quote_v = SIMD_SET1_EPI8('"');
+  const core::vec128 slash_v = SIMD_SET1_EPI8('\\');
+  const core::vec128 comma_v = SIMD_SET1_EPI8(',');
+  const core::vec128 colon_v = SIMD_SET1_EPI8(':');
+  const core::vec128 lbrack_v = SIMD_SET1_EPI8('[');
+  const core::vec128 rbrack_v = SIMD_SET1_EPI8(']');
+  const core::vec128 lbrace_v = SIMD_SET1_EPI8('{');
+  const core::vec128 rbrace_v = SIMD_SET1_EPI8('}');
+
+  core::size_t out = 0;
+  core::size_t i = 0;
+  bool in_string = false;
+  bool escaped_carry = false;
+
+  auto record = [&](core::size_t index) -> bool {
+    if (out == dst_cap) {
+      return false;
+    }
+    dst[out++] = index;
+    return true;
+  };
+
+  auto walk_byte = [&]() {
+    const char c = src[i];
+    if (in_string) {
+      if (escaped_carry) {
+        escaped_carry = false;
+      } else if (c == '\\') {
+        escaped_carry = true;
+      } else if (c == '"') {
+        in_string = false;
+      }
+    } else if (c == '"') {
+      in_string = true;
+    } else if (c == '[' || c == ']' || c == '{' || c == '}'
+               || c == ',' || c == ':') {
+      if (!record(i)) {
+        return false;
+      }
+    }
+    i += 1;
+    return true;
+  };
+
+  const core::size_t n_blocks = src_size / 16;
+  for (core::size_t block = 0; block < n_blocks; ++block) {
+    const core::vec128 lanes =
+        _mm_loadu_si128(reinterpret_cast<const core::vec128 *>(src + i));
+    const core::uint32_t interesting =
+        static_cast<core::uint32_t>(_mm_movemask_epi8(
+            _mm_or_si128(_mm_cmpeq_epi8(lanes, quote_v),
+                         _mm_cmpeq_epi8(lanes, slash_v))));
+
+    if (interesting == 0) {
+      if (!in_string) {
+        // FAST-A
+        const core::uint32_t structural = static_cast<core::uint32_t>(
+            _mm_movemask_epi8(_mm_or_si128(
+                _mm_or_si128(_mm_cmpeq_epi8(lanes, comma_v),
+                             _mm_cmpeq_epi8(lanes, colon_v)),
+                _mm_or_si128(_mm_or_si128(_mm_cmpeq_epi8(lanes, lbrack_v),
+                                          _mm_cmpeq_epi8(lanes, rbrack_v)),
+                             _mm_or_si128(_mm_cmpeq_epi8(lanes, lbrace_v),
+                                          _mm_cmpeq_epi8(lanes, rbrace_v))))));
+        core::uint32_t mask = structural;
+        while (mask != 0) {
+          const unsigned bit = static_cast<unsigned>(__builtin_ctz(mask));
+          mask &= mask - 1;
+          if (!record(i + bit)) {
+            return core::JsonErrc::InsufficientBuffer;
+          }
+        }
+      }
+      // FAST-A (recorded) or FAST-B (skipped); escaped carry clears either way.
+      i += 16;
+      escaped_carry = false;
+      continue;
+    }
+
+    // SLOW: quote/backslash present — walk the block byte-serially.
+    for (unsigned lane = 0; lane < 16; ++lane) {
+      if (!walk_byte()) {
+        return core::JsonErrc::InsufficientBuffer;
+      }
+    }
+  }
+
+  while (i < src_size) {
+    if (!walk_byte()) {
+      return core::JsonErrc::InsufficientBuffer;
+    }
+  }
+
+  if (in_string) {
+    return core::JsonErrc::InvalidJson; // string never closed
+  }
+  return out;
+}
+
+#endif // __SSE2__ && little-endian 64-bit
 
 /**
  * @brief Static-dispatch implementation (resolve the variant pointer once).

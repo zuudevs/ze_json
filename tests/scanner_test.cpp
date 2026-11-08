@@ -263,9 +263,9 @@ TEST(ScannerDifferential, DeterministicFuzz) {
 	&& defined(__IS_64_BIT__) && __IS_64_BIT__ == 1
 
 TEST(ScannerVariants, AllVariantsMatchReference) {
-  // scanner64 (SWAR) and the static dispatch must reproduce the reference
-  // exactly; structural_scan additionally validates the once-resolved
-  // dispatch wiring (P4-2).
+  // scanner64 (SWAR), scanner128 (SSE2) and the static dispatch must
+  // reproduce the reference exactly; structural_scan additionally validates
+  // the once-resolved dispatch wiring (P4-2).
   using ScanFn = zuu::core::Result<zuu::core::size_t, zuu::core::JsonErrc> (*)(
       const char *const, zuu::core::size_t, zuu::core::size_t *,
       zuu::core::size_t);
@@ -273,6 +273,9 @@ TEST(ScannerVariants, AllVariantsMatchReference) {
     &zuu::ondemand::scanner8,
     &zuu::ondemand::scanner64,
     &zuu::ondemand::structural_scan,
+#if defined(__SSE2__)
+    &zuu::ondemand::scanner128,
+#endif
   };
 
   const std::vector<std::string> cases = {
@@ -313,6 +316,9 @@ TEST(ScannerVariants, FuzzAgreesAcrossVariants) {
     &zuu::ondemand::scanner8,
     &zuu::ondemand::scanner64,
     &zuu::ondemand::structural_scan,
+#if defined(__SSE2__)
+    &zuu::ondemand::scanner128,
+#endif
   };
 
   for (int iteration = 0; iteration < 300; ++iteration) {

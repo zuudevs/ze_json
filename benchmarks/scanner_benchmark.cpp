@@ -152,6 +152,12 @@ void bench_structural_document(benchmark::State &state, const Document *doc) {
   scan_document(state, &zuu::ondemand::structural_scan, doc);
 }
 
+#if defined(__SSE2__)
+void bench_scanner128_document(benchmark::State &state, const Document *doc) {
+  scan_document(state, &zuu::ondemand::scanner128, doc);
+}
+#endif
+
 void bench_reference_batch(benchmark::State &state,
                            const std::vector<Document> *docs) {
   scan_batch(state, &zuu::ondemand::reference_scan, docs);
@@ -171,6 +177,13 @@ void bench_structural_batch(benchmark::State &state,
                             const std::vector<Document> *docs) {
   scan_batch(state, &zuu::ondemand::structural_scan, docs);
 }
+
+#if defined(__SSE2__)
+void bench_scanner128_batch(benchmark::State &state,
+                            const std::vector<Document> *docs) {
+  scan_batch(state, &zuu::ondemand::scanner128, docs);
+}
+#endif
 
 void register_corpus(const char *sub_dir, const char *label) {
   const std::vector<Document> &docs = corpus_docs(sub_dir);
@@ -196,6 +209,12 @@ void register_corpus(const char *sub_dir, const char *label) {
                                  bench_structural_document, doc)
         ->Repetitions(5)
         ->Unit(benchmark::kMicrosecond);
+#if defined(__SSE2__)
+    benchmark::RegisterBenchmark(("BM_Scanner128/" + base).c_str(),
+                                 bench_scanner128_document, doc)
+        ->Repetitions(5)
+        ->Unit(benchmark::kMicrosecond);
+#endif
     return;
   }
   const std::vector<Document> *docs_ptr = &docs;
@@ -215,6 +234,12 @@ void register_corpus(const char *sub_dir, const char *label) {
                                bench_structural_batch, docs_ptr)
       ->Repetitions(5)
       ->Unit(benchmark::kMicrosecond);
+#if defined(__SSE2__)
+  benchmark::RegisterBenchmark(("BM_Scanner128/" + base).c_str(),
+                               bench_scanner128_batch, docs_ptr)
+      ->Repetitions(5)
+      ->Unit(benchmark::kMicrosecond);
+#endif
 }
 
 } // namespace
