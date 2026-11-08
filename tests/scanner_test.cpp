@@ -259,6 +259,81 @@ TEST(ScannerDifferential, DeterministicFuzz) {
   }
 }
 
+#if defined(__LITTLE_ENDIAN__) && __LITTLE_ENDIAN__ == 1 \
+	&& defined(__IS_64_BIT__) && __IS_64_BIT__ == 1
+
+TEST(ScannerVariants, AllVariantsMatchReference) {
+  // scanner64 (SWAR) and the static dispatch must reproduce the reference
+  // exactly; structural_scan additionally validates the once-resolved
+  // dispatch wiring (P4-2).
+  using ScanFn = zuu::core::Result<zuu::core::size_t, zuu::core::JsonErrc> (*)(
+      const char *const, zuu::core::size_t, zuu::core::size_t *,
+      zuu::core::size_t);
+  const std::vector<ScanFn> variants = {
+    &zuu::ondemand::scanner8,
+    &zuu::ondemand::scanner64,
+    &zuu::ondemand::structural_scan,
+  };
+
+  const std::vector<std::string> cases = {
+    "{\"a\":1}",
+    "[1,[2],[3]]",
+    "\"just a string\"",
+    "{\"k\":\"a[b],{c}\"}",
+    R"(["a\"b", "back\\slash", "end\""])",
+    "{\"emoji\":\"\xF0\x9F\xA6\x89\",\"na\xC3\xAFve\":1}",
+    "{\"\":\"[]\",\"a\\\\\":1}",
+    "{\"unclosed",
+    "\"dangling\\",
+    "",
+    "[1e308,-1e-308,9007199254740993,0.1e+2]",
+    "\"\\\\\"",         // escaped backslash closes the string
+    "\"\\\\\\\"",       // escaped backslash then escaped quote
+  };
+
+  for (const auto &variant : variants) {
+    for (const auto &input : cases) {
+      const auto reference = run_scan(zuu::ondemand::reference_scan, input, 64);
+      const auto fast = run_scan(variant, input, 64);
+      expect_identical(reference, fast, input.c_str());
+    }
+  }
+}
+
+TEST(ScannerVariants, FuzzAgreesAcrossVariants) {
+  std::mt19937 rng(424242);
+  const char alphabet[] = "{}[]\",: \\ \t\nabc123e.-+";
+  std::uniform_int_distribution<int> pick(0, sizeof(alphabet) - 2);
+  std::uniform_int_distribution<int> length(0, 4096);
+
+  using ScanFn = zuu::core::Result<zuu::core::size_t, zuu::core::JsonErrc> (*)(
+      const char *const, zuu::core::size_t, zuu::core::size_t *,
+      zuu::core::size_t);
+  const std::vector<ScanFn> variants = {
+    &zuu::ondemand::scanner8,
+    &zuu::ondemand::scanner64,
+    &zuu::ondemand::structural_scan,
+  };
+
+  for (int iteration = 0; iteration < 300; ++iteration) {
+    std::string input(static_cast<size_t>(length(rng)), '\0');
+    for (char &c : input) {
+      c = alphabet[pick(rng)];
+    }
+    const auto reference = run_scan(zuu::ondemand::reference_scan, input, 4096);
+    for (const auto &variant : variants) {
+      const auto fast = run_scan(variant, input, 4096);
+      expect_identical(reference, fast);
+      if (HasNonfatalFailure()) {
+        ADD_FAILURE() << "divergence at fuzz iteration " << iteration;
+        return;
+      }
+    }
+  }
+}
+
+#endif // little-endian 64-bit
+
 TEST(JsonCharClassTable, MatchesReferenceCharacterSet) {
   // The codegen table itself is under test: its classes must equal the
   // reference character set (a table bug would corrupt every fast path).

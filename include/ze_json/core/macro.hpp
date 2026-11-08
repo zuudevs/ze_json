@@ -34,6 +34,18 @@
 #error "Unsupported target architecture"
 #endif
 
+// scanner64/scanner32 (SWAR byte-parallel) require little-endian byte order:
+// lanes are read as one u64 and classified per byte from the low byte up.
+#if defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) && \
+	__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#define __LITTLE_ENDIAN__ 1
+#elif defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && \
+	__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define __LITTLE_ENDIAN__ 0
+#else
+#error "Unknown byte order: __BYTE_ORDER__ not defined by the compiler"
+#endif
+
 #ifdef __cplusplus
 #define EXTERN_C_BEGIN extern "C" {
 #define EXTERN_C_END }

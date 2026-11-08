@@ -33,4 +33,17 @@ scanner32(const char *const RESTRICT src, core::size_t src_size,
 scanner128(const char *const RESTRICT src, core::size_t src_size,
            core::size_t *RESTRICT dst, core::size_t dst_size) NOEXCEPT;
 
+/**
+ * @brief Static-dispatch entry point for the structural scanner.
+ *
+ * Resolves the best available variant ONCE (function-local static
+ * initialization — never per call): scanner64 (SWAR) on little-endian
+ * 64-bit targets, falling back to the plain scalar scanner8 otherwise.
+ * The dispatched function must satisfy the same contract as
+ * reference_scan(); the differential test gates every variant.
+ */
+[[nodiscard]] core::Result<core::size_t, core::JsonErrc>
+structural_scan(const char *const RESTRICT src, core::size_t src_size,
+                core::size_t *RESTRICT dst, core::size_t dst_size) NOEXCEPT;
+
 } // namespace zuu::ondemand
