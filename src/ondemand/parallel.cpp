@@ -3,7 +3,7 @@
 #include <ze_json/utils/swar.hpp>
 #include <ze_json/utils/utf8_validator.hpp>
 
-namespace zuu::scanner {
+namespace zuu::ondemand {
 
 #if __LITTLE_ENDIAN__ == 1
 
@@ -25,4 +25,4 @@ scanner32(const char *const RESTRICT src, core::size_t src_size,
 #endif // __IS_64_BIT__ == 0
 #endif // __LITTLE_ENDIAN__ == 1
 
-} // namespace zuu::scanner
+} // namespace zuu::ondemand
