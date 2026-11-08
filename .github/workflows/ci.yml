@@ -143,6 +143,12 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
           cache-dependency-path: 'ze_json/scripts/requirements.txt'
+
+      - name: Install Python
+        shell: bash
+        run: |
+           python -m pip install --upgrade pip
+           pip install -r ze_json/scripts/requirements.txt
           
       - name: Configure CMake (preset ${{ matrix.preset }})
         shell: bash
