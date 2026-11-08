@@ -9,6 +9,12 @@
 # @cite 10.48550_arXiv.1902.08318 (simdjson staging)
 # @cite 10.1145_2807591.2807644 (scientific benchmarking methodology)
 
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
+	# GTest/benchmark modules are native-only (root CMakeLists skips them for
+	# wasm targets); nothing to register here.
+	return()
+endif()
+
 set(ZE_JSON_BENCH_CORPUS_DIR "$ENV{PROJECT_ROOT_DIR}/corpus/benchmarks" CACHE PATH
 	"benchmark corpora directory (corpus/benchmarks, P0-8 manifests)")
 
