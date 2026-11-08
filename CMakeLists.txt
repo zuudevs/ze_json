@@ -24,6 +24,8 @@ include("cmake/modules/CodeCoverage.cmake")
 include("cmake/modules/HandleDoxygen.cmake")
 include("cmake/modules/Packaging.cmake")
 
+enable_testing()
+
 add_subdirectory("src")
 add_subdirectory("tests")
 add_subdirectory("benchmarks")
