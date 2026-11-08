@@ -144,6 +144,14 @@ void bench_scanner8_document(benchmark::State &state, const Document *doc) {
   scan_document(state, &zuu::ondemand::scanner8, doc);
 }
 
+void bench_scanner64_document(benchmark::State &state, const Document *doc) {
+  scan_document(state, &zuu::ondemand::scanner64, doc);
+}
+
+void bench_structural_document(benchmark::State &state, const Document *doc) {
+  scan_document(state, &zuu::ondemand::structural_scan, doc);
+}
+
 void bench_reference_batch(benchmark::State &state,
                            const std::vector<Document> *docs) {
   scan_batch(state, &zuu::ondemand::reference_scan, docs);
@@ -152,6 +160,16 @@ void bench_reference_batch(benchmark::State &state,
 void bench_scanner8_batch(benchmark::State &state,
                           const std::vector<Document> *docs) {
   scan_batch(state, &zuu::ondemand::scanner8, docs);
+}
+
+void bench_scanner64_batch(benchmark::State &state,
+                           const std::vector<Document> *docs) {
+  scan_batch(state, &zuu::ondemand::scanner64, docs);
+}
+
+void bench_structural_batch(benchmark::State &state,
+                            const std::vector<Document> *docs) {
+  scan_batch(state, &zuu::ondemand::structural_scan, docs);
 }
 
 void register_corpus(const char *sub_dir, const char *label) {
@@ -170,6 +188,14 @@ void register_corpus(const char *sub_dir, const char *label) {
                                  bench_scanner8_document, doc)
         ->Repetitions(5)
         ->Unit(benchmark::kMicrosecond);
+    benchmark::RegisterBenchmark(("BM_Scanner64/" + base).c_str(),
+                                 bench_scanner64_document, doc)
+        ->Repetitions(5)
+        ->Unit(benchmark::kMicrosecond);
+    benchmark::RegisterBenchmark(("BM_Structural/" + base).c_str(),
+                                 bench_structural_document, doc)
+        ->Repetitions(5)
+        ->Unit(benchmark::kMicrosecond);
     return;
   }
   const std::vector<Document> *docs_ptr = &docs;
@@ -179,6 +205,14 @@ void register_corpus(const char *sub_dir, const char *label) {
       ->Unit(benchmark::kMicrosecond);
   benchmark::RegisterBenchmark(("BM_Scanner8/" + base).c_str(),
                                bench_scanner8_batch, docs_ptr)
+      ->Repetitions(5)
+      ->Unit(benchmark::kMicrosecond);
+  benchmark::RegisterBenchmark(("BM_Scanner64/" + base).c_str(),
+                               bench_scanner64_batch, docs_ptr)
+      ->Repetitions(5)
+      ->Unit(benchmark::kMicrosecond);
+  benchmark::RegisterBenchmark(("BM_Structural/" + base).c_str(),
+                               bench_structural_batch, docs_ptr)
       ->Repetitions(5)
       ->Unit(benchmark::kMicrosecond);
 }
