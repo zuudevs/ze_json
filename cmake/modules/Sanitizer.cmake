@@ -1,7 +1,7 @@
-if(ENABLE_SANITIZER)
+if(ENABLE_SANITIZERS)
 	if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 		message(WARNING 
-			"ENABLE_SANITIZER only tested on native clang;"
+			"ENABLE_SANITIZERS only tested on native clang;"
 			"gcc supported -fsanitize=address,undefined, but MSVC not supported."
 		)
 	endif()
