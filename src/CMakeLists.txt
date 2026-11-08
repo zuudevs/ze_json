@@ -15,7 +15,7 @@ find_package(Python COMPONENTS Interpreter REQUIRED)
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
     add_executable(
 		${LIBRARY_OUTPUT_NAME} 
-			${CMAKE_CURRENT_SOURCE_DIR}/dummy.cpp
+			${CMAKE_CURRENT_SOURCE_DIR}/stubs/compiler_rt.cpp
 	)
 
 	target_include_directories(${LIBRARY_OUTPUT_NAME} PUBLIC
@@ -46,7 +46,7 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
 elseif(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
 	add_library(
 		${LIBRARY_OUTPUT_NAME} 
-			${CMAKE_CURRENT_SOURCE_DIR}/dummy.cpp
+			${CMAKE_CURRENT_SOURCE_DIR}/stubs/compiler_rt.cpp
 	)
 
 	target_include_directories(${LIBRARY_OUTPUT_NAME} PUBLIC
@@ -54,7 +54,11 @@ elseif(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
 		$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/generated>
 		$<INSTALL_INTERFACE:include>
 	)
+
+	add_clang_tidy_target(${LIBRARY_OUTPUT_NAME})
 endif()
+
+add_clang_format_target(${LIBRARY_OUTPUT_NAME})
 
 if(Python_FOUND)
     add_custom_command(

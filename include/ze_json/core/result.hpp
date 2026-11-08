@@ -4,7 +4,7 @@
 #include <ze_json/core/integral.hpp>
 #include <ze_json/utils/move.hpp>
 
-namespace zuu::types {
+namespace zuu::core {
 
 template <typename E> struct Unexpected {
     E error_val;
@@ -27,7 +27,7 @@ template <typename R, typename E> class [[nodiscard]] Result {
         : m_result(utils::move(result)), m_is_error(false) {}
 
     constexpr Result(E error) noexcept
-        requires(!traits::is_same_v<R, E>)
+        requires(!meta::is_same_v<R, E>)
         : m_error(utils::move(error)), m_is_error(true) {}
 
     constexpr Result(Unexpected<E> unexpected) noexcept
@@ -160,34 +160,35 @@ get(const Result<R, E>&& res) noexcept {
     }
 }
 
-} // namespace zuu::types
+} // namespace zuu::core
 
 namespace std {
 template <typename T> struct tuple_size;
 
-template <zuu::types::size_t I, typename T> struct tuple_element;
+template <zuu::core::size_t I, typename T> struct tuple_element;
 
-template <typename R, typename E> struct tuple_size<zuu::types::Result<R, E>> {
-    static constexpr zuu::types::size_t value = 2;
+template <typename R, typename E> struct tuple_size<zuu::core::Result<R, E>> {
+
+    static constexpr zuu::core::size_t value = 2;
 };
 
 template <typename R, typename E>
-struct tuple_element<0, zuu::types::Result<R, E>> {
+struct tuple_element<0, zuu::core::Result<R, E>> {
     using type = R*;
 };
 
 template <typename R, typename E>
-struct tuple_element<1, zuu::types::Result<R, E>> {
+struct tuple_element<1, zuu::core::Result<R, E>> {
     using type = E*;
 };
 
 template <typename R, typename E>
-struct tuple_element<0, const zuu::types::Result<R, E>> {
+struct tuple_element<0, const zuu::core::Result<R, E>> {
     using type = const R*;
 };
 
 template <typename R, typename E>
-struct tuple_element<1, const zuu::types::Result<R, E>> {
+struct tuple_element<1, const zuu::core::Result<R, E>> {
     using type = const E*;
 };
 } // namespace std

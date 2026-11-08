@@ -27,7 +27,7 @@ template <> struct is_integral<signed int> : value_constant<true> {};
 template <> struct is_integral<signed long> : value_constant<true> {};
 
 template <> struct is_integral<signed long long> : value_constant<true> {};
-
+// NOLINTNEXTLINE(readability-identifier-naming)
 template <typename T> constexpr bool is_integral_v = is_integral<T>::value;
 
 } // namespace zuu::meta
