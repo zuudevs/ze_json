@@ -7,7 +7,7 @@
  * @cite 10.48550_arXiv.1902.08318 simdjson staging contract
  * @cite 10.14778_3115404.3115416 Mison structural indexing
  */
-import { ZeJson, ZeDocument, ABI_VERSION } from '../ze_json.mjs';
+import { ZeJson, ZeDocument, ABI_VERSION, SCANNER_MODES } from '../ze_json.mjs';
 
 let failures = 0;
 
@@ -54,6 +54,34 @@ for (const { input, expect } of cases) {
     fast.ok === reference.ok && fast.count === reference.count,
     `fast=${JSON.stringify(fast)} ref=${JSON.stringify(reference)}`);
 }
+
+// --- scanner-mode surface (R2) ----------------------------------------------
+check('default scanner is structural', binding.defaultScanner === 'structural');
+for (const mode of Object.keys(SCANNER_MODES)) {
+  check(`mode '${mode}' available in wasm build`, binding.hasScanner(mode));
+}
+check('unknown mode rejected (TypeError)', (() => {
+  try {
+    binding.scan('turbo', 0, 0, 0, 0);
+    return false;
+  } catch (err) {
+    return err instanceof TypeError;
+  }
+})());
+
+const modeDoc = new ZeDocument(binding, Buffer.from('{"k":"a[b],{c}"}'), {
+  scanner: 'scanner128',
+});
+const modeExpect = [0, 4, 15];
+for (const mode of ['structural', 'scanner8', 'scanner64', 'scanner128', 'reference']) {
+  const res = modeDoc.scan(mode);
+  check(`modeDoc.scan('${mode}') indices`,
+    res.ok && JSON.stringify(modeDoc.indices(res)) === JSON.stringify(modeExpect),
+    `got [${modeDoc.indices(res)}]`);
+}
+// Preference: constructor option, override per call.
+check('modeDoc preference honored', modeDoc.scanner === 'scanner128'
+  && JSON.stringify(modeDoc.indices(modeDoc.scan())) === JSON.stringify(modeExpect));
 
 // --- allocator sanity -------------------------------------------------------
 const ptrA = binding.alloc(64);

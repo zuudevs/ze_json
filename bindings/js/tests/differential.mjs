@@ -1,8 +1,10 @@
 /**
  * differential.mjs — corpus-wide differential gate for the wasm64 binding
- * (TASKS P3-5): for every corpus document and every json_checker case, the
- * wasm scanner8, the wasm reference_scan (same module, C++ reference) and the
- * plain JS reference must agree on outcome, count and indices.
+ * (TASKS P3-5, extended in R2): for every corpus document and every
+ * json_checker case, EVERY available wasm scanner mode (structural,
+ * scanner8, scanner64, scanner128, reference), the wasm reference_scan
+ * (same module, C++ reference) and the plain JS reference must agree on
+ * outcome, count and indices.
  *
  * @cite 10.48550_arXiv.1902.08318 simdjson staging contract
  * @cite 10.14778_3115404.3115416 Mison structural indexing
@@ -10,7 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ZeJson, ZeDocument } from '../ze_json.mjs';
+import { ZeJson, ZeDocument, SCANNER_MODES } from '../ze_json.mjs';
 import { referenceScan } from './reference.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -24,9 +26,6 @@ let checked = 0;
 function compareDoc(label, bytes) {
   checked += 1;
   const doc = new ZeDocument(binding, bytes);
-  // Copy indices immediately after each scan: both scans share one dst buffer.
-  const fast = doc.scan8();
-  const fastIdx = fast.ok ? doc.indices(fast) : [];
   const cppRef = doc.referenceScan();
   const cppIdx = cppRef.ok ? doc.indices(cppRef) : [];
   const jsRef = referenceScan(bytes);
@@ -36,17 +35,25 @@ function compareDoc(label, bytes) {
     && (a.ok ? a.count === b.count && JSON.stringify(aIdx) === JSON.stringify(bIdx)
              : a.error === b.error);
 
-  if (!sameShape(fast, fastIdx, cppRef, cppIdx)) {
-    failures += 1;
-    console.error(`FAIL scanner8 vs wasm-reference: ${label} — `
-      + `fast=${JSON.stringify({ ...fast, indices: fastIdx })} `
-      + `cppRef=${JSON.stringify({ ...cppRef, indices: cppIdx })}`);
-  }
-  if (!sameShape(fast, fastIdx, jsRef, jsRef.indices)) {
-    failures += 1;
-    console.error(`FAIL scanner8 vs js-reference: ${label} — `
-      + `fast=${JSON.stringify({ ...fast, indices: fastIdx })} `
-      + `jsRef=${JSON.stringify(jsRef)}`);
+  for (const mode of Object.keys(SCANNER_MODES)) {
+    if (!binding.hasScanner(mode)) {
+      continue; // variant not compiled into this artifact
+    }
+    // Copy indices immediately after each scan: all scans share one dst buffer.
+    const fast = doc.scan(mode);
+    const fastIdx = fast.ok ? doc.indices(fast) : [];
+    if (!sameShape(fast, fastIdx, cppRef, cppIdx)) {
+      failures += 1;
+      console.error(`FAIL ${mode} vs wasm-reference: ${label} — `
+        + `fast=${JSON.stringify({ ...fast, indices: fastIdx })} `
+        + `cppRef=${JSON.stringify({ ...cppRef, indices: cppIdx })}`);
+    }
+    if (!sameShape(fast, fastIdx, jsRef, jsRef.indices)) {
+      failures += 1;
+      console.error(`FAIL ${mode} vs js-reference: ${label} — `
+        + `fast=${JSON.stringify({ ...fast, indices: fastIdx })} `
+        + `jsRef=${JSON.stringify(jsRef)}`);
+    }
   }
 }
 
@@ -75,6 +82,7 @@ for (const file of fs.readdirSync(CHECKER_DIR)) {
   compareDoc(`json_checker/${file}`, fs.readFileSync(path.join(CHECKER_DIR, file)));
 }
 
-console.log(`[differential] checked ${checked} document(s): `
-  + `${failures === 0 ? 'all three implementations agree' : `${failures} failure(s)`}`);
+console.log(`[differential] checked ${checked} document(s) x `
+  + `${Object.keys(SCANNER_MODES).length} mode(s): `
+  + `${failures === 0 ? 'all implementations agree' : `${failures} failure(s)`}`);
 process.exit(failures === 0 ? 0 : 1);

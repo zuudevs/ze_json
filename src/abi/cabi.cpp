@@ -65,6 +65,51 @@ core::uint64_t ze_reference_scan(core::uint64_t src, core::uint64_t src_size,
                             : abi::pack_error(result.error());
 }
 
+#if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
+
+EXPORT_NAME(ze_scanner64)
+core::uint64_t ze_scanner64(core::uint64_t src, core::uint64_t src_size,
+                            core::uint64_t dst, core::uint64_t dst_cap) {
+  const auto result = ondemand::scanner64(
+      reinterpret_cast<const char *>(static_cast<core::uintptr_t>(src)),
+      static_cast<core::size_t>(src_size),
+      reinterpret_cast<core::size_t *>(static_cast<core::uintptr_t>(dst)),
+      static_cast<core::size_t>(dst_cap));
+  return result.has_value() ? abi::pack_ok(result.value())
+                            : abi::pack_error(result.error());
+}
+
+#endif // little-endian 64-bit (scanner64 availability)
+
+#if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1 \
+	&& (defined(__SSE2__) || defined(__wasm__))
+
+EXPORT_NAME(ze_scanner128)
+core::uint64_t ze_scanner128(core::uint64_t src, core::uint64_t src_size,
+                             core::uint64_t dst, core::uint64_t dst_cap) {
+  const auto result = ondemand::scanner128(
+      reinterpret_cast<const char *>(static_cast<core::uintptr_t>(src)),
+      static_cast<core::size_t>(src_size),
+      reinterpret_cast<core::size_t *>(static_cast<core::uintptr_t>(dst)),
+      static_cast<core::size_t>(dst_cap));
+  return result.has_value() ? abi::pack_ok(result.value())
+                            : abi::pack_error(result.error());
+}
+
+#endif // little-endian 64-bit + (SSE2 || wasm-simd128)
+
+EXPORT_NAME(ze_structural_scan)
+core::uint64_t ze_structural_scan(core::uint64_t src, core::uint64_t src_size,
+                                  core::uint64_t dst, core::uint64_t dst_cap) {
+  const auto result = ondemand::structural_scan(
+      reinterpret_cast<const char *>(static_cast<core::uintptr_t>(src)),
+      static_cast<core::size_t>(src_size),
+      reinterpret_cast<core::size_t *>(static_cast<core::uintptr_t>(dst)),
+      static_cast<core::size_t>(dst_cap));
+  return result.has_value() ? abi::pack_ok(result.value())
+                            : abi::pack_error(result.error());
+}
+
 } // extern "C"
 
 } // namespace zuu
