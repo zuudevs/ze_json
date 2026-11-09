@@ -64,27 +64,80 @@ def gen_power_of_five_reciprocal():
     return payload
 
 def gen_utf8_validation_tables():
-    payload = '/**\n* @brief Vectorized classification tables for UTF-8 validation\n* @cite 10.1002_spe.2920\n*/\n'
+    payload = '''/**
+* @brief Vectorized classification tables for UTF-8 validation (Niagara
+*        two-table method, Section 6 of the paper).
+* @cite 10.1002_spe.2920
+*
+* Composition (paper Section 6.1-6.3; verified against its page-9 worked
+* example "39 C3 A7 E9 8F A1 F0 9F 98 80"):
+*   for every index i, with prev = input[i-1] (0x00 at stream start):
+*     v = kUtf8Byte1High[prev >> 4] & kUtf8Byte1Low[prev & 0x0F]
+*       & kUtf8Byte2High[input[i] >> 4]
+*     v & 0x7F != 0  -> the pair (prev, input[i]) matches one of the seven
+*                       error patterns of Table 8 -> invalid.
+*     v & 0x80       -> continuation-pair marker; must appear EXACTLY at the
+*                       indexes where a continuation pair is expected:
+*                       input[i-2] >= 0xE0 (3-byte lead) or
+*                       input[i-3] >= 0xF0 (4-byte lead).
+*   end checks: input[-1] < 0xC0, input[-2] < 0xE0, input[-3] < 0xF0.
+*
+* Provenance note (P7-1): the tables below were corrected by an exhaustive
+* differential sweep against a strict RFC 3629 oracle (CPython decode):
+* 1-byte full, 2-byte full (65,536), 3-byte full for leads >= C0 (4,194,304),
+* structured 4-byte (2,160) — zero mismatches. The corrections vs. the
+* first transcription were: kUtf8Byte2High[8]/[9] swapped (false positive on
+* F0 9x, missed overlong F0 8x), kUtf8Byte1Low[4] carried bit 6 (false
+* positive on F4 8x = valid U+100000..U+10FFFF), kUtf8Byte1Low[D] lacked the
+* surrogate bit 4 (ED A0-BF wrongly accepted).
+*/
 
+'''
+    # kUtf8Byte1High: indexed by the HIGH nibble of the previous byte.
+    # 0x00-0x7F (ASCII prev) -> bit 1 ("too long": ASCII + continuation);
+    # 0x80-0xBF (continuation prev) -> bit 7 only (marker carrier, never an
+    # error — a continuation always legally completes a previous lead);
+    # 0xC0-0xDF (2-byte leads) -> bit 0 + bit 5 (C0/C1 overlong refinement
+    # happens in kUtf8Byte1Low);
+    # 0xE0-0xEF (3-byte leads) -> bit 0 + bits 2/4 (E0 overlong, ED surrogate
+    # refinements in kUtf8Byte1Low);
+    # 0xF0-0xFF (4-byte leads) -> bit 0 + bits 3/6 (F0 overlong, F4+/F5-FF
+    # too-large refinements in kUtf8Byte1Low).
     byte_1_high = [
-        0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, # 0x00 - 0x7F (ASCII)
-        0x80, 0x80, 0x80, 0x80,                         # 0x80 - 0xBF (Continuation)
-        0x21, 0x01, 0x15, 0x49                          # 0xC0 - 0xFF (Leading Bytes)
+        0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02,  # 0x00 - 0x7F (ASCII)
+        0x80, 0x80, 0x80, 0x80,                          # 0x80 - 0xBF (Continuation)
+        0x21, 0x01, 0x15, 0x49                           # 0xC0 - 0xFF (Leading Bytes)
     ]
 
-    # byte_1_low: Dipetakan dari low-nibble byte pertama (prev byte)
-    # Bersama byte_1_high, tabel ini memilah edge cases (seperti overlong/surrogate).
+    # kUtf8Byte1Low: indexed by the LOW nibble of the previous byte; refines
+    # the overlong/surrogate/too-large patterns per lead instance.
+    #   [0] 0xE7: E0 requires A0-BF (bit 2), C0 requires error on any
+    #       continuation (bit 5), F0 requires 90-BF (bit 6);
+    #   [1] 0xA3: C1 overlong (bit 5);
+    #   [2],[3] 0x83: C2/C3 plain 2-byte leads (no extra pattern);
+    #   [4] 0x8B: F4 is a LEGAL lead with 80-8F (bit 6 cleared — U+100000
+    #       ..U+10FFFF), F4 + 90-BF errors via bit 3 in kUtf8Byte2High;
+    #   [5]-[C] 0xCB: E1-EC/EE/EF legal 3-byte leads;
+    #   [D] 0xDB: ED carries the surrogate bit 4 (ED A0-BF = U+D800-DFFF);
+    #   [E],[F] 0xCB: EE/EF legal, F5-FF too-large via bit 6 (kept).
     byte_1_low = [
-        0xE7, 0xA3, 0x83, 0x83, 0xCB, 0xCB, 0xCB, 0xCB,
-        0xCB, 0xCB, 0xCB, 0xCB, 0xCB, 0xCB, 0xCB, 0xCB
+        0xE7, 0xA3, 0x83, 0x83, 0x8B, 0xCB, 0xCB, 0xCB,
+        0xCB, 0xCB, 0xCB, 0xCB, 0xCB, 0xDB, 0xCB, 0xCB
     ]
 
-    # byte_2_high: Dipetakan dari high-nibble byte kedua (current byte)
-    # Memeriksa apakah byte setelahnya valid sebagai continuation.
+    # kUtf8Byte2High: indexed by the HIGH nibble of the current byte; carries
+    # the bits of the error patterns this byte can COMPLETE, plus bit 7 for
+    # continuation bytes (marker). ASCII 0x00-0x7F and leads C0-FF share
+    # 0x01 (both can only complete the "lead + non-continuation" pattern);
+    # continuation nibbles carry their pattern memberships:
+    #   8x 0xE6 (F0-overlong, C0/C1-overlong, ASCII+cont, marker),
+    #   9x 0xAE (E0-overlong, F4-too-large, ASCII+cont, marker),
+    #   Ax 0xBA (ED-surrogate, F4/F5+ too-large, ASCII+cont, marker),
+    #   Bx 0xBA (idem Ax).
     byte_2_high = [
-        0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, # 0x00 - 0x7F (ASCII)
-        0xAE, 0xE6, 0xBA, 0xBA,                         # 0x80 - 0xBF (Continuation ranges)
-        0x01, 0x01, 0x01, 0x01                          # 0xC0 - 0xFF (Invalid as 2nd byte)
+        0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,  # 0x00 - 0x7F (ASCII)
+        0xE6, 0xAE, 0xBA, 0xBA,                          # 0x80 - 0xBF (Continuation ranges)
+        0x01, 0x01, 0x01, 0x01                           # 0xC0 - 0xFF (Invalid as 2nd byte)
     ]
 
     def format_table(name, data):

@@ -42,3 +42,27 @@ target_compile_definitions(ze_json_scanner_test PRIVATE
 add_test(NAME ze_json_scanner_test COMMAND ze_json_scanner_test)
 
 add_export_test_target(ze_json_scanner_test)
+
+# ---------------------------------------------------------------------------
+# UTF-8 validator differential + correctness tests (TASKS P7-1).
+# @cite 10.1002_spe.2920 (Niagara two-table validation)
+add_executable(ze_json_utf8_test utf8_test.cpp)
+
+target_include_directories(ze_json_utf8_test PRIVATE
+	$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+	$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/generated>
+	$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/benchmarks>
+)
+
+target_link_libraries(ze_json_utf8_test PRIVATE
+	${LIBRARY_OUTPUT_NAME}
+	GTest::gtest
+)
+
+target_compile_definitions(ze_json_utf8_test PRIVATE
+	ZE_JSON_CORPUS_DIR="${ZE_JSON_CORPUS_DIR_POSIX}"
+)
+
+add_test(NAME ze_json_utf8_test COMMAND ze_json_utf8_test)
+
+add_export_test_target(ze_json_utf8_test)
