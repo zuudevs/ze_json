@@ -37,10 +37,10 @@ namespace {
 
 /** Escape body classification (the byte after the backslash). */
 inline bool is_simple_escape(core::uint8_t e) noexcept {
-  return e == core::uint8_t{'"'} || e == core::uint8_t{'\\'}
-         || e == core::uint8_t{'/'} || e == core::uint8_t{'b'}
-         || e == core::uint8_t{'f'} || e == core::uint8_t{'n'}
-         || e == core::uint8_t{'r'} || e == core::uint8_t{'t'};
+  return e == core::uint8_t{'"'} || e == core::uint8_t{'\\'} ||
+         e == core::uint8_t{'/'} || e == core::uint8_t{'b'} ||
+         e == core::uint8_t{'f'} || e == core::uint8_t{'n'} ||
+         e == core::uint8_t{'r'} || e == core::uint8_t{'t'};
 }
 
 /** Target byte of a simple escape (callers validated the class first). */
@@ -75,8 +75,7 @@ simple_escape_byte(core::uint8_t e) noexcept {
 }
 
 /** 4 hex digits -> value; false on any non-hex digit (both cases). */
-[[nodiscard]] inline bool
-hex4(const char *p, core::uint32_t &out) noexcept {
+[[nodiscard]] inline bool hex4(const char *p, core::uint32_t &out) noexcept {
   core::uint32_t v = 0;
   for (int k = 0; k < 4; ++k) {
     const auto b = static_cast<core::uint8_t>(p[k]);
@@ -121,8 +120,7 @@ utf8_seq_advance(const char *s, core::size_t avail) noexcept {
 }
 
 /** Encode one code point into strict UTF-8 (`out` needs <= 4 bytes). */
-inline core::size_t
-encode_utf8(core::uint32_t cp, char *out) noexcept {
+inline core::size_t encode_utf8(core::uint32_t cp, char *out) noexcept {
   if (cp < 0x80) {
     out[0] = static_cast<char>(cp);
     return 1;
@@ -155,8 +153,8 @@ encode_utf8(core::uint32_t cp, char *out) noexcept {
  */
 [[nodiscard]] core::Result<core::size_t, core::JsonErrc>
 decode_interior(const char *s, core::size_t inner_len, char *out) noexcept {
-  core::size_t w = 0;  // decoded bytes written (or counted when out = null)
-  core::size_t i = 0;  // walk position inside the interior
+  core::size_t w = 0; // decoded bytes written (or counted when out = null)
+  core::size_t i = 0; // walk position inside the interior
   while (i < inner_len) {
     const auto b = static_cast<core::uint8_t>(s[i]);
     if (b != 0x5C) { // not a backslash: raw byte
@@ -210,8 +208,8 @@ decode_interior(const char *s, core::size_t inner_len, char *out) noexcept {
       // whose value is a low surrogate; anything else is a lone escape
       // that passes through verbatim (locked output policy).
       core::uint32_t lo = 0;
-      if (inner_len >= i + 12 && s[i + 6] == 0x5C && s[i + 7] == 0x75
-          && hex4(s + i + 8, lo) && lo >= 0xDC00 && lo <= 0xDFFF) {
+      if (inner_len >= i + 12 && s[i + 6] == 0x5C && s[i + 7] == 0x75 &&
+          hex4(s + i + 8, lo) && lo >= 0xDC00 && lo <= 0xDFFF) {
         cp = 0x10000U + ((cp - 0xD800) << 10U) + (lo - 0xDC00);
         // cp >= 0x10000 here, so the encoding is always 4 bytes.
         const core::size_t n = (out != nullptr) ? encode_utf8(cp, out + w) : 4;

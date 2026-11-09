@@ -39,3 +39,10 @@ target_compile_definitions(ze_json_scanner_benchmark PRIVATE
 )
 
 add_export_benchmark_target(ze_json_scanner_benchmark)
+
+set(FORMAT_ENTRIES
+	"${CMAKE_CURRENT_SOURCE_DIR}/export_sidecar.hpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/scanner_benchmark.cpp"
+)
+
+add_clang_format_target(${FORMAT_ENTRIES})

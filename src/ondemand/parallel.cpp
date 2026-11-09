@@ -69,8 +69,8 @@ scanner64(const char *const RESTRICT src, core::size_t src_size,
       }
     } else if (c == '"') {
       in_string = true;
-    } else if (c == '[' || c == ']' || c == '{' || c == '}'
-               || c == ',' || c == ':') {
+    } else if (c == '[' || c == ']' || c == '{' || c == '}' || c == ',' ||
+               c == ':') {
       if (!record(i)) {
         return false;
       }
@@ -91,9 +91,9 @@ scanner64(const char *const RESTRICT src, core::size_t src_size,
     if (!in_string && !interesting) {
       // FAST-A: outside a string; every flagged lane is a real structural byte.
       core::uint64_t structural =
-          utils::swar_eq(lanes, 0x2C) | utils::swar_eq(lanes, 0x3A)
-        | utils::swar_eq(lanes, 0x5B) | utils::swar_eq(lanes, 0x5D)
-        | utils::swar_eq(lanes, 0x7B) | utils::swar_eq(lanes, 0x7D);
+          utils::swar_eq(lanes, 0x2C) | utils::swar_eq(lanes, 0x3A) |
+          utils::swar_eq(lanes, 0x5B) | utils::swar_eq(lanes, 0x5D) |
+          utils::swar_eq(lanes, 0x7B) | utils::swar_eq(lanes, 0x7D);
       while (structural != 0) {
         const unsigned bit = static_cast<unsigned>(__builtin_ctzll(structural));
         structural &= structural - 1;
@@ -138,14 +138,17 @@ core::Result<core::size_t, core::JsonErrc>
 scanner32(const char *const RESTRICT src, core::size_t src_size,
           core::size_t *RESTRICT dst, core::size_t dst_size) NOEXCEPT {
   // TODO: 32-bit SWAR variant (same three-path structure, 4 lanes).
-  (void)src; (void)src_size; (void)dst; (void)dst_size;
+  (void)src;
+  (void)src_size;
+  (void)dst;
+  (void)dst_size;
   return core::JsonErrc::InvalidJson;
 }
 #endif // __IS_64_BIT__ == 0
 #endif // __LITTLE_ENDIAN__ == 1
 
-#if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1 \
-	&& (defined(__SSE2__) || defined(__wasm__))
+#if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1 &&                            \
+    (defined(__SSE2__) || defined(__wasm__))
 
 /**
  * @brief 128-bit SIMD structural scanner (16-byte blocks).
@@ -211,8 +214,8 @@ scanner128(const char *const RESTRICT src, core::size_t src_size,
       }
     } else if (c == '"') {
       in_string = true;
-    } else if (c == '[' || c == ']' || c == '{' || c == '}'
-               || c == ',' || c == ':') {
+    } else if (c == '[' || c == ']' || c == '{' || c == '}' || c == ',' ||
+               c == ':') {
       if (!record(i)) {
         return false;
       }
@@ -231,11 +234,10 @@ scanner128(const char *const RESTRICT src, core::size_t src_size,
       if (!in_string) {
         // FAST-A
         const core::vec128 structural_v = core::simd_or(
-            core::simd_or(
-                core::simd_or(core::simd_eq_u8(lanes, comma_v),
-                              core::simd_eq_u8(lanes, colon_v)),
-                core::simd_or(core::simd_eq_u8(lanes, lbrack_v),
-                              core::simd_eq_u8(lanes, rbrack_v))),
+            core::simd_or(core::simd_or(core::simd_eq_u8(lanes, comma_v),
+                                        core::simd_eq_u8(lanes, colon_v)),
+                          core::simd_or(core::simd_eq_u8(lanes, lbrack_v),
+                                        core::simd_eq_u8(lanes, rbrack_v))),
             core::simd_or(core::simd_eq_u8(lanes, lbrace_v),
                           core::simd_eq_u8(lanes, rbrace_v)));
         core::uint32_t mask = core::simd_bitmask_u8(structural_v);

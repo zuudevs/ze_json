@@ -32,7 +32,8 @@ core::uint64_t ze_alloc(core::uint64_t size) {
   if (heap_cursor == nullptr) {
     heap_cursor = __heap_base;
   }
-  const core::uint64_t aligned = (size + 15u) & ~static_cast<core::uint64_t>(15u);
+  const core::uint64_t aligned =
+      (size + 15u) & ~static_cast<core::uint64_t>(15u);
   const core::uint64_t ptr = reinterpret_cast<core::uint64_t>(heap_cursor);
   heap_cursor += aligned;
   return ptr;
@@ -81,8 +82,8 @@ core::uint64_t ze_scanner64(core::uint64_t src, core::uint64_t src_size,
 
 #endif // little-endian 64-bit (scanner64 availability)
 
-#if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1 \
-	&& (defined(__SSE2__) || defined(__wasm__))
+#if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1 &&                            \
+    (defined(__SSE2__) || defined(__wasm__))
 
 EXPORT_NAME(ze_scanner128)
 core::uint64_t ze_scanner128(core::uint64_t src, core::uint64_t src_size,

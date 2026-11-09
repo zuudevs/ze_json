@@ -62,8 +62,8 @@ constexpr Big kPow10Big(int p) noexcept {
  * to nearest, ties-to-even; subnormal- and overflow-safe.
  * `sticky` = nonzero tail beyond the 55 captured bits.
  */
-[[nodiscard]] double
-assemble_double(core::uint64_t sig55, int e, bool sticky, bool negative) noexcept {
+[[nodiscard]] double assemble_double(core::uint64_t sig55, int e, bool sticky,
+                                     bool negative) noexcept {
   // Normalized value = 1.f × 2^e (sig55 = 1.f × 2^54).
   if (e > 1023) {
     // V8 semantics: overflow -> ±Infinity.
@@ -90,8 +90,8 @@ assemble_double(core::uint64_t sig55, int e, bool sticky, bool negative) noexcep
         }
       }
     }
-    const core::uint64_t bits = (static_cast<core::uint64_t>(e + 1023) << 52)
-                                | (sig & ((core::uint64_t{1} << 52) - 1));
+    const core::uint64_t bits = (static_cast<core::uint64_t>(e + 1023) << 52) |
+                                (sig & ((core::uint64_t{1} << 52) - 1));
     double out;
     __builtin_memcpy(&out, &bits, sizeof(out));
     return negative ? -out : out;
@@ -133,8 +133,8 @@ assemble_double(core::uint64_t sig55, int e, bool sticky, bool negative) noexcep
 // ------------------------------------------------- exact 128-bit fast path
 
 // Requires: 1 <= m < 2^53, -22 <= q <= 22.
-[[nodiscard]] double
-region_exact(core::uint64_t m, core::int64_t q, bool negative) noexcept {
+[[nodiscard]] double region_exact(core::uint64_t m, core::int64_t q,
+                                  bool negative) noexcept {
   core::uint64_t sig55 = 0;
   int e = 0;
   bool sticky = false;
@@ -163,8 +163,8 @@ region_exact(core::uint64_t m, core::int64_t q, bool negative) noexcept {
     Big rr = 0;
     const int top = bitlen64(n64) + s - 1;
     for (int i = top; i >= 0; --i) {
-      rr = (rr << 1)
-           | ((i >= s) ? ((static_cast<Big>(n64 >> (i - s))) & 1) : Big{0});
+      rr = (rr << 1) |
+           ((i >= s) ? ((static_cast<Big>(n64 >> (i - s))) & 1) : Big{0});
       if (rr >= d) {
         rr -= d;
         qq |= Big{1} << i;
@@ -227,15 +227,14 @@ struct BigDec {
     }
     const core::size_t limb_shift = static_cast<core::size_t>(bits) / 32;
     const int bit_shift = bits % 32;
-    const core::size_t new_n =
-        (static_cast<core::size_t>(bitlen()) + static_cast<core::size_t>(bits)
-         + 31)
-        / 32;
+    const core::size_t new_n = (static_cast<core::size_t>(bitlen()) +
+                                static_cast<core::size_t>(bits) + 31) /
+                               32;
     // Walk destinations top-down: every source index is <= its destination,
     // so in-place widening reads never race the writes.
     for (core::size_t dst = new_n; dst-- > 0;) {
-      const long long src = static_cast<long long>(dst)
-                            - static_cast<long long>(limb_shift);
+      const long long src =
+          static_cast<long long>(dst) - static_cast<long long>(limb_shift);
       core::uint64_t hi = 0;
       core::uint64_t lo = 0;
       if (src >= 0 && src < static_cast<long long>(n)) {
@@ -258,7 +257,8 @@ struct BigDec {
   void mul_add(core::uint32_t m, core::uint32_t add) noexcept {
     core::uint64_t carry = add;
     for (core::size_t i = 0; i < n; ++i) {
-      const core::uint64_t cur = static_cast<core::uint64_t>(limb[i]) * m + carry;
+      const core::uint64_t cur =
+          static_cast<core::uint64_t>(limb[i]) * m + carry;
       limb[i] = static_cast<core::uint32_t>(cur);
       carry = cur >> 32;
     }
@@ -355,7 +355,8 @@ struct BigDec {
 }
 
 // Requires sig_len >= 1; value = digits(as integer) exactly.
-[[nodiscard]] BigDec big_from_digits(const char *digits, core::size_t len) noexcept {
+[[nodiscard]] BigDec big_from_digits(const char *digits,
+                                     core::size_t len) noexcept {
   BigDec v;
   core::size_t i = 0;
   while (i < len) {
@@ -373,9 +374,9 @@ struct BigDec {
 // Slow path: correctly-rounded value of `0.digits × 10^q0` semantics —
 // `digits` holds the significant-digit string (no leading zeros; trailing
 // zeros already folded into q0 by the caller), capped by the caller.
-[[nodiscard]] double
-slow_path(const char *digits, core::size_t sig_len, core::int64_t q0,
-          bool negative, bool tail_nonzero) noexcept {
+[[nodiscard]] double slow_path(const char *digits, core::size_t sig_len,
+                               core::int64_t q0, bool negative,
+                               bool tail_nonzero) noexcept {
   // Order-of-magnitude clamps (safe: strictly outside the tie window).
   if (q0 + static_cast<core::int64_t>(sig_len) - 1 >= 309) {
     const core::uint64_t inf = core::uint64_t{0x7FF} << 52;
@@ -433,8 +434,7 @@ slow_path(const char *digits, core::size_t sig_len, core::int64_t q0,
   const int ba = a.bitlen();
   const int bb = b.bitlen();
   const auto s2 = static_cast<core::int64_t>(56) + bb - ba;
-  const auto total_bits = static_cast<core::int64_t>(ba)
-                          + (s2 > 0 ? s2 : 0);
+  const auto total_bits = static_cast<core::int64_t>(ba) + (s2 > 0 ? s2 : 0);
 
   BigDec r;    // remainder < divisor
   BigDec qq;   // quotient (bitlen 56-58)
@@ -446,9 +446,9 @@ slow_path(const char *digits, core::size_t sig_len, core::int64_t q0,
     dive.shl(static_cast<int>(-s2));
   }
   for (auto i = total_bits - 1; i >= 0; --i) {
-    const bool bit =
-        (s2 >= 0 && i >= s2) ? a.get_bit(static_cast<int>(i - s2))
-                             : (s2 < 0 ? a.get_bit(static_cast<int>(i)) : false);
+    const bool bit = (s2 >= 0 && i >= s2)
+                         ? a.get_bit(static_cast<int>(i - s2))
+                         : (s2 < 0 ? a.get_bit(static_cast<int>(i)) : false);
     r.shl1_or(bit);
     const bool take = r.ge(dive);
     if (take) {
@@ -474,8 +474,7 @@ slow_path(const char *digits, core::size_t sig_len, core::int64_t q0,
       sticky = true;
     }
   }
-  const auto e =
-      static_cast<int>(static_cast<core::int64_t>(bl) - 1 + q0 - s2);
+  const auto e = static_cast<int>(static_cast<core::int64_t>(bl) - 1 + q0 - s2);
   return assemble_double(sig55, e, sticky, negative);
 }
 
@@ -564,9 +563,8 @@ scan_number(const char *src, core::size_t len) NOEXCEPT {
     }
   }
 
-  return NumberParts{negative, zero, digits_start, digits_len,
-                     int_len,  frac_len, has_exp,  exp_negative,
-                     exp_value, i};
+  return NumberParts{negative, zero,    digits_start, digits_len, int_len,
+                     frac_len, has_exp, exp_negative, exp_value,  i};
 }
 
 // ------------------------------------------------------------------- parsing
@@ -582,9 +580,10 @@ namespace {
 
 } // namespace
 
-core::Result<double, core::JsonErrc>
-parse_number(const char *src, core::size_t len) NOEXCEPT {
-  const core::Result<NumberParts, core::JsonErrc> scanned = scan_number(src, len);
+core::Result<double, core::JsonErrc> parse_number(const char *src,
+                                                  core::size_t len) NOEXCEPT {
+  const core::Result<NumberParts, core::JsonErrc> scanned =
+      scan_number(src, len);
   if (scanned.has_error()) {
     return scanned.error();
   }
@@ -617,9 +616,8 @@ parse_number(const char *src, core::size_t len) NOEXCEPT {
       p.has_exp ? (p.exp_negative ? -static_cast<core::int64_t>(p.exp_value)
                                   : static_cast<core::int64_t>(p.exp_value))
                 : 0;
-  const core::int64_t q0 = exp_term
-                           - static_cast<core::int64_t>(p.frac_len)
-                           + static_cast<core::int64_t>(p.digits_len - 1 - last);
+  const core::int64_t q0 = exp_term - static_cast<core::int64_t>(p.frac_len) +
+                           static_cast<core::int64_t>(p.digits_len - 1 - last);
 
   // Fold the leading significant digits (enough for every fast path).
   core::uint64_t m = 0;
@@ -661,8 +659,8 @@ parse_number(const char *src, core::size_t len) NOEXCEPT {
       sigbuf[k] = dig(first + k);
     }
   }
-  return slow_path(sigbuf, sig_len < kSigCap ? sig_len : kSigCap,
-                   q0 + dropped, p.negative, tail_nonzero);
+  return slow_path(sigbuf, sig_len < kSigCap ? sig_len : kSigCap, q0 + dropped,
+                   p.negative, tail_nonzero);
 }
 
 } // namespace zuu::ondemand

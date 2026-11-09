@@ -46,8 +46,7 @@ inline constexpr core::uint64_t kAbiVersion = 2;
 
 inline constexpr core::uint32_t kErrorShift = 32;
 
-[[nodiscard]] constexpr core::uint64_t
-pack_ok(core::size_t count) noexcept {
+[[nodiscard]] constexpr core::uint64_t pack_ok(core::size_t count) noexcept {
   return static_cast<core::uint64_t>(count);
 }
 

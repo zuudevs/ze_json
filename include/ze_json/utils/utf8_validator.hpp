@@ -17,8 +17,8 @@ namespace zuu::utils {
  * @cite 10.1002_spe.2920 the validation semantics this anchor mirrors
  *       (Unicode range rules, Section 2 of the paper).
  */
-[[nodiscard]] inline bool
-utf8_validate_scalar(const char *src, core::size_t len) noexcept {
+[[nodiscard]] inline bool utf8_validate_scalar(const char *src,
+                                               core::size_t len) noexcept {
   const auto *p = reinterpret_cast<const core::uint8_t *>(src);
   core::size_t i = 0;
   while (i < len) {
@@ -95,14 +95,14 @@ utf8_validate_scalar(const char *src, core::size_t len) noexcept {
  *       instruction per byte — the two-table classification this
  *       implements and the marker/end checks it composes.
  */
-[[nodiscard]] inline bool
-utf8_validate(const char *src, core::size_t len) noexcept {
+[[nodiscard]] inline bool utf8_validate(const char *src,
+                                        core::size_t len) noexcept {
   const auto *p = reinterpret_cast<const core::uint8_t *>(src);
   for (core::size_t i = 0; i < len; ++i) {
     const core::uint8_t prev = (i > 0) ? p[i - 1] : core::uint8_t{0};
-    const core::uint8_t v =
-        core::kUtf8Byte1High[prev >> 4] & core::kUtf8Byte1Low[prev & 0x0F]
-        & core::kUtf8Byte2High[p[i] >> 4];
+    const core::uint8_t v = core::kUtf8Byte1High[prev >> 4] &
+                            core::kUtf8Byte1Low[prev & 0x0F] &
+                            core::kUtf8Byte2High[p[i] >> 4];
     if ((v & 0x7F) != 0) {
       return false; // two-byte error pattern (Table 8, bits 0-6)
     }

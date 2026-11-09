@@ -23,8 +23,8 @@ namespace zuu::utils {
 [[nodiscard]] constexpr core::uint64_t
 swar_has_zero_byte(core::uint64_t v) noexcept {
   const core::uint64_t low = v & utils::repeat_byte_v<core::uint64_t, 0x7F_u8>;
-  return ~(v | (low + utils::repeat_byte_v<core::uint64_t, 0x7F_u8>))
-         & utils::repeat_byte_v<core::uint64_t, 0x80_u8>;
+  return ~(v | (low + utils::repeat_byte_v<core::uint64_t, 0x7F_u8>)) &
+         utils::repeat_byte_v<core::uint64_t, 0x80_u8>;
 }
 
 /**
@@ -36,11 +36,11 @@ swar_has_zero_byte(core::uint64_t v) noexcept {
  * @cite 10.1002_spe.2984 SWAR byte-parallel classification idiom — the
  *       broadcast-XOR-then-zero-test composition used for per-byte masks.
  */
-[[nodiscard]] constexpr core::uint64_t
-swar_eq(core::uint64_t x, core::uint8_t byte) noexcept {
+[[nodiscard]] constexpr core::uint64_t swar_eq(core::uint64_t x,
+                                               core::uint8_t byte) noexcept {
   const core::uint64_t broadcast =
-      static_cast<core::uint64_t>(byte)
-      * utils::repeat_byte_v<core::uint64_t, 0x01_u8>;
+      static_cast<core::uint64_t>(byte) *
+      utils::repeat_byte_v<core::uint64_t, 0x01_u8>;
   return swar_has_zero_byte(x ^ broadcast);
 }
 
