@@ -14,7 +14,7 @@ namespace zuu::ondemand {
  *
  * Document owns NOTHING except references: the source buffer stays with
  * the caller, the structural index lives in the caller-supplied
- * `memory::Arena` slice allocated at open (upper bound: `src_size`
+ * `ondemand::Arena` slice allocated at open (upper bound: `src_size`
  * entries — every indexed structural byte consumes at least one source
  * byte). Lifetime contract: source AND arena must both outlive the
  * document and every `Value`/iterator handed out by it.
@@ -32,9 +32,11 @@ namespace zuu::ondemand {
  */
 class Document {
 public:
-  Document() NOEXCEPT
-      : arena_(nullptr), src_(nullptr), src_size_(0), indexes_(nullptr),
-        index_count_(0) {}
+  Document() NOEXCEPT : arena_(nullptr),
+                        src_(nullptr),
+                        src_size_(0),
+                        indexes_(nullptr),
+                        index_count_(0) {}
   ~Document() NOEXCEPT = default;
   Document(const Document &) = delete;
   Document &operator=(const Document &) = delete;
@@ -62,7 +64,7 @@ public:
    * null source — the scanner contract is propagated as-is.
    */
   [[nodiscard]] static core::Result<Document, core::JsonErrc>
-  open(memory::Arena &arena, const char *src, core::size_t src_size) NOEXCEPT;
+  open(ondemand::Arena &arena, const char *src, core::size_t src_size) NOEXCEPT;
 
   /**
    * @brief The root value (first non-whitespace token).
@@ -75,7 +77,9 @@ public:
    */
   [[nodiscard]] core::Result<Value, core::JsonErrc> get_root() const NOEXCEPT;
 
-  [[nodiscard]] core::size_t index_count() const NOEXCEPT { return index_count_; }
+  [[nodiscard]] core::size_t index_count() const NOEXCEPT {
+    return index_count_;
+  }
 
   // -- internal surface shared with Value/iterators (implemented in ----------
   // -- document.cpp; public so the on-demand object graph stays header-only).
@@ -94,7 +98,7 @@ public:
   [[nodiscard]] core::uint8_t classify(core::size_t byte_pos) const NOEXCEPT;
 
 private:
-  memory::Arena *arena_;
+  ondemand::Arena *arena_;
   const char *src_;
   core::size_t src_size_;
   const core::size_t *indexes_;

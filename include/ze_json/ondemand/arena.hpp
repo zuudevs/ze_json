@@ -5,7 +5,7 @@
 #include <ze_json/utils/alloc.hpp>
 #include <ze_json/utils/forward.hpp>
 
-namespace zuu::memory {
+namespace zuu::ondemand {
 
 class Arena {
 private:
@@ -110,4 +110,4 @@ public:
   }
 };
 
-} // namespace zuu::memory
+} // namespace zuu::ondemand

@@ -34,7 +34,7 @@
 
 namespace {
 
-using zuu::memory::Arena;
+using zuu::ondemand::Arena;
 using zuu::ondemand::Document;
 using zuu::ondemand::Field;
 using zuu::ondemand::NodeType;
@@ -50,8 +50,7 @@ struct TestDoc {
   Document doc;
 
   explicit TestDoc(const char *src)
-      : json(src),
-        arena_buf(json.size() * sizeof(std::size_t) * 3 + 64),
+      : json(src), arena_buf(json.size() * sizeof(std::size_t) * 3 + 64),
         arena(arena_buf.data(), arena_buf.size()) {
     auto opened = Document::open(arena, json.data(), json.size());
     if (opened.has_value()) {
@@ -159,7 +158,8 @@ TEST(ValueDocument, RootContainerOwnership) {
     const auto &root = t.doc.get_root();
     ASSERT_TRUE(root.has_value()) << "[case-empty]";
     EXPECT_EQ(root.value().type(), NodeType::Array);
-    EXPECT_EQ(root.value().count_elements().value(), 0U) << "[case-empty-count]";
+    EXPECT_EQ(root.value().count_elements().value(), 0U)
+        << "[case-empty-count]";
   }
   {
     const auto &t = must_open("[1,2,3]");
@@ -184,9 +184,9 @@ TEST(ValueDocument, LauncherTableClassification) {
     NodeType expected;
   };
   const Case cases[] = {
-      {"[1]", NodeType::Array},   {"{\"a\": 1}", NodeType::Object},
-      {"1", NodeType::Number},    {"-3", NodeType::Number},
-      {"\"s\"", NodeType::String}, {"true", NodeType::BoolTrue},
+      {"[1]", NodeType::Array},       {"{\"a\": 1}", NodeType::Object},
+      {"1", NodeType::Number},        {"-3", NodeType::Number},
+      {"\"s\"", NodeType::String},    {"true", NodeType::BoolTrue},
       {"false", NodeType::BoolFalse}, {"null", NodeType::Null},
   };
   for (const auto &kase : cases) {
@@ -201,8 +201,8 @@ TEST(ValueDocument, LauncherTableClassification) {
 
 TEST(ValueDocument, ArrayFramingRejections) {
   for (const char *src :
-       {"[,]", "[1,]", "[1 2]", "[\"a\" \"b\"]", "[1 ,  , 2]", "[1, 2", "[1:",
-        "[,1]", "[\"x\":1]", "[1e]", "[01]", "[true false]"}) {
+       {"[,]", "[1,]", "[1 2]", "[\"a\" \"b\"]", "[1 ,  , 2]", "[1, 2",
+        "[1:", "[,1]", "[\"x\":1]", "[1e]", "[01]", "[true false]"}) {
     const auto &t = must_open(src);
     ASSERT_TRUE(t.ok()) << "scanner accepted " << src;
     const auto &root = t.doc.get_root();
@@ -215,9 +215,8 @@ TEST(ValueDocument, ArrayFramingRejections) {
 }
 
 TEST(ValueDocument, ObjectFramingRejections) {
-  for (const char *src :
-       {"{\"a\" 1}", "{\"a\": 5,}", "{\"a\": }", "{\"a\"}", "{,}",
-        "{\"a\": 1 2}", "{\"a\":: 1}", "{1: 2}"}) {
+  for (const char *src : {"{\"a\" 1}", "{\"a\": 5,}", "{\"a\": }", "{\"a\"}",
+                          "{,}", "{\"a\": 1 2}", "{\"a\":: 1}", "{1: 2}"}) {
     const auto &t = must_open(src);
     ASSERT_TRUE(t.ok()) << "scanner accepted " << src;
     const auto &root = t.doc.get_root();
@@ -378,7 +377,7 @@ TEST(ValueDocument, BeginRejectionsOnScalarValues) {
   const auto &t = must_open("[1]");
   const auto &root = t.doc.get_root();
   ASSERT_TRUE(root.has_value());
-  const auto & element = root.value().begin_array();
+  const auto &element = root.value().begin_array();
   ASSERT_TRUE(element.has_value());
   auto it = element.value();
   const auto &v = *it;

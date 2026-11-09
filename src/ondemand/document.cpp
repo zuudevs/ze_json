@@ -40,8 +40,7 @@ namespace {
 
 //! Exact literal comparison of a token body ("true"/"false"/"null").
 [[nodiscard]] inline bool lit_equal(const Document &doc, core::size_t pos,
-                                    const char *lit,
-                                    core::size_t n) NOEXCEPT {
+                                    const char *lit, core::size_t n) NOEXCEPT {
   if (pos + n > doc.src_size()) {
     return false;
   }
@@ -64,9 +63,9 @@ inline constexpr core::size_t kNoBracket = static_cast<core::size_t>(-1);
 
 //! Index whose byte position is the first one >= `byte_pos`, walking only
 //! FORWARD from `cursor` (each index is visited once per document walk).
-[[nodiscard]] core::size_t first_index_at_or_after(const Document &doc,
-                                                   core::size_t cursor,
-                                                   core::size_t byte_pos) NOEXCEPT {
+[[nodiscard]] core::size_t
+first_index_at_or_after(const Document &doc, core::size_t cursor,
+                        core::size_t byte_pos) NOEXCEPT {
   while (cursor < doc.index_count() && doc.index_at(cursor) < byte_pos) {
     ++cursor;
   }
@@ -163,8 +162,7 @@ framing_delimiter(const Document &doc, core::size_t token_end,
     return core::JsonErrc::InvalidJson; // [1,2 <eof> / gap without a closer
   }
   const core::size_t delim_pos = doc.index_at(index_cursor);
-  if (delim_pos < token_end ||
-      !bytes_are_ws(doc, token_end, delim_pos)) {
+  if (delim_pos < token_end || !bytes_are_ws(doc, token_end, delim_pos)) {
     return core::JsonErrc::InvalidJson; // e.g. [1 2] / ["a" "b"]
   }
   return static_cast<core::uint8_t>(doc.src()[delim_pos]);
@@ -200,7 +198,7 @@ next_key_after_comma(const Document &doc, core::size_t comma_index) NOEXCEPT {
 // clang-format on
 
 core::Result<Document, core::JsonErrc>
-Document::open(memory::Arena &arena, const char *src,
+Document::open(ondemand::Arena &arena, const char *src,
                core::size_t src_size) NOEXCEPT {
   if (src_size != 0 && src == nullptr) {
     return core::JsonErrc::InvalidJson; // scanner contract mirrored up-front
@@ -225,8 +223,7 @@ Document::open(memory::Arena &arena, const char *src,
     if (indexes == nullptr || match == nullptr || stack == nullptr) {
       return core::JsonErrc::InsufficientBuffer;
     }
-    const auto scan =
-        structural_scan(src, src_size, indexes, src_size);
+    const auto scan = structural_scan(src, src_size, indexes, src_size);
     if (!scan) {
       return scan.error(); // EmptyJson/InvalidJson/InsufficientBuffer as-is
     }
@@ -378,9 +375,8 @@ bool Value::is_null() const NOEXCEPT {
 }
 
 core::Result<ArrayIter, core::JsonErrc> Value::begin_array() const NOEXCEPT {
-  if (document_ == nullptr ||
-      document_->classify(token_start_) !=
-          static_cast<core::uint8_t>(NodeType::Array)) {
+  if (document_ == nullptr || document_->classify(token_start_) !=
+                                  static_cast<core::uint8_t>(NodeType::Array)) {
     return core::JsonErrc::InvalidJson;
   }
   // `[` is structural: the first index >= token_start_ must be the opener
@@ -607,8 +603,8 @@ core::Result<Field, core::JsonErrc> ObjectIter::operator*() const NOEXCEPT {
     failed_ = core::JsonErrc::InvalidJson;
     return failed_;
   }
-  const auto key = scan_string(doc.src() + key_start_,
-                               doc.src_size() - key_start_);
+  const auto key =
+      scan_string(doc.src() + key_start_, doc.src_size() - key_start_);
   if (!key) {
     failed_ = key.error();
     return failed_;
@@ -631,8 +627,8 @@ core::Result<Field, core::JsonErrc> ObjectIter::operator*() const NOEXCEPT {
     failed_ = core::JsonErrc::InvalidJson; // missing value
     return failed_;
   }
-  const core::size_t vcursor = first_index_at_or_after(
-      doc, colon_cursor + 1, vts);
+  const core::size_t vcursor =
+      first_index_at_or_after(doc, colon_cursor + 1, vts);
   // Mutable framing state (forward-only contract): operator* is the only
   // step of object iteration that learns where the current value starts;
   // the cursor moves for the following operator++.
