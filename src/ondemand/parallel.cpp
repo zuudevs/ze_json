@@ -2,30 +2,12 @@
 #include <ze_json/core/simd.hpp>
 #include <ze_json/ondemand/scanner.hpp>
 #include <ze_json/utils/swar.hpp>
-#include <ze_json/utils/utf8_validator.hpp>
 
 namespace zuu::ondemand {
 
 #if __LITTLE_ENDIAN__ == 1
 
 #if __IS_64_BIT__ == 1
-
-namespace {
-
-constexpr core::uint64_t kOnes = 0x0101010101010101ULL;
-constexpr core::uint64_t kHigh = 0x8080808080808080ULL;
-
-/**
- * SWAR byte-equality: 0x80 in every lane whose byte equals `c`.
- * Delegates to utils::swar_has_zero_byte — the carry-free, per-byte-exact
- * form (the textbook (t - 0x01) & ~t & 0x80 idiom leaks borrows into the
- * lane above a zero lane and is NOT a valid per-byte mask; see swar.hpp).
- */
-[[nodiscard]] constexpr core::uint64_t swar_eq(core::uint64_t x, core::uint8_t c) {
-  return utils::swar_has_zero_byte(x ^ (static_cast<core::uint64_t>(c) * kOnes));
-}
-
-} // namespace
 
 /**
  * @brief SWAR structural scanner (8-byte blocks, little-endian lanes).
@@ -102,16 +84,16 @@ scanner64(const char *const RESTRICT src, core::size_t src_size,
     core::uint64_t lanes;
     __builtin_memcpy(&lanes, src + i, 8);
 
-    const core::uint64_t quotes = swar_eq(lanes, 0x22);
-    const core::uint64_t slashes = swar_eq(lanes, 0x5C);
+    const core::uint64_t quotes = utils::swar_eq(lanes, 0x22);
+    const core::uint64_t slashes = utils::swar_eq(lanes, 0x5C);
     const bool interesting = (quotes | slashes) != 0;
 
     if (!in_string && !interesting) {
       // FAST-A: outside a string; every flagged lane is a real structural byte.
       core::uint64_t structural =
-          swar_eq(lanes, 0x2C) | swar_eq(lanes, 0x3A)
-        | swar_eq(lanes, 0x5B) | swar_eq(lanes, 0x5D)
-        | swar_eq(lanes, 0x7B) | swar_eq(lanes, 0x7D);
+          utils::swar_eq(lanes, 0x2C) | utils::swar_eq(lanes, 0x3A)
+        | utils::swar_eq(lanes, 0x5B) | utils::swar_eq(lanes, 0x5D)
+        | utils::swar_eq(lanes, 0x7B) | utils::swar_eq(lanes, 0x7D);
       while (structural != 0) {
         const unsigned bit = static_cast<unsigned>(__builtin_ctzll(structural));
         structural &= structural - 1;
@@ -162,14 +144,17 @@ scanner32(const char *const RESTRICT src, core::size_t src_size,
 #endif // __IS_64_BIT__ == 0
 #endif // __LITTLE_ENDIAN__ == 1
 
-#if defined(__SSE2__) && __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1
+#if __LITTLE_ENDIAN__ == 1 && __IS_64_BIT__ == 1 \
+	&& (defined(__SSE2__) || defined(__wasm__))
 
 /**
- * @brief SSE2 structural scanner (16-byte blocks).
+ * @brief 128-bit SIMD structural scanner (16-byte blocks).
  *
  * Same three-path structure as scanner64 (proven by the differential gate),
- * with _mm_cmpeq_epi8 classification (one compare per class, 0.75 ops/byte
- * vs ~3.6 for SWAR) and _mm_movemask_epi8 lane extraction:
+ * with per-lane byte classification (one compare per class, 0.75 ops/byte
+ * vs ~3.6 for SWAR) and bitmask lane extraction (SSE2 movemask /
+ * wasm-simd128 i8x16.bitmask). Built on core::simd_* so the identical
+ * source serves both ISAs:
  *   FAST-A  outside a string, no quote/backslash in the block
  *   FAST-B  inside a string, no quote/backslash in the block
  *   SLOW    byte-serial walk of the block (exact reference semantics)
@@ -192,14 +177,14 @@ scanner128(const char *const RESTRICT src, core::size_t src_size,
     return core::JsonErrc::InsufficientBuffer;
   }
 
-  const core::vec128 quote_v = SIMD_SET1_EPI8('"');
-  const core::vec128 slash_v = SIMD_SET1_EPI8('\\');
-  const core::vec128 comma_v = SIMD_SET1_EPI8(',');
-  const core::vec128 colon_v = SIMD_SET1_EPI8(':');
-  const core::vec128 lbrack_v = SIMD_SET1_EPI8('[');
-  const core::vec128 rbrack_v = SIMD_SET1_EPI8(']');
-  const core::vec128 lbrace_v = SIMD_SET1_EPI8('{');
-  const core::vec128 rbrace_v = SIMD_SET1_EPI8('}');
+  const core::vec128 quote_v = core::simd_splat_u8('"');
+  const core::vec128 slash_v = core::simd_splat_u8('\\');
+  const core::vec128 comma_v = core::simd_splat_u8(',');
+  const core::vec128 colon_v = core::simd_splat_u8(':');
+  const core::vec128 lbrack_v = core::simd_splat_u8('[');
+  const core::vec128 rbrack_v = core::simd_splat_u8(']');
+  const core::vec128 lbrace_v = core::simd_splat_u8('{');
+  const core::vec128 rbrace_v = core::simd_splat_u8('}');
 
   core::size_t out = 0;
   core::size_t i = 0;
@@ -238,25 +223,22 @@ scanner128(const char *const RESTRICT src, core::size_t src_size,
 
   const core::size_t n_blocks = src_size / 16;
   for (core::size_t block = 0; block < n_blocks; ++block) {
-    const core::vec128 lanes =
-        _mm_loadu_si128(reinterpret_cast<const core::vec128 *>(src + i));
-    const core::uint32_t interesting =
-        static_cast<core::uint32_t>(_mm_movemask_epi8(
-            _mm_or_si128(_mm_cmpeq_epi8(lanes, quote_v),
-                         _mm_cmpeq_epi8(lanes, slash_v))));
+    const core::vec128 lanes = core::simd_loadu(src + i);
+    const core::uint32_t interesting = core::simd_bitmask_u8(core::simd_or(
+        core::simd_eq_u8(lanes, quote_v), core::simd_eq_u8(lanes, slash_v)));
 
     if (interesting == 0) {
       if (!in_string) {
         // FAST-A
-        const core::uint32_t structural = static_cast<core::uint32_t>(
-            _mm_movemask_epi8(_mm_or_si128(
-                _mm_or_si128(_mm_cmpeq_epi8(lanes, comma_v),
-                             _mm_cmpeq_epi8(lanes, colon_v)),
-                _mm_or_si128(_mm_or_si128(_mm_cmpeq_epi8(lanes, lbrack_v),
-                                          _mm_cmpeq_epi8(lanes, rbrack_v)),
-                             _mm_or_si128(_mm_cmpeq_epi8(lanes, lbrace_v),
-                                          _mm_cmpeq_epi8(lanes, rbrace_v))))));
-        core::uint32_t mask = structural;
+        const core::vec128 structural_v = core::simd_or(
+            core::simd_or(
+                core::simd_or(core::simd_eq_u8(lanes, comma_v),
+                              core::simd_eq_u8(lanes, colon_v)),
+                core::simd_or(core::simd_eq_u8(lanes, lbrack_v),
+                              core::simd_eq_u8(lanes, rbrack_v))),
+            core::simd_or(core::simd_eq_u8(lanes, lbrace_v),
+                          core::simd_eq_u8(lanes, rbrace_v)));
+        core::uint32_t mask = core::simd_bitmask_u8(structural_v);
         while (mask != 0) {
           const unsigned bit = static_cast<unsigned>(__builtin_ctz(mask));
           mask &= mask - 1;
@@ -291,7 +273,7 @@ scanner128(const char *const RESTRICT src, core::size_t src_size,
   return out;
 }
 
-#endif // __SSE2__ && little-endian 64-bit
+#endif // little-endian 64-bit + (SSE2 || wasm-simd128)
 
 /**
  * @brief Static-dispatch implementation (resolve the variant pointer once).

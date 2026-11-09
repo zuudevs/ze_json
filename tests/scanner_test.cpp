@@ -17,9 +17,11 @@
 #include <ze_json/core/lookups.hpp>
 #include <ze_json/ondemand/reference.hpp>
 #include <ze_json/ondemand/scanner.hpp>
+#include <ze_json/utils/swar.hpp>
 
 #include "export_sidecar.hpp" // export-helper sidecar contract (AGENTS.md section 4)
 
+#include <array>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -256,6 +258,72 @@ TEST(ScannerDifferential, DeterministicFuzz) {
       ADD_FAILURE() << "divergence at fuzz iteration " << iteration;
       return;
     }
+  }
+}
+
+// SWAR utility masks must match a serial per-byte reference exactly.
+// Carries the P4-2 correctness fix: the textbook `(v - 0x01..) & ~v & 0x80..`
+// form leaks borrows across lanes when used as a per-byte mask (30/200k
+// random failures); the shipped carry-free form and swar_eq must never.
+// @cite 10.1002_spe.2984 SWAR byte-parallel arithmetic idioms.
+TEST(SwarUtil, MasksMatchSerialReference) {
+  using zuu::core::uint64_t;
+  using zuu::core::uint8_t;
+  auto serial_zero = [](uint64_t v) {
+    uint64_t mask = 0;
+    for (int lane = 0; lane < 8; ++lane) {
+      const auto byte = static_cast<uint8_t>(v >> (lane * 8));
+      mask |= (byte == 0 ? uint64_t{0x80} : uint64_t{0}) << (lane * 8);
+    }
+    return mask;
+  };
+  auto serial_eq = [](uint64_t x, uint8_t c) {
+    uint64_t mask = 0;
+    for (int lane = 0; lane < 8; ++lane) {
+      const auto byte = static_cast<uint8_t>(x >> (lane * 8));
+      mask |= (byte == c ? uint64_t{0x80} : uint64_t{0}) << (lane * 8);
+    }
+    return mask;
+  };
+
+  // Adversarial patterns: zero-adjacent-to-0x01 (the textbook borrow case),
+  // full lanes, single-lane hits.
+  const std::vector<uint64_t> edges = {
+    0x0000000000000000ULL, 0x0000000000000100ULL, 0x0100000000000000ULL,
+    0x0000000001000000ULL, 0x0000000000000001ULL, 0x0101010101010101ULL,
+    0xFFFFFFFFFFFFFFFFULL, 0x8000000000000080ULL, 0x8080808080808080ULL,
+    0x0000000000000080ULL, 0x2222222222222222ULL, 0x5C5C5C5C5C5C5C5CULL,
+  };
+  for (const uint64_t x : edges) {
+    EXPECT_EQ(zuu::utils::swar_has_zero_byte(x), serial_zero(x)) << std::hex
+                                                                 << x;
+    EXPECT_EQ(zuu::utils::swar_eq(x, 0x22), serial_eq(x, 0x22)) << std::hex
+                                                                << x;
+    EXPECT_EQ(zuu::utils::swar_eq(x, 0x5C), serial_eq(x, 0x5C)) << std::hex
+                                                                << x;
+    EXPECT_EQ(zuu::utils::swar_eq(x, 0x00), serial_eq(x, 0x00)) << std::hex
+                                                                << x;
+  }
+
+  // Deterministic random sweep (project fuzz seed, P1-3/P4 convention).
+  std::mt19937_64 rng(20261108);
+  const std::array<uint8_t, 6> byte_pool = {
+    0x00, 0x01, 0x22, 0x5C, 0x7F, 0xFF,
+  };
+  std::uniform_int_distribution<size_t> pool_pick(0, byte_pool.size() - 1);
+  for (int iteration = 0; iteration < 200000; ++iteration) {
+    uint64_t x = rng();
+    if (iteration % 3 == 0) {
+      // Structured stress: borrow-prone lanes built from the pool.
+      for (int lane = 0; lane < 8; ++lane) {
+        const int shift = lane * 8;
+        x = (x & ~(uint64_t{0xFF} << shift))
+            | (uint64_t{byte_pool[pool_pick(rng)]} << shift);
+      }
+    }
+    const auto c = static_cast<uint8_t>(rng());
+    EXPECT_EQ(zuu::utils::swar_has_zero_byte(x), serial_zero(x));
+    EXPECT_EQ(zuu::utils::swar_eq(x, c), serial_eq(x, c));
   }
 }
 

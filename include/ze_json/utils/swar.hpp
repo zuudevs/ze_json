@@ -27,4 +27,21 @@ swar_has_zero_byte(core::uint64_t v) noexcept {
          & utils::repeat_byte_v<core::uint64_t, 0x80_u8>;
 }
 
+/**
+ * SWAR byte-equality mask: 0x80 in every lane whose byte equals `c`.
+ * Broadcasts `c` across the lanes with the repeat_byte_v API and XORs it
+ * into `x` so equality reduces to zero detection (carry-free, per-byte
+ * exact — see swar_has_zero_byte for why the textbook form is not used).
+ *
+ * @cite 10.1002_spe.2984 SWAR byte-parallel classification idiom — the
+ *       broadcast-XOR-then-zero-test composition used for per-byte masks.
+ */
+[[nodiscard]] constexpr core::uint64_t
+swar_eq(core::uint64_t x, core::uint8_t byte) noexcept {
+  const core::uint64_t broadcast =
+      static_cast<core::uint64_t>(byte)
+      * utils::repeat_byte_v<core::uint64_t, 0x01_u8>;
+  return swar_has_zero_byte(x ^ broadcast);
+}
+
 } // namespace zuu::utils
