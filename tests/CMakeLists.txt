@@ -43,6 +43,25 @@ add_test(NAME ze_json_scanner_test COMMAND ze_json_scanner_test)
 
 add_export_test_target(ze_json_scanner_test)
 
+# Register the number parser tests (TASKS P7-2).
+# @cite 10.1002_spe.2984 (number parsing at a gigabyte per second)
+add_executable(ze_json_number_test number_test.cpp)
+
+target_include_directories(ze_json_number_test PRIVATE
+	$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+	$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/generated>
+	$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/benchmarks>
+)
+
+target_link_libraries(ze_json_number_test PRIVATE
+	${LIBRARY_OUTPUT_NAME}
+	GTest::gtest
+)
+
+add_test(NAME ze_json_number_test COMMAND ze_json_number_test)
+
+add_export_test_target(ze_json_number_test)
+
 # ---------------------------------------------------------------------------
 # UTF-8 validator differential + correctness tests (TASKS P7-1).
 # @cite 10.1002_spe.2920 (Niagara two-table validation)
