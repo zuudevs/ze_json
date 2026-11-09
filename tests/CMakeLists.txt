@@ -110,3 +110,24 @@ target_compile_definitions(ze_json_string_test PRIVATE
 add_test(NAME ze_json_string_test COMMAND ze_json_string_test)
 
 add_export_test_target(ze_json_string_test)
+
+# ---------------------------------------------------------------------------
+# On-demand Value/Document API tests (TASKS P7-4).
+# @cite 10.1002_spe.3313 (on-demand JSON front-end semantics)
+# @cite 10.14778_3115404.3115416 (Mison structural-index traversal)
+add_executable(ze_json_value_test value_test.cpp)
+
+target_include_directories(ze_json_value_test PRIVATE
+	$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+	$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/generated>
+	$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/benchmarks>
+)
+
+target_link_libraries(ze_json_value_test PRIVATE
+	${LIBRARY_OUTPUT_NAME}
+	GTest::gtest
+)
+
+add_test(NAME ze_json_value_test COMMAND ze_json_value_test)
+
+add_export_test_target(ze_json_value_test)
