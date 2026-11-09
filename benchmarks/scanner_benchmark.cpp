@@ -67,9 +67,9 @@ const std::vector<Document> &corpus_docs(const char *sub_dir) {
   auto it = cache.find(sub_dir);
   if (it == cache.end()) {
     it = cache
-             .emplace(sub_dir, load_corpus_dir(
-                                   std::filesystem::path(ZE_JSON_BENCH_CORPUS_DIR) /
-                                   sub_dir))
+             .emplace(sub_dir, load_corpus_dir(std::filesystem::path(
+                                                   ZE_JSON_BENCH_CORPUS_DIR) /
+                                               sub_dir))
              .first;
   }
   return it->second;
@@ -78,14 +78,16 @@ const std::vector<Document> &corpus_docs(const char *sub_dir) {
 template <typename ScanFn>
 void scan_document(benchmark::State &state, ScanFn scan, const Document *doc) {
   if (doc->data.empty()) {
-    state.SkipWithError("corpus document missing (check ZE_JSON_BENCH_CORPUS_DIR)");
+    state.SkipWithError(
+        "corpus document missing (check ZE_JSON_BENCH_CORPUS_DIR)");
     return;
   }
   std::vector<size_t> dst(doc->data.size(), 0);
 
   size_t produced = 0;
   for (auto _ : state) {
-    auto result = scan(doc->data.data(), doc->data.size(), dst.data(), dst.size());
+    auto result =
+        scan(doc->data.data(), doc->data.size(), dst.data(), dst.size());
     if (!result.has_value()) {
       state.SkipWithError("scanner rejected a corpus document");
       return;
@@ -119,7 +121,8 @@ void scan_batch(benchmark::State &state, ScanFn scan,
   for (auto _ : state) {
     size_t produced = 0;
     for (const Document &doc : *docs) {
-      auto result = scan(doc.data.data(), doc.data.size(), dst.data(), dst.size());
+      auto result =
+          scan(doc.data.data(), doc.data.size(), dst.data(), dst.size());
       if (!result.has_value()) {
         state.SkipWithError("scanner rejected a corpus batch member");
         return;
@@ -193,8 +196,8 @@ void register_corpus(const char *sub_dir, const char *label) {
   const std::string base = std::string(label);
   if (docs.size() == 1) {
     const Document *doc = &docs.front();
-    benchmark::RegisterBenchmark(
-        ("BM_ReferenceScan/" + base).c_str(), bench_reference_document, doc)
+    benchmark::RegisterBenchmark(("BM_ReferenceScan/" + base).c_str(),
+                                 bench_reference_document, doc)
         ->Repetitions(5)
         ->Unit(benchmark::kMicrosecond);
     benchmark::RegisterBenchmark(("BM_Scanner8/" + base).c_str(),

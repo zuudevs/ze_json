@@ -131,13 +131,3 @@ target_link_libraries(ze_json_value_test PRIVATE
 add_test(NAME ze_json_value_test COMMAND ze_json_value_test)
 
 add_export_test_target(ze_json_value_test)
-
-set(FORMAT_ENTRIES
-	"${CMAKE_CURRENT_SOURCE_DIR}/number_test.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/scanner_test.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/string_test.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/utf8_test.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/value_test.cpp"
-)
-
-add_clang_format_target(${FORMAT_ENTRIES})

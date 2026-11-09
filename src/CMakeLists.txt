@@ -55,6 +55,4 @@ elseif(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
 	add_clang_tidy_target(${LIBRARY_OUTPUT_NAME})
 endif()
 
-add_clang_format_target(${LIBRARY_OUTPUT_NAME})
-
 add_dependencies(${LIBRARY_OUTPUT_NAME} generate_ze_json_headers)

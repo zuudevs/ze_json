@@ -29,11 +29,21 @@ inline void json_escape_into(std::string &out, const char *raw) {
   for (const char *p = raw; *p != '\0'; ++p) {
     const unsigned char c = static_cast<unsigned char>(*p);
     switch (*p) {
-    case '"': out += "\\\""; break;
-    case '\\': out += "\\\\"; break;
-    case '\n': out += "\\n"; break;
-    case '\r': out += "\\r"; break;
-    case '\t': out += "\\t"; break;
+    case '"':
+      out += "\\\"";
+      break;
+    case '\\':
+      out += "\\\\";
+      break;
+    case '\n':
+      out += "\\n";
+      break;
+    case '\r':
+      out += "\\r";
+      break;
+    case '\t':
+      out += "\\t";
+      break;
     default:
       if (c < 0x20) {
         char buf[8];
@@ -54,7 +64,8 @@ inline void json_escape_into(std::string &out, const char *raw) {
  * would break exhibit provenance (AGENTS.md section 4), which is worse than a
  * failed export run.
  *
- * @param out_env   env var holding the sidecar path (METADATA_OUT / ZE_METADATA_OUT)
+ * @param out_env   env var holding the sidecar path (METADATA_OUT /
+ * ZE_METADATA_OUT)
  * @param run_env   env var holding the run id (RUN_ID / ZE_RUN_ID)
  * @param git_env   env var holding the git commit (GIT_COMMIT / ZE_GIT_COMMIT)
  * @param target    executable name recorded in the sidecar
@@ -82,7 +93,8 @@ inline void write_export_sidecar(const char *out_env, const char *run_env,
 
   std::string json;
   json.reserve(256);
-  json += "{\n  \"schema_version\": \"1.0.0\",\n  \"kind\": \"export_sidecar\",\n";
+  json +=
+      "{\n  \"schema_version\": \"1.0.0\",\n  \"kind\": \"export_sidecar\",\n";
   json += "  \"target\": \"";
   json_escape_into(json, target);
   json += "\",\n  \"run_id\": \"";

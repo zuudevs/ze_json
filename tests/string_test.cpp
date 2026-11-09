@@ -31,8 +31,8 @@
 
 namespace {
 
-using zuu::ondemand::StringParts;
 using zuu::ondemand::scan_string;
+using zuu::ondemand::StringParts;
 using zuu::ondemand::unescape_string;
 
 /** Expected strict-UTF-8 bytes of a code point (hand-rolled encoder). */
@@ -85,8 +85,8 @@ using zuu::ondemand::unescape_string;
     return false;
   }
   std::vector<char> buf(s.value().inner_len + 8);
-  const auto d = unescape_string(token.data(), token.size(), buf.data(),
-                                 buf.size());
+  const auto d =
+      unescape_string(token.data(), token.size(), buf.data(), buf.size());
   if (d.has_error()) {
     return false;
   }
@@ -104,16 +104,16 @@ using zuu::ondemand::unescape_string;
 
 TEST(StringGrammar, ValidTokens) {
   const std::array<std::string, 10> tokens = {
-    token_of(""),                                // empty
-    token_of("abc DEF 42"),                      // plain
-    token_of("\\\"\\\\"),                        // quote + backslash escapes
-    token_of("\\b\\f\\n\\r\\t\\/"),              // all remaining simple escapes
-    token_of(u4(0x41, true) + u4(0x1F, false)),  // hex, both cases
-    token_of("\xF0\x9F\x98\x80\xE2\xAC\x80"),    // raw 4+3-byte
-    token_of("\xC2\x80\x7F"),                    // raw 2-byte + raw DEL
-    token_of("\\uD83D\\uDE00"),                  // surrogate pair
-    token_of("\\u0001"),                         // escaped control value
-    token_of("\xEF\xBF\xBD"),                    // raw U+FFFD
+      token_of(""),                   // empty
+      token_of("abc DEF 42"),         // plain
+      token_of("\\\"\\\\"),           // quote + backslash escapes
+      token_of("\\b\\f\\n\\r\\t\\/"), // all remaining simple escapes
+      token_of(u4(0x41, true) + u4(0x1F, false)), // hex, both cases
+      token_of("\xF0\x9F\x98\x80\xE2\xAC\x80"),   // raw 4+3-byte
+      token_of("\xC2\x80\x7F"),                   // raw 2-byte + raw DEL
+      token_of("\\uD83D\\uDE00"),                 // surrogate pair
+      token_of("\\u0001"),                        // escaped control value
+      token_of("\xEF\xBF\xBD"),                   // raw U+FFFD
   };
   for (const std::string &tok : tokens) {
     EXPECT_TRUE(accepted(tok)) << tok;
@@ -128,9 +128,9 @@ TEST(StringGrammar, InvalidTokens) {
   EXPECT_TRUE(scan_string("", 0).has_error());
   EXPECT_TRUE(scan_string("\\", 1).has_error());
   const std::array<std::string, 8> bad = {
-    token_of("\\x41"), token_of("\\v"),  token_of("\\'"),
-    token_of("\\Q"),   token_of("\\0"),  token_of("\\u12"),
-    token_of("\\uzzzz"), token_of("\\u00 1"),
+      token_of("\\x41"),   token_of("\\v"),     token_of("\\'"),
+      token_of("\\Q"),     token_of("\\0"),     token_of("\\u12"),
+      token_of("\\uzzzz"), token_of("\\u00 1"),
   };
   for (const std::string &tok : bad) {
     EXPECT_TRUE(scan_string(tok.data(), tok.size()).has_error()) << tok;
@@ -225,8 +225,14 @@ TEST(StringSemantics, V8ParityEdges) {
 
 TEST(StringSemantics, SimpleEscapes) {
   const std::array<std::pair<const char *, char>, 8> table{{
-      {"\\\"", '"'}, {"\\\\", '\\'}, {"\\/", '/'}, {"\\b", '\b'},
-      {"\\f", '\f'}, {"\\n", '\n'}, {"\\r", '\r'}, {"\\t", '\t'},
+      {"\\\"", '"'},
+      {"\\\\", '\\'},
+      {"\\/", '/'},
+      {"\\b", '\b'},
+      {"\\f", '\f'},
+      {"\\n", '\n'},
+      {"\\r", '\r'},
+      {"\\t", '\t'},
   }};
   for (const auto &[esc, byte] : table) {
     std::string out;
@@ -263,8 +269,7 @@ TEST(StringSemantics, PairMatrixSweep) {
   std::string out;
   for (std::uint32_t hi = 0xD800; hi <= 0xDBFF; ++hi) {
     for (std::uint32_t lo = 0xDC00; lo <= 0xDFFF; ++lo) {
-      const std::uint32_t cp =
-          0x10000 + ((hi - 0xD800) << 10) + (lo - 0xDC00);
+      const std::uint32_t cp = 0x10000 + ((hi - 0xD800) << 10) + (lo - 0xDC00);
       const std::string tok = token_of(u4(hi, false) + u4(lo, true));
       EXPECT_TRUE(decode_to(tok, out)) << tok;
       EXPECT_EQ(out, expected_utf8(cp)) << tok;
@@ -286,21 +291,21 @@ TEST(StringSemantics, NotPairs) {
 
 TEST(StringUtf8, RawValidity) {
   // Raw non-ASCII bytes must form strict RFC 3629 UTF-8 (P7-1 semantics).
-  EXPECT_TRUE(accepted(token_of("\xF4\x8F\xBF\xBF")));    // U+10FFFF
-  EXPECT_TRUE(accepted(token_of("\xF0\x90\x80\x80")));    // U+10000
-  EXPECT_TRUE(accepted(token_of("\xED\x9F\xBF")));        // U+D7FF
-  EXPECT_TRUE(accepted(token_of("\xEE\x80\x80")));        // U+E000
-  EXPECT_TRUE(accepted(token_of("\xDF\xBF")));            // U+07FF
-  EXPECT_FALSE(accepted(token_of("\xED\xA0\x80")));       // encoded U+D800
-  EXPECT_FALSE(accepted(token_of("\xED\xAF\xBF")));       // another surrogate
-  EXPECT_FALSE(accepted(token_of("\xC0\xAF")));           // overlong
-  EXPECT_FALSE(accepted(token_of("\xE0\x80\x80")));      // overlong 3-byte
-  EXPECT_FALSE(accepted(token_of("\xF0\x80\x80\x80")));  // overlong 4-byte
-  EXPECT_FALSE(accepted(token_of("\xF4\x90\x80\x80")));  // > U+10FFFF
-  EXPECT_FALSE(accepted(token_of("\xFF")));              // illegal lead
-  EXPECT_FALSE(accepted(token_of("\x80")));              // stray continuation
-  EXPECT_FALSE(accepted(token_of("\xF0\x9F")));          // truncated at end
-  EXPECT_FALSE(accepted(token_of("\xE2\x82")));          // truncated at end
+  EXPECT_TRUE(accepted(token_of("\xF4\x8F\xBF\xBF")));  // U+10FFFF
+  EXPECT_TRUE(accepted(token_of("\xF0\x90\x80\x80")));  // U+10000
+  EXPECT_TRUE(accepted(token_of("\xED\x9F\xBF")));      // U+D7FF
+  EXPECT_TRUE(accepted(token_of("\xEE\x80\x80")));      // U+E000
+  EXPECT_TRUE(accepted(token_of("\xDF\xBF")));          // U+07FF
+  EXPECT_FALSE(accepted(token_of("\xED\xA0\x80")));     // encoded U+D800
+  EXPECT_FALSE(accepted(token_of("\xED\xAF\xBF")));     // another surrogate
+  EXPECT_FALSE(accepted(token_of("\xC0\xAF")));         // overlong
+  EXPECT_FALSE(accepted(token_of("\xE0\x80\x80")));     // overlong 3-byte
+  EXPECT_FALSE(accepted(token_of("\xF0\x80\x80\x80"))); // overlong 4-byte
+  EXPECT_FALSE(accepted(token_of("\xF4\x90\x80\x80"))); // > U+10FFFF
+  EXPECT_FALSE(accepted(token_of("\xFF")));             // illegal lead
+  EXPECT_FALSE(accepted(token_of("\x80")));             // stray continuation
+  EXPECT_FALSE(accepted(token_of("\xF0\x9F")));         // truncated at end
+  EXPECT_FALSE(accepted(token_of("\xE2\x82")));         // truncated at end
 }
 
 TEST(StringGate, TruncationPrefixes) {
@@ -310,14 +315,14 @@ TEST(StringGate, TruncationPrefixes) {
   // for grammar breaks; mid-multibyte truncations are InvalidUtf8 — here we
   // only pin ACCEPT/REJECT parity per prefix.
   const std::string bodies[] = {
-    "abc",
-    "ab\\ncd",
-    "\\u0041y",
-    "\\uD83D\\uDE00",        // full pair token
-    "\\ud800y",              // lone with a follower
-    "\xF0\x9F\x98\x80raw",   // raw multibyte + plain
-    "\\u0000p",
-    "",
+      "abc",
+      "ab\\ncd",
+      "\\u0041y",
+      "\\uD83D\\uDE00",      // full pair token
+      "\\ud800y",            // lone with a follower
+      "\xF0\x9F\x98\x80raw", // raw multibyte + plain
+      "\\u0000p",
+      "",
   };
   for (const std::string &body : bodies) {
     const std::string tok = token_of(body);
@@ -401,9 +406,7 @@ struct RefResult {
   }
   std::string out;
   out.reserve(n);
-  const auto fail = [&](bool utf8) {
-    return RefResult{false, utf8, ""};
-  };
+  const auto fail = [&](bool utf8) { return RefResult{false, utf8, ""}; };
   std::size_t i = 1;
   auto hex_at = [&](std::size_t pos, std::uint32_t &value) {
     std::uint32_t v = 0;
@@ -493,15 +496,40 @@ struct RefResult {
     char map = 0;
     bool simple = false;
     switch (esc) {
-    case '"': map = '"'; simple = true; break;
-    case '\\': map = '\\'; simple = true; break;
-    case '/': map = '/'; simple = true; break;
-    case 'b': map = '\b'; simple = true; break;
-    case 'f': map = '\f'; simple = true; break;
-    case 'n': map = '\n'; simple = true; break;
-    case 'r': map = '\r'; simple = true; break;
-    case 't': map = '\t'; simple = true; break;
-    default: break;
+    case '"':
+      map = '"';
+      simple = true;
+      break;
+    case '\\':
+      map = '\\';
+      simple = true;
+      break;
+    case '/':
+      map = '/';
+      simple = true;
+      break;
+    case 'b':
+      map = '\b';
+      simple = true;
+      break;
+    case 'f':
+      map = '\f';
+      simple = true;
+      break;
+    case 'n':
+      map = '\n';
+      simple = true;
+      break;
+    case 'r':
+      map = '\r';
+      simple = true;
+      break;
+    case 't':
+      map = '\t';
+      simple = true;
+      break;
+    default:
+      break;
     }
     if (simple) {
       out.push_back(map);
@@ -520,8 +548,8 @@ struct RefResult {
     }
     if (cp >= 0xD800 && cp <= 0xDBFF) {
       std::uint32_t lo = 0;
-      if (i + 12 < n && tok[i + 6] == '\\' && tok[i + 7] == 'u'
-          && hex_at(i + 8, lo) && lo >= 0xDC00 && lo <= 0xDFFF) {
+      if (i + 12 < n && tok[i + 6] == '\\' && tok[i + 7] == 'u' &&
+          hex_at(i + 8, lo) && lo >= 0xDC00 && lo <= 0xDFFF) {
         cp = 0x10000 + ((cp - 0xD800) << 10) + (lo - 0xDC00);
         out += expected_utf8(cp);
         i += 12;
@@ -559,8 +587,8 @@ void compare_with_ref(const std::string &tok) {
   }
   // Decode bytes must match bitwise:
   std::vector<char> buf(s.value().inner_len + 8);
-  const auto d = unescape_string(tok.data(), tok.size(), buf.data(),
-                                 buf.size());
+  const auto d =
+      unescape_string(tok.data(), tok.size(), buf.data(), buf.size());
   ASSERT_TRUE(d.has_value()) << tok;
   ASSERT_EQ(d.value(), ref.bytes.size()) << tok;
   EXPECT_EQ(std::memcmp(buf.data(), ref.bytes.data(), ref.bytes.size()), 0)
@@ -631,9 +659,8 @@ TEST(StringFuzzRef, CorruptedTokens) {
     std::string tok = token_of(gen_token_body(rng, (rng() % 2) == 0));
     // Mutate one byte to a category that terminates/alters the token.
     const std::size_t pos = 1 + rng() % (tok.size() - 1);
-    static const std::array<char, 8> kMutations{
-      '"', '\\', 'u', '\x01', '\x1F', '\x41', '\xFF', '\x0A'
-    };
+    static const std::array<char, 8> kMutations{'"',    '\\',   'u',    '\x01',
+                                                '\x1F', '\x41', '\xFF', '\x0A'};
     tok[pos] = kMutations[rng() % kMutations.size()];
     compare_with_ref(tok); // the closing quote stays as the token end
   }

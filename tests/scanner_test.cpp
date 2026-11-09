@@ -54,8 +54,8 @@ ScanOutcome run_scan(ScanFn scan, const std::string &input, size_t capacity) {
   if (result.has_value()) {
     outcome.ok = true;
     outcome.count = result.value();
-    outcome.indices.assign(dst.begin(),
-                           dst.begin() + static_cast<long long>(result.value()));
+    outcome.indices.assign(
+        dst.begin(), dst.begin() + static_cast<long long>(result.value()));
   } else {
     outcome.ok = false;
     outcome.error = result.error();
@@ -126,10 +126,10 @@ TEST(ScannerDifferential, NullSource) {
 
 TEST(ScannerDifferential, NullDestination) {
   const std::string input = "{}";
-  const auto ref = zuu::ondemand::reference_scan(input.data(), input.size(),
-                                                 nullptr, 4);
-  const auto fast = zuu::ondemand::scanner8(input.data(), input.size(),
-                                            nullptr, 4);
+  const auto ref =
+      zuu::ondemand::reference_scan(input.data(), input.size(), nullptr, 4);
+  const auto fast =
+      zuu::ondemand::scanner8(input.data(), input.size(), nullptr, 4);
   ASSERT_TRUE(ref.has_error());
   ASSERT_TRUE(fast.has_error());
   EXPECT_EQ(ref.error(), JsonErrc::InsufficientBuffer);
@@ -163,7 +163,8 @@ TEST(ScannerDifferential, EscapedQuotesInsideStrings) {
 
 TEST(ScannerDifferential, RawUtf8BytesOutsideAscii) {
   // "emoji <F0 9F A6 89>": multibyte UTF-8 must be treated as opaque data.
-  const std::string input = "{\"emoji\":\"\xF0\x9F\xA6\x89\",\"na\xC3\xAFve\":1}";
+  const std::string input =
+      "{\"emoji\":\"\xF0\x9F\xA6\x89\",\"na\xC3\xAFve\":1}";
   const auto ref = run_scan(zuu::ondemand::reference_scan, input, 16);
   const auto fast = run_scan(zuu::ondemand::scanner8, input, 16);
   ASSERT_TRUE(ref.ok);
@@ -289,26 +290,26 @@ TEST(SwarUtil, MasksMatchSerialReference) {
   // Adversarial patterns: zero-adjacent-to-0x01 (the textbook borrow case),
   // full lanes, single-lane hits.
   const std::vector<uint64_t> edges = {
-    0x0000000000000000ULL, 0x0000000000000100ULL, 0x0100000000000000ULL,
-    0x0000000001000000ULL, 0x0000000000000001ULL, 0x0101010101010101ULL,
-    0xFFFFFFFFFFFFFFFFULL, 0x8000000000000080ULL, 0x8080808080808080ULL,
-    0x0000000000000080ULL, 0x2222222222222222ULL, 0x5C5C5C5C5C5C5C5CULL,
+      0x0000000000000000ULL, 0x0000000000000100ULL, 0x0100000000000000ULL,
+      0x0000000001000000ULL, 0x0000000000000001ULL, 0x0101010101010101ULL,
+      0xFFFFFFFFFFFFFFFFULL, 0x8000000000000080ULL, 0x8080808080808080ULL,
+      0x0000000000000080ULL, 0x2222222222222222ULL, 0x5C5C5C5C5C5C5C5CULL,
   };
   for (const uint64_t x : edges) {
-    EXPECT_EQ(zuu::utils::swar_has_zero_byte(x), serial_zero(x)) << std::hex
-                                                                 << x;
-    EXPECT_EQ(zuu::utils::swar_eq(x, 0x22), serial_eq(x, 0x22)) << std::hex
-                                                                << x;
-    EXPECT_EQ(zuu::utils::swar_eq(x, 0x5C), serial_eq(x, 0x5C)) << std::hex
-                                                                << x;
-    EXPECT_EQ(zuu::utils::swar_eq(x, 0x00), serial_eq(x, 0x00)) << std::hex
-                                                                << x;
+    EXPECT_EQ(zuu::utils::swar_has_zero_byte(x), serial_zero(x))
+        << std::hex << x;
+    EXPECT_EQ(zuu::utils::swar_eq(x, 0x22), serial_eq(x, 0x22))
+        << std::hex << x;
+    EXPECT_EQ(zuu::utils::swar_eq(x, 0x5C), serial_eq(x, 0x5C))
+        << std::hex << x;
+    EXPECT_EQ(zuu::utils::swar_eq(x, 0x00), serial_eq(x, 0x00))
+        << std::hex << x;
   }
 
   // Deterministic random sweep (project fuzz seed, P1-3/P4 convention).
   std::mt19937_64 rng(20261108);
   const std::array<uint8_t, 6> byte_pool = {
-    0x00, 0x01, 0x22, 0x5C, 0x7F, 0xFF,
+      0x00, 0x01, 0x22, 0x5C, 0x7F, 0xFF,
   };
   std::uniform_int_distribution<size_t> pool_pick(0, byte_pool.size() - 1);
   for (int iteration = 0; iteration < 200000; ++iteration) {
@@ -317,8 +318,8 @@ TEST(SwarUtil, MasksMatchSerialReference) {
       // Structured stress: borrow-prone lanes built from the pool.
       for (int lane = 0; lane < 8; ++lane) {
         const int shift = lane * 8;
-        x = (x & ~(uint64_t{0xFF} << shift))
-            | (uint64_t{byte_pool[pool_pick(rng)]} << shift);
+        x = (x & ~(uint64_t{0xFF} << shift)) |
+            (uint64_t{byte_pool[pool_pick(rng)]} << shift);
       }
     }
     const auto c = static_cast<uint8_t>(rng());
@@ -327,8 +328,8 @@ TEST(SwarUtil, MasksMatchSerialReference) {
   }
 }
 
-#if defined(__LITTLE_ENDIAN__) && __LITTLE_ENDIAN__ == 1 \
-	&& defined(__IS_64_BIT__) && __IS_64_BIT__ == 1
+#if defined(__LITTLE_ENDIAN__) && __LITTLE_ENDIAN__ == 1 &&                    \
+    defined(__IS_64_BIT__) && __IS_64_BIT__ == 1
 
 TEST(ScannerVariants, AllVariantsMatchReference) {
   // scanner64 (SWAR), scanner128 (SSE2) and the static dispatch must
@@ -338,28 +339,28 @@ TEST(ScannerVariants, AllVariantsMatchReference) {
       const char *const, zuu::core::size_t, zuu::core::size_t *,
       zuu::core::size_t);
   const std::vector<ScanFn> variants = {
-    &zuu::ondemand::scanner8,
-    &zuu::ondemand::scanner64,
-    &zuu::ondemand::structural_scan,
+      &zuu::ondemand::scanner8,
+      &zuu::ondemand::scanner64,
+      &zuu::ondemand::structural_scan,
 #if defined(__SSE2__)
-    &zuu::ondemand::scanner128,
+      &zuu::ondemand::scanner128,
 #endif
   };
 
   const std::vector<std::string> cases = {
-    "{\"a\":1}",
-    "[1,[2],[3]]",
-    "\"just a string\"",
-    "{\"k\":\"a[b],{c}\"}",
-    R"(["a\"b", "back\\slash", "end\""])",
-    "{\"emoji\":\"\xF0\x9F\xA6\x89\",\"na\xC3\xAFve\":1}",
-    "{\"\":\"[]\",\"a\\\\\":1}",
-    "{\"unclosed",
-    "\"dangling\\",
-    "",
-    "[1e308,-1e-308,9007199254740993,0.1e+2]",
-    "\"\\\\\"",         // escaped backslash closes the string
-    "\"\\\\\\\"",       // escaped backslash then escaped quote
+      "{\"a\":1}",
+      "[1,[2],[3]]",
+      "\"just a string\"",
+      "{\"k\":\"a[b],{c}\"}",
+      R"(["a\"b", "back\\slash", "end\""])",
+      "{\"emoji\":\"\xF0\x9F\xA6\x89\",\"na\xC3\xAFve\":1}",
+      "{\"\":\"[]\",\"a\\\\\":1}",
+      "{\"unclosed",
+      "\"dangling\\",
+      "",
+      "[1e308,-1e-308,9007199254740993,0.1e+2]",
+      "\"\\\\\"",   // escaped backslash closes the string
+      "\"\\\\\\\"", // escaped backslash then escaped quote
   };
 
   for (const auto &variant : variants) {
@@ -381,11 +382,11 @@ TEST(ScannerVariants, FuzzAgreesAcrossVariants) {
       const char *const, zuu::core::size_t, zuu::core::size_t *,
       zuu::core::size_t);
   const std::vector<ScanFn> variants = {
-    &zuu::ondemand::scanner8,
-    &zuu::ondemand::scanner64,
-    &zuu::ondemand::structural_scan,
+      &zuu::ondemand::scanner8,
+      &zuu::ondemand::scanner64,
+      &zuu::ondemand::structural_scan,
 #if defined(__SSE2__)
-    &zuu::ondemand::scanner128,
+      &zuu::ondemand::scanner128,
 #endif
   };
 
@@ -452,8 +453,7 @@ TEST(JsonCheckerCorpus, FailCasesAgreeWithLegacyExceptions) {
     GTEST_SKIP() << "json_checker corpus not available (ZE_JSON_CORPUS_DIR)";
   }
   for (const auto &path : files) {
-    const std::string name =
-        std::filesystem::path(path).filename().string();
+    const std::string name = std::filesystem::path(path).filename().string();
     const std::string input = read_file(path);
     const auto ref = run_scan(zuu::ondemand::reference_scan, input, 65536);
     const auto fast = run_scan(zuu::ondemand::scanner8, input, 65536);

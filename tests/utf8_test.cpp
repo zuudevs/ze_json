@@ -41,47 +41,51 @@ struct Case {
 
 // Every Table 8 error pattern + every valid boundary (hard-coded truth).
 constexpr std::array<Case, 34> kCases = {{
-  {"a", true},                                   // ASCII
-  {"\x7F", true},                                // U+007F boundary
-  {"\xC2\x80", true},                            // U+0080 (min 2-byte)
-  {"\xDF\xBF", true},                            // U+07FF (max 2-byte)
-  {"\xE0\xA0\x80", true},                        // U+0800 (min 3-byte)
-  {"\xE1\x80\x80", true},                        // E1 plain lead
-  {"\xEC\xBF\xBF", true},                        // U+CFFF
-  {"\xED\x80\x80", true},                        // U+D000 (pre-surrogate)
-  {"\xED\x9F\xBF", true},                        // U+D7FF (last pre-surrogate)
-  {"\xEE\x80\x80", true},                        // U+E000 (post-surrogate)
-  {"\xEF\xBF\xBF", true},                        // U+FFFF (max 3-byte)
-  {"\xF0\x90\x80\x80", true},                    // U+10000 (min 4-byte)
-  {"\xF1\x80\x80\x80", true},                    // F1 plain lead
-  {"\xF3\xBF\xBF\xBF", true},                    // U+3FFFF
-  {"\xF4\x80\x80\x80", true},                    // U+100000
-  {"\xF4\x8F\xBF\xBF", true},                    // U+10FFFF (max)
-  {"\xC0\x80", false},                           // overlong 2-byte (NUL)
-  {"\xC1\xBF", false},                           // overlong 2-byte
-  {"\xC2\x41", false},                           // too short (ASCII 2nd)
-  {"\xC2\xC3", false},                           // too short (lead 2nd)
-  {"\x41\x80", false},                           // too long (ASCII + cont)
-  {"\x80\x41", false},                           // stray continuation
-  {"\xE0\x80\x80", false},                       // overlong 3-byte
-  {"\xE0\x9F\xBF", false},                       // overlong 3-byte
-  {"\xED\xA0\x80", false},                       // surrogate U+D800
-  {"\xED\xBF\xBF", false},                       // surrogate U+DFFF
-  {"\xEE\x41\x80", false},                       // too short inside 3-byte
-  {"\xF0\x80\x80\x80", false},                   // overlong 4-byte
-  {"\xF0\x8F\xBF\xBF", false},                   // overlong 4-byte
-  {"\xF4\x90\x80\x80", false},                   // > U+10FFFF
-  {"\xF5\x80\x80\x80", false},                   // F5 lead (too large)
-  {"\xFF", false},                               // 0xFF lead
-  {"\xC2", false},                               // truncated 2-byte
-  {"\xE0\xA0", false},                           // truncated 3-byte
+    {"a", true},                 // ASCII
+    {"\x7F", true},              // U+007F boundary
+    {"\xC2\x80", true},          // U+0080 (min 2-byte)
+    {"\xDF\xBF", true},          // U+07FF (max 2-byte)
+    {"\xE0\xA0\x80", true},      // U+0800 (min 3-byte)
+    {"\xE1\x80\x80", true},      // E1 plain lead
+    {"\xEC\xBF\xBF", true},      // U+CFFF
+    {"\xED\x80\x80", true},      // U+D000 (pre-surrogate)
+    {"\xED\x9F\xBF", true},      // U+D7FF (last pre-surrogate)
+    {"\xEE\x80\x80", true},      // U+E000 (post-surrogate)
+    {"\xEF\xBF\xBF", true},      // U+FFFF (max 3-byte)
+    {"\xF0\x90\x80\x80", true},  // U+10000 (min 4-byte)
+    {"\xF1\x80\x80\x80", true},  // F1 plain lead
+    {"\xF3\xBF\xBF\xBF", true},  // U+3FFFF
+    {"\xF4\x80\x80\x80", true},  // U+100000
+    {"\xF4\x8F\xBF\xBF", true},  // U+10FFFF (max)
+    {"\xC0\x80", false},         // overlong 2-byte (NUL)
+    {"\xC1\xBF", false},         // overlong 2-byte
+    {"\xC2\x41", false},         // too short (ASCII 2nd)
+    {"\xC2\xC3", false},         // too short (lead 2nd)
+    {"\x41\x80", false},         // too long (ASCII + cont)
+    {"\x80\x41", false},         // stray continuation
+    {"\xE0\x80\x80", false},     // overlong 3-byte
+    {"\xE0\x9F\xBF", false},     // overlong 3-byte
+    {"\xED\xA0\x80", false},     // surrogate U+D800
+    {"\xED\xBF\xBF", false},     // surrogate U+DFFF
+    {"\xEE\x41\x80", false},     // too short inside 3-byte
+    {"\xF0\x80\x80\x80", false}, // overlong 4-byte
+    {"\xF0\x8F\xBF\xBF", false}, // overlong 4-byte
+    {"\xF4\x90\x80\x80", false}, // > U+10FFFF
+    {"\xF5\x80\x80\x80", false}, // F5 lead (too large)
+    {"\xFF", false},             // 0xFF lead
+    {"\xC2", false},             // truncated 2-byte
+    {"\xE0\xA0", false},         // truncated 3-byte
 }};
 
 // Valid multi-byte chars for the truncation sweep (every proper prefix of
 // these must be rejected by BOTH implementations).
 constexpr std::array<std::string_view, 6> kValidChars = {{
-  "\xC2\x80", "\xE0\xA0\x80", "\xED\x9F\xBF", "\xF0\x90\x80\x80",
-  "\xF4\x8F\xBF\xBF", "\xE6\x96\x87",
+    "\xC2\x80",
+    "\xE0\xA0\x80",
+    "\xED\x9F\xBF",
+    "\xF0\x90\x80\x80",
+    "\xF4\x8F\xBF\xBF",
+    "\xE6\x96\x87",
 }};
 
 void expect_agreement(std::string_view bytes, bool expected, const char *ctx) {
@@ -113,8 +117,8 @@ TEST(Utf8Validator, ExhaustiveByteSpaces) {
     for (int b = 0; b < 256; ++b) {
       const char s[2] = {static_cast<char>(static_cast<unsigned char>(a)),
                          static_cast<char>(static_cast<unsigned char>(b))};
-      const bool expected = (a < 0x80 && b < 0x80)
-                            || (a >= 0xC2 && a <= 0xDF && b >= 0x80 && b <= 0xBF);
+      const bool expected = (a < 0x80 && b < 0x80) ||
+                            (a >= 0xC2 && a <= 0xDF && b >= 0x80 && b <= 0xBF);
       expect_agreement(std::string_view(s, 2), expected, "2-byte sweep");
     }
   }
@@ -133,7 +137,7 @@ TEST(Utf8Validator, ExhaustiveByteSpaces) {
   }
   // 4-byte: structured sweep — every lead through every probe pair.
   const std::array<unsigned char, 8> probes = {
-    0x00, 0x41, 0x7F, 0x80, 0x8F, 0x90, 0xBF, 0xC0,
+      0x00, 0x41, 0x7F, 0x80, 0x8F, 0x90, 0xBF, 0xC0,
   };
   for (int a = 0xC0; a < 256; ++a) {
     for (const unsigned char b : probes) {
@@ -154,8 +158,8 @@ TEST(Utf8Validator, TruncatedPrefixesAreInvalid) {
   for (const std::string_view full : kValidChars) {
     for (size_t cut = 0; cut <= full.size(); ++cut) {
       // Empty and complete = valid; every proper prefix = invalid.
-      expect_agreement(full.substr(0, cut),
-                       cut == 0 || cut == full.size(), "truncation sweep");
+      expect_agreement(full.substr(0, cut), cut == 0 || cut == full.size(),
+                       "truncation sweep");
     }
   }
 }
@@ -163,7 +167,8 @@ TEST(Utf8Validator, TruncatedPrefixesAreInvalid) {
 TEST(Utf8Validator, EmbeddedInText) {
   // Valid multibyte embedded in ASCII text (the JSON-string shape the
   // parser will hand the validator).
-  const std::string ok = "name\": \"\xE6\x96\x87\xF0\x9F\xA6\x89\", na\xC3\xAFve";
+  const std::string ok =
+      "name\": \"\xE6\x96\x87\xF0\x9F\xA6\x89\", na\xC3\xAFve";
   expect_agreement(ok, true, "embedded valid");
   const std::string bad = "name\": \"\xE6\x96\x41\xF0\x9F\xA6\x89\"";
   expect_agreement(bad, false, "embedded broken");
@@ -201,7 +206,8 @@ TEST(Utf8Validator, FuzzAgreement) {
     // Bias 1-in-4 buffers toward multi-byte shapes (leads + continuations).
     if (iteration % 4 == 0 && !buf.empty()) {
       for (size_t k = 0; k < buf.size(); k += 2) {
-        buf[k] = static_cast<char>(static_cast<unsigned char>(0xC0 | (byte_dist(rng) & 0x3F)));
+        buf[k] = static_cast<char>(
+            static_cast<unsigned char>(0xC0 | (byte_dist(rng) & 0x3F)));
       }
     }
     const bool scalar = utf8_validate_scalar(buf.data(), buf.size());
