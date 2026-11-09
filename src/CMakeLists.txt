@@ -2,11 +2,15 @@ set(SOURCES
 	${CMAKE_CURRENT_SOURCE_DIR}/stubs/compiler_rt.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/ondemand/scalar.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/ondemand/parallel.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/bindings/cabi.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/abi/cabi.cpp
 )
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
     add_executable(${LIBRARY_OUTPUT_NAME} ${SOURCES})
+
+    # core::simd_* needs the stable wasm-simd128 proposal (shipped in all
+    # engines since 2022); wasm_i8x16_* intrinsics require -msimd128.
+    target_compile_options(${LIBRARY_OUTPUT_NAME} PRIVATE -msimd128)
 
 	target_include_directories(${LIBRARY_OUTPUT_NAME} PUBLIC
 		$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
