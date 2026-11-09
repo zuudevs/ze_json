@@ -85,3 +85,28 @@ target_compile_definitions(ze_json_utf8_test PRIVATE
 add_test(NAME ze_json_utf8_test COMMAND ze_json_utf8_test)
 
 add_export_test_target(ze_json_utf8_test)
+
+# ---------------------------------------------------------------------------
+# String token scan + unescape tests (TASKS P7-3).
+# @cite 10.48550_arXiv.1902.08318 (simdjson string pass)
+# @cite 10.14778_3115404.3115416 (Mison span decomposition)
+add_executable(ze_json_string_test string_test.cpp)
+
+target_include_directories(ze_json_string_test PRIVATE
+	$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+	$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/generated>
+	$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/benchmarks>
+)
+
+target_link_libraries(ze_json_string_test PRIVATE
+	${LIBRARY_OUTPUT_NAME}
+	GTest::gtest
+)
+
+target_compile_definitions(ze_json_string_test PRIVATE
+	ZE_JSON_CORPUS_DIR="${ZE_JSON_CORPUS_DIR_POSIX}"
+)
+
+add_test(NAME ze_json_string_test COMMAND ze_json_string_test)
+
+add_export_test_target(ze_json_string_test)

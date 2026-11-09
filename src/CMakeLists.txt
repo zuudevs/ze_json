@@ -3,6 +3,7 @@ set(SOURCES
 	${CMAKE_CURRENT_SOURCE_DIR}/ondemand/scalar.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/ondemand/parallel.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/ondemand/number.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/ondemand/string.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/abi/cabi.cpp
 )
 
