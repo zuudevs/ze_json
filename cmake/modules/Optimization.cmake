@@ -15,7 +15,6 @@ endif()
 function(add_optimizations_target TARGET_NAME)
 	include(CheckIPOSupported)
     check_ipo_supported(RESULT IPO_SUPPORTED OUTPUT IPO_ERROR)
-
 	if(MSVC) 
 		target_compile_options(${TARGET_NAME} PRIVATE
 			$<$<CONFIG:Release>:/O2>
@@ -99,5 +98,45 @@ function(add_optimizations_target TARGET_NAME)
 
 	if(IPO_SUPPORTED AND ENABLE_IPO)
 		set_property(TARGET ${TARGET_NAME} PROPERTY INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
+	endif()
+endfunction()
+
+# ---------------------------------------------------------------------------
+# add_pgo_flags(<target>) — P4-4: instrument targets for the PGO cycle.
+#
+# Rationale: `add_optimizations_target` above carries the full optimization
+# set (-O3, -march=native, IPO) and is deliberately NOT wired into the build
+# (the canonical native-release flag set comes from the toolchain, and
+# -march=native must never reach a distributable build — AGENTS.md section 6).
+# The PGO cycle only needs instrumentation + profile-use flags on the library
+# and the two benchmark drivers, without touching any other build type:
+#   GENERATE: -fprofile-generate (counters written as *.profraw next to the
+#             driver's CWD; merged by the `pgo_merge` target of HandlePgo.cmake)
+#   USE:      -fprofile-use=merged.profdata (auto-selected once the merge
+#             output exists — see the PGO_MODE auto-detection at the top).
+# @cite 10.1145_2807591.2807644 (benchmarking discipline: measured PGO claims
+#       require the same-window sandwich; P4-4 TASKS entry).
+function(add_pgo_flags TARGET_NAME)
+	if(NOT ENABLE_PGO)
+		return()
+	endif()
+	if(PGO_MODE STREQUAL "GENERATE")
+		message(STATUS "PGO: instrumenting ${TARGET_NAME} for profile GENERATION")
+		target_compile_options(${TARGET_NAME} PRIVATE
+			$<$<CONFIG:Release>:-fprofile-generate>
+			$<$<CONFIG:Release>:-mllvm>
+			$<$<CONFIG:Release>:-vp-counters-per-site=8>
+		)
+		target_link_options(${TARGET_NAME} PRIVATE
+			$<$<CONFIG:Release>:-fprofile-generate>
+		)
+	elseif(PGO_MODE STREQUAL "USE")
+		message(STATUS "PGO: applying profile to ${TARGET_NAME} (USE mode)")
+		target_compile_options(${TARGET_NAME} PRIVATE
+			$<$<CONFIG:Release>:-fprofile-use=${CMAKE_BINARY_DIR}/merged.profdata>
+		)
+		target_link_options(${TARGET_NAME} PRIVATE
+			$<$<CONFIG:Release>:-fprofile-use=${CMAKE_BINARY_DIR}/merged.profdata>
+		)
 	endif()
 endfunction()

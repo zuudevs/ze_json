@@ -38,6 +38,10 @@ target_compile_definitions(ze_json_scanner_benchmark PRIVATE
 	ZE_JSON_BENCH_CORPUS_DIR="${ZE_JSON_BENCH_CORPUS_DIR_POSIX}"
 )
 
+# P4-4: the driver exe must be instrumented too — the profile runtime that
+# writes the *.profraw (merged by `pgo_merge`) is linked from here.
+add_pgo_flags(ze_json_scanner_benchmark)
+
 add_export_benchmark_target(ze_json_scanner_benchmark)
 
 # ---------------------------------------------------------------------------
@@ -61,5 +65,8 @@ target_link_libraries(ze_json_parser_benchmark PRIVATE
 target_compile_definitions(ze_json_parser_benchmark PRIVATE
 	ZE_JSON_BENCH_CORPUS_DIR="${ZE_JSON_BENCH_CORPUS_DIR_POSIX}"
 )
+
+# P4-4: same as the scanner driver — profile runtime linkage + counters.
+add_pgo_flags(ze_json_parser_benchmark)
 
 add_export_benchmark_target(ze_json_parser_benchmark)
