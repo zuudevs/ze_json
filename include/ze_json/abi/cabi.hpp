@@ -6,7 +6,7 @@
 namespace zuu::abi {
 
 /**
- * @brief C-ABI contract shared by every `ze_*` export (wasm64 binding, v2).
+ * @brief C-ABI contract shared by every `ze_*` export (wasm64 binding, v3).
  *
  * This header is the single source of truth for the surface consumed by
  * `bindings/js/ze_json.mjs` (and any future foreign-function consumer).
@@ -41,10 +41,97 @@ namespace zuu::abi {
  *   ok    : count (high 32 bits zero) — structural indices written to dst
  *   error : (JsonErrc code << 32)
  * `dst` entries are core::size_t (8 bytes on wasm64).
+ *
+ * v3 export table (v2 + on-demand parser surface, TASKS P7-5). Every call
+ * operates on one parser SLOT of a static pool (kParserSlotMax entries,
+ * one Arena + one Document placed per slot; slot = the handle). Traversal
+ * continuation state is the (cursor, token_start) frame pair a step result
+ * hands back — full-width u64 ARGUMENTS stay unpacked, so re-entry is
+ * stateless: the exports rebuild the exact C++ iterator from the pair and
+ * drive the real on-demand operators (no framing logic is duplicated).
+ * @cite 10.1002_spe.3313 on-demand JSON (Keiser, Lemire) — the single
+ *       forward iterator this C surface replays token by token.
+ * @cite 10.14778_3115404.3115416 Mison — the structural-index walk that
+ *       backs cursor re-entry without a materialized DOM.
+ *
+ *   ze_parser_open (src, src_size) -> u64      Document::open on the slot
+ *                       (arena carve src_size*8*3+64 bytes from the bump
+ *                       heap); ok => slot id in the low half. Fails loud
+ *                       (InsufficientBuffer) when the pool is exhausted —
+ *                       closing slots first is the caller's job.
+ *   ze_parser_root (slot) -> u64               Document::get_root; ok =>
+ *                       root token_start (plain, 0 is a valid root).
+ *   ze_parser_close (slot) -> u64              destruct the slot; plain 0.
+ *   ze_reset_heap () -> void                   v2 rewind EXTENDED: closes
+ *                       every parser slot first (buffers share the bump
+ *                       heap, so a reset invalidates open documents).
+ *   ze_container_begin (slot, container_ts, container_cursor) -> u64
+ *                       first child frame of the array/object at ts; ok =>
+ *                       (cursor << 32) | child_ts — of an OBJECT the
+ *                       "child" is the STRING KEY token (its cursor is
+ *                       the ':' index); done (empty container) =>
+ *                       kStepSentinel << 32.
+ *   ze_array_next (slot, child_ts, child_cursor) -> u64
+ *                       ArrayIter++ replay; same step packing.
+ *   ze_object_next (slot, value_ts, value_cursor) -> u64
+ *                       ObjectIter++ replay; ok => next key frame
+ *                       (cursor << 32) | key_ts; done => kStepSentinel.
+ *   ze_object_field (slot, key_ts, key_cursor) -> u64
+ *                       ObjectIter* replay (the key itself is a string
+ *                       token: read it back with ze_value_kind + 
+ *                       ze_get_string); ok => (value_cursor << 32) |
+ *                       value_ts — the same frame shape every consumer
+ *                       feeds back into ze_container_begin /
+ *                       ze_array_next.
+ *   ze_value_kind (slot, token_start) -> u64   plain classification
+ *                       kOndemandNodeType value 0..7; 0 = Unknown (also
+ *                       for out-of-range ts — no error channel).
+ *   ze_get_string  (slot, token_start, dst, dst_cap) -> u64
+ *                       full P7-3 unescape into dst (V8-locked semantics:
+ *                       lone-surrogate escapes pass through verbatim); ok
+ *                       => decoded byte count (0 = valid empty string);
+ *                       too-small cap => InsufficientBuffer, dst untouched.
+ *   ze_get_number  (slot, token_start, dst, dst_cap) -> u64
+ *                       V8-parity double (P7-2 parse_number) written to
+ *                       dst as 8 little-endian bytes (dst_cap >= 8); ok =>
+ *                       8. The bits do NOT travel in the packed return —
+ *                       -0.0 and subnormal bit patterns would alias the
+ *                       error-half-non-zero packing.
+ *   ze_get_bool    (slot, token_start) -> u64  ok => literal check, low
+ *                       half 0 (false) / 1 (true); non-literal ts =>
+ *                       InvalidJson.
+ *   ze_is_null     (slot, token_start) -> u64  plain 0/1 literal match
+ *                       (no error channel — classification, not scan).
+ *   ze_count_elements (slot, token_start) -> u64
+ *                       Value::count_elements; ok => count (index-walk
+ *                       framing only — the skip latitude is INTENTIONAL),
+ *                       error => (JsonErrc << 32).
+ *
+ * v3 result packing:
+ *   ok (scalar family: open/root/count/string/number/bool)
+ *                       payload in the LOW 32 bits, high 32 bits zero;
+ *   ok (step family: container_begin/array_next/object_next/object_field)
+ *                       frame (cursor << 32) | token_start — BOTH halves
+ *                       are always non-zero (every child/key/value sits
+ *                       after its launcher byte, and a container owns at
+ *                       least one index before any child), so the error
+ *                       test `high != 0 && low == 0` stays exact;
+ *   done (step family)  (kStepSentinel << 32)  — kStepSentinel = 0xffffffff
+ *                       can never be a cursor for any sub-4-GiB document
+ *                       (cursors are structural-index positions, bounded
+ *                       by the source size);
+ *   plain (kind/is_null/close)   the value itself;
+ *   error (everything)  (JsonErrc code << 32) — matching v2.
  */
-inline constexpr core::uint64_t kAbiVersion = 2;
+inline constexpr core::uint64_t kAbiVersion = 3;
 
 inline constexpr core::uint32_t kErrorShift = 32;
+
+/** Static parser-slot pool size (slot ids are 0-based arrays into it). */
+inline constexpr core::uint32_t kParserSlotMax = 64;
+
+/** Step-family exhaustion sentinel (carried in the high 32 bits). */
+inline constexpr core::uint32_t kStepSentinel = 0xffffffffU;
 
 [[nodiscard]] constexpr core::uint64_t pack_ok(core::size_t count) noexcept {
   return static_cast<core::uint64_t>(count);
@@ -54,6 +141,17 @@ inline constexpr core::uint32_t kErrorShift = 32;
 pack_error(core::JsonErrc error) noexcept {
   return static_cast<core::uint64_t>(static_cast<core::uint32_t>(error))
          << kErrorShift;
+}
+
+/** Step-family ok frame: `cursor` and `token_start` BOTH in a u32 half. */
+[[nodiscard]] constexpr core::uint64_t
+pack_step(core::size_t cursor, core::size_t token_start) noexcept {
+  return (static_cast<core::uint64_t>(cursor) << kErrorShift) |
+         static_cast<core::uint64_t>(token_start);
+}
+
+[[nodiscard]] constexpr core::uint64_t pack_step_done() noexcept {
+  return static_cast<core::uint64_t>(kStepSentinel) << kErrorShift;
 }
 
 } // namespace zuu::abi

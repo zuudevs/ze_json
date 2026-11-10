@@ -7,7 +7,8 @@
  * @cite 10.48550_arXiv.1902.08318 simdjson staging contract
  * @cite 10.14778_3115404.3115416 Mison structural indexing
  */
-import { ZeJson, ZeDocument, ABI_VERSION, SCANNER_MODES } from '../ze_json.mjs';
+import { ZeJson, ZeDocument, ZeParser, ZeParserError, ABI_VERSION,
+  SCANNER_MODES, PARSER_SLOT_MAX } from '../ze_json.mjs';
 
 let failures = 0;
 
@@ -91,6 +92,143 @@ check('bump allocator advances (16-aligned)', ptrB >= ptrA + 64 && ptrB % 16 ===
 binding.resetHeap();
 const ptrReset = binding.alloc(64);
 check('resetHeap rewinds to base region', ptrReset <= ptrA, `reset=${ptrReset} first=${ptrA}`);
+
+// --- on-demand parser surface (P7-5) ---------------------------------------
+// parse() = full materialization; for plain cases the tree must equal
+// JSON.parse (same engine, canonical stringify on both sides). The two
+// documented divergence cases (-0 sign, lone-surrogate pass-through) get
+// explicit checks instead of stringify — JSON.stringify loses the -0 sign
+// and the escape-preserving wrapper semantics differs from a V8 surrogate.
+const parseDoc = (text) => {
+  const parser = ZeParser.open(binding, Buffer.from(text, 'utf8'));
+  try {
+    return parser.parse();
+  } finally {
+    parser.close();
+  }
+};
+
+const parseParityCases = [
+  'null', 'true', ' false ', '42', '-3', '-2.5e2', '9007199254740993',
+  '1e-400', '"plain"', '"tab\\tnewline\\n"', '"\\u0000"', '"\\ud83d\\ude00"',
+  '[]', '[1,2,3]', '[0.1, [true, null]]', '{}', '{"a":1,"b":[1,{"c":"d"}]}',
+  '{"k":"a[b],{c}"}', '{"a\\t":"b\\n\\u0041"}', '"ex\\"c"', '"end\\\\"',
+  '[[[[["deep"]]]]]', '[1e400]',
+];
+for (const text of parseParityCases) {
+  let ok = false;
+  let detail = '';
+  try {
+    const value = parseDoc(text);
+    const v8 = JSON.parse(text);
+    ok = JSON.stringify(value) === JSON.stringify(v8);
+    detail = `ze=${JSON.stringify(value)} v8=${JSON.stringify(v8)}`;
+  } catch (err) {
+    if (err instanceof ZeParserError) {
+      detail = `unexpected reject: ${err.message}`;
+    } else {
+      throw err;
+    }
+  }
+  check(`parse ${JSON.stringify(text)} equals JSON.parse`, ok, detail);
+}
+
+// Documented divergences: exact f64/-0 identity and lone-surrogate literal.
+check('parse "-0" keeps negative zero',
+  Object.is(parseDoc('-0'), -0) && Object.is(JSON.parse('-0'), -0));
+check('parse "1e400" overflows to Infinity',
+  parseDoc('1e400') === Infinity && JSON.parse('1e400') === Infinity);
+check('parse lone surrogate escape passes through verbatim',
+  parseDoc('"\\ud800"') === '\\ud800');
+check('parse decode target is UTF-8 of the astral pair',
+  Buffer.from(parseDoc('"\\ud83d\\ude00"'), 'utf8')
+    .equals(Buffer.from('\xF0\x9F\x98\x80', 'binary')));
+
+// Own-key semantics: "__proto__" must stay an own key (JSON.parse parity).
+const protoValue = parseDoc('{"__proto__": 1}');
+check('parse "__proto__" key stays an own property',
+  Object.prototype.hasOwnProperty.call(protoValue, '__proto__')
+  && Object.getPrototypeOf(protoValue) === null
+  && protoValue['__proto__'] === 1);
+
+// Framing/grammar rejects — the walk must surface a ZeParserError verdict.
+const parseRejectCases = [
+  '', '  \n', 'tru', 'nul', '5 5', 'true x', '"a" 4', '1e3\r,', '[,]',
+  '[1,]', '[1 2]', '["a" "b"]', '[1, 2', '[1:', '[1e]', '[01]',
+  '{"a": 1,}', '{"a": }', '{"a"}', '{,}', '{"a":: 1}', '{1: 2}',
+  '{"a": "b"} {"b": 2}', '[] []', '"just a string" trailing',
+];
+for (const text of parseRejectCases) {
+  let threw = false;
+  let detail = '';
+  try {
+    parseDoc(text);
+  } catch (err) {
+    threw = err instanceof ZeParserError;
+    detail = err.message;
+  }
+  check(`parse rejects ${JSON.stringify(text)}`, threw, detail);
+}
+
+// Low-level parser surface: counts, kinds, frame walking, slot lifecycle.
+{
+  const parser = ZeParser.open(binding, Buffer.from('[1, 2, 3]', 'utf8'));
+  check('root kind is object/array classified', parser.kind(parser.rootTs) === 2);
+  check('countElements of the root array',
+    parser.countElements(parser.rootTs) === 3);
+  const frame = parser.containerBegin(parser.rootTs, 0);
+  const kinds = [];
+  let cursor = frame;
+  for (let i = 0; i < 4; i += 1) {
+    kinds.push(parser.kind(cursor.ts));
+    cursor = parser.arrayNext(cursor.ts, cursor.cursor);
+    if (cursor === null) {
+      break;
+    }
+  }
+  check('frame walk classifies [number, number, number] then done',
+    JSON.stringify(kinds.slice(0, 3)) === JSON.stringify([4, 4, 4])
+    && kinds[3] === undefined, `kinds=${JSON.stringify(kinds)}`);
+  parser.close();
+  check('close() is idempotent', (parser.close(), true));
+}
+
+check('two parsers live concurrently', (() => {
+  const a = ZeParser.open(binding, Buffer.from('{"a":1}', 'utf8'));
+  const b = ZeParser.open(binding, Buffer.from('[true, null, 2]', 'utf8'));
+  const ok = JSON.stringify(a.parse()) === JSON.stringify(JSON.parse('{"a":1}'))
+    && JSON.stringify(b.parse()) === JSON.stringify(JSON.parse('[true, null, 2]'));
+  a.close();
+  b.close();
+  return ok;
+})());
+
+check('slot pool fills to kParserSlotMax then fails loud', (() => {
+  const bytes = Buffer.from('1', 'utf8');
+  for (let i = 0; i < PARSER_SLOT_MAX; i += 1) {
+    const ptr = binding.alloc(1);
+    binding.writeBytes(ptr, bytes);
+    const open = binding.openParser(ptr, 1);
+    if (!open.ok) {
+      console.error(`  slot ${i} unexpectedly rejected: ${open.error}`);
+      binding.resetHeap();
+      return false;
+    }
+  }
+  const overflowPtr = binding.alloc(1);
+  const overflow = binding.openParser(overflowPtr, 1);
+  binding.resetHeap(); // closes every open slot in one step
+  return overflow.ok === false && overflow.error === 'InsufficientBuffer'
+    && binding.openParser(overflowPtr, 1).ok === true;
+})());
+
+check('resetHeap closes live parser slots', (() => {
+  const parser = ZeParser.open(binding, Buffer.from('"x"', 'utf8'));
+  const live = binding.valueKind(parser.slot, parser.rootTs);
+  binding.resetHeap();
+  const dead = binding.valueKind(parser.slot, parser.rootTs);
+  return live === 3 && dead === 0; // string when open, unknown when closed
+})());
 
 console.log(failures === 0 ? '[smoke] PASS' : `[smoke] FAIL (${failures} failure(s))`);
 process.exit(failures === 0 ? 0 : 1);
