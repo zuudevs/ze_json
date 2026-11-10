@@ -8,6 +8,7 @@ project(
 include("cmake/modules/Config.cmake")
 include("cmake/modules/Variable.cmake")
 include("cmake/modules/HandleGit.cmake")
+include("cmake/modules/MeasurementRegistry.cmake")
 include("cmake/modules/Optimization.cmake")
 include("cmake/modules/CheckTidy.cmake")
 include("cmake/modules/CodeFormat.cmake")

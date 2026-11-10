@@ -39,3 +39,27 @@ target_compile_definitions(ze_json_scanner_benchmark PRIVATE
 )
 
 add_export_benchmark_target(ze_json_scanner_benchmark)
+
+# ---------------------------------------------------------------------------
+# On-demand parser component benchmarks (TASKS P7-7): BM_ParseReference vs
+# BM_ParseOpen (staging) vs BM_ParseOnDemandFullWalk — the P4-3/P4-4 baselines.
+# @cite 10.1002_spe.3313 (on-demand walk component costs)
+# @cite 10.14778_3115404.3115416 (Mison staging layer)
+# @cite 10.1002_spe.2984 (number promotion cost inside the walk)
+add_executable(ze_json_parser_benchmark parser_benchmark.cpp)
+
+target_include_directories(ze_json_parser_benchmark PRIVATE
+	$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+	$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/generated>
+)
+
+target_link_libraries(ze_json_parser_benchmark PRIVATE
+	${LIBRARY_OUTPUT_NAME}
+	benchmark::benchmark
+)
+
+target_compile_definitions(ze_json_parser_benchmark PRIVATE
+	ZE_JSON_BENCH_CORPUS_DIR="${ZE_JSON_BENCH_CORPUS_DIR_POSIX}"
+)
+
+add_export_benchmark_target(ze_json_parser_benchmark)
