@@ -25,12 +25,15 @@
 #include <ze_json/ondemand/number.hpp>
 
 #include <ze_json/core/integral.hpp>
+#include <ze_json/core/lookups.hpp>
 
 namespace zuu::ondemand {
 
 namespace {
 
 using Big = unsigned __int128;
+
+constexpr Big kMask64 = (Big{1} << 64) - 1;
 
 // ---------------------------------------------------------------- bit utils
 
@@ -151,30 +154,54 @@ constexpr Big kPow10Big(int p) noexcept {
     }
     e = bl - 1;
   } else {
-    // value = m / 10^k as an exact rational; scale so the quotient lands in
-    // (2^52, 2^54), divide bit-serially (≈ 53 + k iterations), round once.
+    // value = m / 10^k, k in [1, 22]: divide by 5^k via the codegen
+    // 128-bit reciprocal (kPowerOfFiveReciprocal, paper Section 9.1
+    // scheme) instead of the bit-serial long division the reference
+    // (region_div_ref) performs. Construction (k = -q, 1 <= k <= 22):
+    //   z = bitlen(5^k), b = 127 + z, c = ceil(2^b / 5^k)  [table entry]
+    //   l = 53 - bitlen(m); m_n = m << l (in [2^52, 2^53))
+    //   n = m_n << z (in [2^(52+z), 2^(53+z)) < 2^106)
+    //   N2 = (n × c) >> 128, D = 127 + z, Q = N2 >> (z - 1)
+    //     = floor(n×c / 2^D) = floor(n / 5^k + eps), 0 <= eps < 2^-22,
+    //     so Q in {floor(n/5^k), +1} — resolved by one exact compare.
+    //   r = n - Q·5^k exact (u128); e = bl(Q) - 1 - (z + l + k).
+    // Q in (2^52, 2^54) by the n/5^k slotting, so bl(Q) in {53, 54} and
+    // the fold machinery below is unchanged.
+    //
+    // @cite 10.1002_spe.2984 Section 9.1 — division by powers of five via
+    //       tabulated 128-bit reciprocals (single multiply product).
     const int k = static_cast<int>(-q);
-    const Big d = kPow10Big(k);
-    const core::uint64_t n64 = m;
-    const int s = 53 + bitlen128(d) - bitlen64(n64); // n << s < 2^127
-    // Binary long division of (n << s) / d; bit i of (n << s) is bit (i-s)
-    // of n (zero for i < s).
-    Big qq = 0;
-    Big rr = 0;
-    const int top = bitlen64(n64) + s - 1;
-    for (int i = top; i >= 0; --i) {
-      rr = (rr << 1) |
-           ((i >= s) ? ((static_cast<Big>(n64 >> (i - s))) & 1) : Big{0});
-      if (rr >= d) {
-        rr -= d;
-        qq |= Big{1} << i;
-      }
+    const Big d = kPow10Big(k) >> k;                 // = 5^k
+    const int z = bitlen128(kPow10Big(k)) - k;       // = bitlen(5^k)
+    const int l = 53 - bitlen64(m);
+    const Big n = (static_cast<Big>(m) << l) << z;    // < 2^106
+    const core::Bytes16 rec_entry = core::kPowerOfFiveReciprocal[k - 1];
+    const Big c = (static_cast<Big>(rec_entry.high) << 64) | rec_entry.low;
+    const Big n_hi = n >> 64, n_lo = n & kMask64;
+    const Big c_hi = c >> 64, c_lo = c & kMask64;
+    // N2 = (n × c) >> 128, assembled without the low half (bits below 128
+    // cannot influence the Q bits — D = 127 + z >= 130).
+    const Big t1 = n_hi * c_hi;                      // < 2^106
+    const Big mid_a = n_hi * c_lo;
+    const Big mid = mid_a + n_lo * c_hi;             // < 2^129
+    const bool mid_carry = mid < mid_a;              // 128-bit wrap spill
+    const Big mh = (mid >> 64) + (mid_carry ? 1 : 0);
+    const Big tl = (mid & kMask64) << 64;            // mid's low × 2^64
+    const Big tl2 = tl + n_lo * c_lo;                // < 2^129
+    const bool tl_carry = tl2 < tl;                  // spill into bit 128
+    const Big n2 = t1 + mh + (tl_carry ? 1 : 0);     // (n×c) >> 128
+    Big qq = n2 >> (z - 1);                          // floor(n×c / 2^D)
+    // Exact correction: floor(n/5^k) ∈ {qq, qq+1} (eps < 2^-22 can push
+    // the truncated product one past the true quotient only).
+    if (((qq + 1) * d) <= n) {
+      qq += 1;
     }
-    // value = (qq + rr/d) × 2^-s; qq ∈ (2^52, 2^54). Fold the remainder
-    // into the 55-bit window — dropping it loses the rounding decision
-    // (e.g. 0.1 must round UP from the quotient's truncation). The quotient
-    // here is < 4 by construction, so it is computed with comparisons only
-    // (no __udivti3 — the wasm64 build is -nostdlib).
+    const Big rr = n - qq * d;                       // exact remainder
+    const int s = z + l + k;                         // value = qq×2^-s scale
+    // Fold the remainder into the 55-bit window — identical glue to the
+    // reference (Semantic: dropping rr loses the rounding decision, e.g.
+    // 0.1 must round UP; the quotient is < 4 by construction so the fold
+    // uses comparisons only, never __udivti3).
     const int bl = bitlen128(qq);
     const int fold = 55 - bl; // bl ∈ {53, 54} -> fold ∈ {1, 2}
     if (fold < 0) {
@@ -182,7 +209,7 @@ constexpr Big kPow10Big(int p) noexcept {
       sig55 = static_cast<core::uint64_t>(qq >> sh);
       sticky = sticky || (qq & ((Big{1} << sh) - 1)) != 0;
     } else {
-      const Big shifted = rr << fold; // rr < d <= 2^74, fold <= 2 -> < 3x2^74
+      const Big shifted = rr << fold; // rr < d <= 2^52, fold <= 2 -> < 3x2^52
       Big add = 0;
       if (shifted >= d) {
         const Big d2 = d << 1;
@@ -194,6 +221,68 @@ constexpr Big kPow10Big(int p) noexcept {
     }
     e = bl - 1 - s;
   }
+  return assemble_double(sig55, e, sticky, negative);
+}
+
+/**
+ * @brief Bit-serial reference for region_exact's negative path (P4-3 C2).
+ *
+ * Same semantics as region_exact for q < 0 (requires 1 <= m < 2^53,
+ * -22 <= q <= -1), but performs the division as binary long division
+ * (≈ 53 + 3.3k shift/compare iterations) — the P7-2 proven implementation
+ * that the reciprocal fast path must match double-for-double.
+ *
+ * @cite 10.1002_spe.2984 the exact-division anchor; kept as the
+ *       correctness oracle (cpp-highperf-json rule: reference next to
+ *       every fast path).
+ */
+[[nodiscard]] double region_div_ref(core::uint64_t m, core::int64_t q,
+                                    bool negative) noexcept {
+  core::uint64_t sig55 = 0;
+  int e = 0;
+  bool sticky = false;
+  // value = m / 10^k as an exact rational; scale so the quotient lands in
+  // (2^52, 2^54), divide bit-serially (≈ 53 + k iterations), round once.
+  const int k = static_cast<int>(-q);
+  const Big d = kPow10Big(k);
+  const core::uint64_t n64 = m;
+  const int s = 53 + bitlen128(d) - bitlen64(n64); // n << s < 2^127
+  // Binary long division of (n << s) / d; bit i of (n << s) is bit (i-s)
+  // of n (zero for i < s).
+  Big qq = 0;
+  Big rr = 0;
+  const int top = bitlen64(n64) + s - 1;
+  for (int i = top; i >= 0; --i) {
+    rr = (rr << 1) |
+         ((i >= s) ? ((static_cast<Big>(n64 >> (i - s))) & 1) : Big{0});
+    if (rr >= d) {
+      rr -= d;
+      qq |= Big{1} << i;
+    }
+  }
+  // value = (qq + rr/d) × 2^-s; qq ∈ (2^52, 2^54). Fold the remainder
+  // into the 55-bit window — dropping it loses the rounding decision
+  // (e.g. 0.1 must round UP from the quotient's truncation). The quotient
+  // here is < 4 by construction, so it is computed with comparisons only
+  // (no __udivti3 — the wasm64 build is -nostdlib).
+  const int bl = bitlen128(qq);
+  const int fold = 55 - bl; // bl ∈ {53, 54} -> fold ∈ {1, 2}
+  if (fold < 0) {
+    const int sh = -fold;
+    sig55 = static_cast<core::uint64_t>(qq >> sh);
+    sticky = sticky || (qq & ((Big{1} << sh) - 1)) != 0;
+  } else {
+    const Big shifted = rr << fold; // rr < d <= 2^74, fold <= 2 -> < 3x2^74
+    Big add = 0;
+    if (shifted >= d) {
+      const Big d2 = d << 1;
+      add = shifted >= d2 ? (shifted >= d2 + d ? Big{3} : Big{2}) : Big{1};
+    }
+    const Big rem2 = shifted - add * d;
+    sig55 = static_cast<core::uint64_t>((qq << fold) + add);
+    sticky = sticky || rem2 != 0;
+  }
+  e = bl - 1 - s;
   return assemble_double(sig55, e, sticky, negative);
 }
 
@@ -661,6 +750,22 @@ core::Result<double, core::JsonErrc> parse_number(const char *src,
   }
   return slow_path(sigbuf, sig_len < kSigCap ? sig_len : kSigCap, q0 + dropped,
                    p.negative, tail_nonzero);
+}
+
+// ----------------------------------------------------- verification bridge
+
+// P4-3 C2 test bridge (see number.hpp `detail`): thin forwarders so
+// tests/number_test.cpp can drive the two negative-region paths directly.
+// The anonymous-namespace implementations stay private to this TU; the
+// bridge functions merely translate the test's k to the internal q = -k.
+double detail::region_exact_neg(const core::uint64_t m, const int k,
+                                const bool negative) noexcept {
+  return region_exact(m, -k, negative);
+}
+
+double detail::region_div_ref(const core::uint64_t m, const int k,
+                              const bool negative) noexcept {
+  return region_div_ref(m, -k, negative);
 }
 
 } // namespace zuu::ondemand
