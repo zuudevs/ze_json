@@ -153,7 +153,22 @@ def gen_utf8_validation_tables():
     return payload
 
 def gen_json_char_classes():
-    payload = '/**\n* @brief JSON Character Classes for fast scalar fallback and validation\n* 0=None, 1=Whitespace, 2=Structural, 4=Quote, 8=Escape\n*/\n'
+    payload = '''/**
+* @brief JSON Character Classes for fast scalar fallback and validation
+* 0=None, 1=Whitespace, 2=Structural, 4=Quote, 8=Escape
+*
+* Provable classification: every entry is computed from the member-list
+* loops below (whitespace set, structural set, quote, escape) — no magic
+* numbers; the differential test pins the table against the same sets
+* byte-by-byte (tests/scanner_test.cpp CharClassTable).
+*
+* @cite 10.14778_3115404.3115416 Mison — structural scanning classifies
+*       bytes by a lookup table so the per-class semantics stay a single
+*       load (structural index formation).
+* @cite 10.48550_arXiv.1902.08318 simdjson — the table-driven scalar
+*       fallback this masks onto (escape/quote detection inside strings).
+*/
+'''
     payload += "inline constexpr uint8_t kJsonCharClass[] = {\n\t"
     
     classes = [0] * 256
@@ -178,7 +193,22 @@ def gen_json_char_classes():
     return payload
 
 def gen_ondemand_node_types():
-    payload = '/**\n* @brief On-Demand JSON Node Type resolution table\n* Maps a starting byte directly to its JSON entity type to eliminate branching.\n* Types: 0=Unknown, 1=Object, 2=Array, 3=String, 4=Number, 5=True, 6=False, 7=Null\n*/\n'
+    payload = '''/**
+* @brief On-Demand JSON Node Type resolution table
+* Maps a starting byte directly to its JSON entity type to eliminate branching.
+* Types: 0=Unknown, 1=Object, 2=Array, 3=String, 4=Number, 5=True, 6=False, 7=Null
+*
+* Provable classification: entry = member-set membership below (launcher
+* sets only), computed by the loops; the on-demand layer's launcher check
+* is one load (node_type_from_byte). Reference walker (P7-6) proves the
+* same mapping branchy — the differential gate holds both sides together.
+*
+* @cite 10.14778_3115404.3115416 Mison — single-load byte classification
+*       keeps the on-demand walk's per-value framing table-bound.
+* @cite 10.48550_arXiv.1902.08318 simdjson — launcher-byte dispatch is the
+*       on-demand value iterator's first decision.
+*/
+'''
     payload += "inline constexpr uint8_t kOndemandNodeType[] = {\n\t"
     
     types = [0] * 256
@@ -221,7 +251,7 @@ def main():
     if not output_path.parent.exists():
         output_path.parent.mkdir(parents=True, exist_ok=True)
     
-    with open(argv[1], 'w') as w:
+    with open(argv[1], 'w', encoding='utf-8', newline='\n') as w:
         w.write('#pragma once\n\n')
         w.write('#include <ze_json/core/integral.hpp>\n\n')
         w.write('namespace zuu::core {\n\n')
