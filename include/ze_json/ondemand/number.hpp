@@ -69,4 +69,29 @@ scan_number(const char *src, core::size_t len) NOEXCEPT;
 [[nodiscard]] core::Result<double, core::JsonErrc>
 parse_number(const char *src, core::size_t len) NOEXCEPT;
 
+namespace detail {
+
+/**
+ * @brief Test/verification bridge for the P4-3 C2 negative-exponent paths
+ *        (NOT part of the public API surface).
+ *
+ * Exposes the two q < 0 implementations of the exact-region number parser so
+ * a differential test can pin them bit-for-bit against each other:
+ *   - region_exact_neg: the reciprocal fast path (kPowerOfFiveReciprocal,
+ *     paper Section 9.1 single-multiply scheme);
+ *   - region_div_ref:   the proven P7-2 bit-serial long division (correctness
+ *     oracle, reference-next-to-every-fast-path rule).
+ * Requires 1 <= m < 2^53 and 1 <= k <= 22 — exactly region_exact's negative
+ * branch contract (outside it the big-integer slow path takes over and
+ * neither internal path is consulted).
+ *
+ * @cite 10.1002_spe.2984 fast/slow-path pairing discipline.
+ */
+[[nodiscard]] double region_exact_neg(core::uint64_t m, int k,
+                                      bool negative) noexcept;
+[[nodiscard]] double region_div_ref(core::uint64_t m, int k,
+                                    bool negative) noexcept;
+
+} // namespace detail
+
 } // namespace zuu::ondemand

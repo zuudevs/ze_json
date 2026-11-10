@@ -323,6 +323,56 @@ TEST(NumberRoundTrip, RandomBitPatterns) {
   }
 }
 
+TEST(NumberRegionFastPath, MatchesBitSerialReference) {
+  // P4-3 C2 gate: the reciprocal fast path (kPowerOfFiveReciprocal, paper
+  // Section 9.1) must agree bit-for-bit with the proven bit-serial long
+  // division over the ENTIRE fast-path input contract — every (m, q) pair
+  // parse_number sends to region_exact's negative branch: 1 <= m < 2^53,
+  // k = -q in [1, 22]. Corner probes pin the bit-length extremes (power-of-
+  // two significands, 2^53-1, all-zero tail m=1) on every k; the seeded
+  // fuzz sweeps ordinary mantissas densely. A mismatch here means the
+  // single-multiply quotient+correction scheme deviated from the exact
+  // result and the candidate is unusable by construction.
+  // @cite 10.1002_spe.2984 Section 9.1 — reciprocal division equality.
+  static const std::array<core_u64, 23> kCorners{
+      1,            2,           3,            5,         7,
+      10,           11,          47,           100,       999,
+      1000000,      123456789,   (1ull << 1),  (1ull << 10),
+      (1ull << 20), (1ull << 40), (1ull << 50), (1ull << 52),
+      (1ull << 52) + 1, (1ull << 52) - 1, (1ull << 53) - 1,
+      0xF0F0F0F0ull,  0x800000aaaaaaull,
+  };
+  for (const core_u64 m : kCorners) {
+    ASSERT_GE(m, 1) << "probe out of contract";
+    ASSERT_LT(m, (core_u64{1} << 53)) << "probe out of contract";
+    for (int k = 1; k <= 22; ++k) {
+      const double fast = zuu::ondemand::detail::region_exact_neg(m, k, false);
+      const double ref = zuu::ondemand::detail::region_div_ref(m, k, false);
+      ASSERT_EQ(bits_of(fast), bits_of(ref))
+          << "m=" << m << " k=" << k << " fast=" << fast << " ref=" << ref;
+      // Sign pass-through.
+      const double fast_neg =
+          zuu::ondemand::detail::region_exact_neg(m, k, true);
+      const double ref_neg =
+          zuu::ondemand::detail::region_div_ref(m, k, true);
+      ASSERT_EQ(bits_of(fast_neg), bits_of(ref_neg))
+          << "m=" << m << " k=" << k << " (negative)";
+    }
+  }
+  std::mt19937_64 rng(20261110);
+  for (int trial = 0; trial < 150000; ++trial) {
+    const core_u64 m = 1 + rng() % ((core_u64{1} << 53) - 1);
+    const int k = 1 + static_cast<int>(rng() % 22);
+    const bool negative = (rng() & 1) != 0;
+    const double fast =
+        zuu::ondemand::detail::region_exact_neg(m, k, negative);
+    const double ref = zuu::ondemand::detail::region_div_ref(m, k, negative);
+    ASSERT_EQ(bits_of(fast), bits_of(ref))
+        << "m=" << m << " k=" << k << " negative=" << negative
+        << " fast=" << fast << " ref=" << ref;
+  }
+}
+
 } // namespace
 
 // Custom main: persist the export-helper sidecar (ZE_METADATA_OUT) when the
