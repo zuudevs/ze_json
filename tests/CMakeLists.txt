@@ -131,3 +131,38 @@ target_link_libraries(ze_json_value_test PRIVATE
 add_test(NAME ze_json_value_test COMMAND ze_json_value_test)
 
 add_export_test_target(ze_json_value_test)
+
+# ---------------------------------------------------------------------------
+# Reference parser verdict-differential + json_checker gate (TASKS P7-6).
+# @cite 10.1002_spe.3313 (on-demand JSON — full-walk verdict anchor)
+# @cite 10.14778_3115404.3115416 (Mison — correctness needs no index)
+add_executable(ze_json_reference_parser_test reference_parser_test.cpp)
+
+target_include_directories(ze_json_reference_parser_test PRIVATE
+	$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+	$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/generated>
+	$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/benchmarks>
+)
+
+target_link_libraries(ze_json_reference_parser_test PRIVATE
+	${LIBRARY_OUTPUT_NAME}
+	GTest::gtest
+)
+
+set(ZE_JSON_BENCH_CORPUS_DIR "$ENV{PROJECT_ROOT_DIR}/corpus/benchmarks" CACHE PATH
+	"benchmark corpora directory (corpus/benchmarks, P0-8 manifests)")
+
+# Normalize separators: backslashes inside a C string literal would form
+# invalid escape sequences (\t, \v, ...), corrupting the path.
+string(REPLACE "\\" "/" ZE_JSON_BENCH_CORPUS_DIR_POSIX
+	"${ZE_JSON_BENCH_CORPUS_DIR}")
+
+target_compile_definitions(ze_json_reference_parser_test PRIVATE
+	ZE_JSON_CORPUS_DIR="${ZE_JSON_CORPUS_DIR_POSIX}"
+	ZE_JSON_BENCH_CORPUS_DIR="${ZE_JSON_BENCH_CORPUS_DIR_POSIX}"
+)
+
+add_test(NAME ze_json_reference_parser_test
+	COMMAND ze_json_reference_parser_test)
+
+add_export_test_target(ze_json_reference_parser_test)
