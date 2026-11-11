@@ -13,6 +13,15 @@ if(ENABLE_SANITIZERS)
 	add_link_options(
 		-fsanitize=address,undefined
 	)
+	# MSVC's STL requests its ASan-instrumented library (stl_asan.lib) via
+	# pragma comment when annotations compile in — a toolset component not
+	# shipped by every BuildTools install (this dev device lacks it). The
+	# clang runtime keeps full heap/stack/UB coverage without the STL layer;
+	# only the container-internal shadow annotations go dark.
+	add_compile_definitions(
+		_DISABLE_STRING_ANNOTATION
+		_DISABLE_VECTOR_ANNOTATION
+	)
 
 	if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 		if(NOT DEFINED ASAN_RUNTIME_DLL)
