@@ -151,6 +151,37 @@ check('parse "__proto__" key stays an own property',
   && Object.getPrototypeOf(protoValue) === null
   && protoValue['__proto__'] === 1);
 
+// Assignment-path semantics (#readObject): duplicates are last-wins at the
+// first-occurrence position, "__proto__" stays an own key wherever it
+// appears, and integer-index-like keys follow OrdinaryOwnPropertyKeys on
+// both engines (all three are data-property semantics of a null-prototype
+// receiver, so the fast assignment path must not diverge from V8).
+const dupValue = parseDoc('{"a": 1, "b": 2, "a": 3}');
+check('parse duplicate keys are last-wins at first position',
+  dupValue.a === 3 && dupValue.b === 2
+  && JSON.stringify(Object.keys(dupValue)) === JSON.stringify(['a', 'b']));
+check('parse duplicate-key tree equals JSON.parse',
+  JSON.stringify(dupValue)
+  === JSON.stringify(JSON.parse('{"a": 1, "b": 2, "a": 3}')));
+
+const protoMid = parseDoc('{"a": 1, "__proto__": {"nested": 2}, "c": null}');
+check('parse mid-document "__proto__" stays an own key',
+  Object.prototype.hasOwnProperty.call(protoMid, '__proto__')
+  && Object.getPrototypeOf(protoMid) === null
+  && protoMid['__proto__'].nested === 2
+  && JSON.stringify(Object.keys(protoMid))
+  === JSON.stringify(['a', '__proto__', 'c']));
+check('parse mid-document "__proto__" tree equals JSON.parse',
+  JSON.stringify(protoMid)
+  === JSON.stringify(JSON.parse('{"a": 1, "__proto__": {"nested": 2}, "c": null}')));
+
+const numKeyValue = parseDoc('{"a": 1, "123": 2, "3": 3, "z": 4}');
+const v8NumKeyValue = JSON.parse('{"a": 1, "123": 2, "3": 3, "z": 4}');
+check('parse integer-index-like key order equals JSON.parse',
+  JSON.stringify(Object.keys(numKeyValue))
+  === JSON.stringify(Object.keys(v8NumKeyValue))
+  && JSON.stringify(numKeyValue) === JSON.stringify(v8NumKeyValue));
+
 // Framing/grammar rejects — the walk must surface a ZeParserError verdict.
 const parseRejectCases = [
   '', '  \n', 'tru', 'nul', '5 5', 'true x', '"a" 4', '1e3\r,', '[,]',
