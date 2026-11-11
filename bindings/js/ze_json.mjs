@@ -628,19 +628,18 @@ export class ZeParser {
     if (begin.done) {
       return [];
     }
-    // count_elements shares the framing machinery: presize, then assert the
-    // walked length matches (an internal invariant of the same index walk).
-    const count = this.#binding.countElements(this.#slot, rootTs);
-    if (!count.ok) {
-      throw new ZeParserError(
-        `countElements(array): ${count.error}`, count.code);
-    }
-    const arr = new Array(count.value);
-    let index = 0;
+    // No pre-size pass: count_elements() replays the WHOLE subtree (one
+    // begin_array + one ArrayIter step per child) BEFORE the walk that
+    // materializes it. The materialization walk re-derives every framing
+    // verdict with the same machinery (arrayNext frames each delimiter;
+    // scalar contents validate on access), so dropping the count pass
+    // loses no coverage — only the internal length-mismatch assert.
+    // push() rides V8's amortized PACKED_ELEMENTS growth (R5-2 sandwich:
+    // <pending measurement reference>).
+    const arr = [];
     let frame = begin;
     while (true) {
-      arr[index] = this.#materialize(frame.ts, frame.cursor);
-      index += 1;
+      arr.push(this.#materialize(frame.ts, frame.cursor));
       const next = this.#binding.arrayNext(
         this.#slot, frame.ts, frame.cursor);
       if (!next.ok) {
@@ -651,9 +650,6 @@ export class ZeParser {
         break;
       }
       frame = next; // { cursor, ts } — exact continuation pair
-    }
-    if (index !== count.value) {
-      throw new ZeParserError('array walk/count mismatch'); // invariant
     }
     return arr;
   }
