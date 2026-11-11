@@ -688,7 +688,9 @@ export class ZeParser {
       // position; integer-index-like strings follow OrdinaryOwnPropertyKeys
       // on both engines. Assignment rides V8's fast data-property path,
       // while Object.defineProperty takes the generic slow path per field
-      // (measured: reports/<R5-1 sandwich report>).
+      // (R5-1 sandwich, dev window 2026-11-11: full-parse median 1.09-1.25x
+      // across all six corpora, see the thesis workspace
+      // reports/R5-1-materialize-assign.md).
       obj[key] = value;
       const next = this.#binding.objectNext(
         this.#slot, field.ts, field.cursor);
