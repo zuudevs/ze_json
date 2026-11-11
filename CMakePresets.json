@@ -103,6 +103,16 @@
 			}
 		},
 		{
+			"name": "native-release-ipo",
+			"inherits": "native",
+			"displayName": "Native Release with LTO (E3 experiment; local labeled builds only)",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release",
+				"ENABLE_TARGET_OPTIMIZATIONS": "ON",
+				"ENABLE_IPO": "ON"
+			}
+		},
+		{
 			"name": "wasm32-debug",
 			"inherits": "wasm32",
 			"displayName": "WASM x32 Debug",
@@ -171,6 +181,10 @@
 		{
 			"name": "native-pgo",
 			"configurePreset": "native-pgo"
+		},
+		{
+			"name": "native-release-ipo",
+			"configurePreset": "native-release-ipo"
 		},
 		{
 			"name": "wasm32-debug",
