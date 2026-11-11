@@ -1,0 +1,17 @@
+# Doxygen configuration template for ze_json.
+# Configured by cmake/modules/HandleDoxygen.cmake into the build directory
+# (@ONLY substitution) — do not edit the generated Doxyfile.
+PROJECT_NAME = @PROJECT_NAME@
+PROJECT_NUMBER = @PROJECT_VERSION@
+
+# Header-first library: document the public headers and the thin .cpp layer.
+INPUT = include/ze_json src
+RECURSIVE = YES
+FILE_PATTERNS = *.hpp *.h *.cpp
+
+OUTPUT_DIRECTORY = @DOXYGEN_OUTPUT_DIRECTORY@
+EXTRACT_ALL = YES
+QUIET = YES
+WARN_IF_UNDOCUMENTED = NO
+GENERATE_LATEX = NO
+HAVE_DOT = NO

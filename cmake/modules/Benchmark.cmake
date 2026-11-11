@@ -25,7 +25,7 @@ function(add_export_benchmark_target TARGET_NAME)
 			--benchmark_context=run_id=${RUN_ID}
 			--benchmark_context=git_commit=${GIT_COMMIT_HASH}
 			--benchmark_context=build_type=${CMAKE_BUILD_TYPE}
-			--benchmark_context=library_version=${ZE_JSON_VERSION_NUMBER}
+			--benchmark_context=ze_json_version=${ZE_JSON_VERSION_NUMBER}
 		DEPENDS ${TARGET_NAME}
 		COMMENT "Run & Export Report for ${TARGET_NAME} (run_id: ${RUN_ID})"
 	)

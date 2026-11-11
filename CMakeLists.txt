@@ -31,6 +31,10 @@ add_subdirectory("src")
 add_subdirectory("tests")
 add_subdirectory("benchmarks")
 
+# PR A: ancillary-module wiring. API docs target (host needs doxygen on
+# PATH; skipped with a warning otherwise) — `ninja ze_json_api_docs`.
+add_doxygen_target(ze_json_api_docs)
+
 message("")
 message("Project Name           : ${PROJECT_NAME}")
 message("Project Version        : ${PROJECT_VERSION}")
