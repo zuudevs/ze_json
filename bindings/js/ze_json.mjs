@@ -634,8 +634,14 @@ export class ZeParser {
     // verdict with the same machinery (arrayNext frames each delimiter;
     // scalar contents validate on access), so dropping the count pass
     // loses no coverage — only the internal length-mismatch assert.
-    // push() rides V8's amortized PACKED_ELEMENTS growth (R5-2 sandwich:
-    // <pending measurement reference>).
+    // push() rides V8's amortized PACKED_ELEMENTS growth. Measured (R5-2
+    // sandwich, 2026-11-12): full-parse median cand/base 1.02-1.30x across
+    // the six corpora and 3.9x on synthetic_1mb — the pre-size pass was
+    // QUADRATIC there: ze_count_elements frames its value with cursor=0,
+    // so begin_array re-walks the sorted index array from 0 up to the
+    // array's own position for EVERY array (O(#arrays x #indexes));
+    // containerBegin never pays this because the wrapper hands it the
+    // true continuation cursor. See reports/R5-2-array-count-drop.md.
     const arr = [];
     let frame = begin;
     while (true) {
