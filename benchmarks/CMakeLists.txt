@@ -38,9 +38,11 @@ target_compile_definitions(ze_json_scanner_benchmark PRIVATE
 	ZE_JSON_BENCH_CORPUS_DIR="${ZE_JSON_BENCH_CORPUS_DIR_POSIX}"
 )
 
-# P4-4: the driver exe must be instrumented too — the profile runtime that
-# writes the *.profraw (merged by `pgo_merge`) is linked from here.
-add_pgo_flags(ze_json_scanner_benchmark)
+# P4-4b: driver exe carries the same opt-in flag set (the profile runtime
+# that writes the *.profraw is linked from here), plus the uProf profiling
+# targets (hotspots_ze_json_parser_benchmark etc. — HandleProfiler.cmake).
+add_optimizations_target(ze_json_scanner_benchmark)
+add_profiling_target(ze_json_scanner_benchmark)
 
 add_export_benchmark_target(ze_json_scanner_benchmark)
 
@@ -66,7 +68,8 @@ target_compile_definitions(ze_json_parser_benchmark PRIVATE
 	ZE_JSON_BENCH_CORPUS_DIR="${ZE_JSON_BENCH_CORPUS_DIR_POSIX}"
 )
 
-# P4-4: same as the scanner driver — profile runtime linkage + counters.
-add_pgo_flags(ze_json_parser_benchmark)
+# P4-4b: same as the scanner driver — optimization flag set + uProf targets.
+add_optimizations_target(ze_json_parser_benchmark)
+add_profiling_target(ze_json_parser_benchmark)
 
 add_export_benchmark_target(ze_json_parser_benchmark)

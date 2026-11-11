@@ -88,7 +88,18 @@
 			"displayName": "Native PGO",
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Release",
-				"ENABLE_PGO": "ON"
+				"ENABLE_PGO": "ON",
+				"ENABLE_TARGET_OPTIMIZATIONS": "ON"
+			}
+		},
+		{
+			"name": "native-release-march",
+			"inherits": "native",
+			"displayName": "Native Release with -march=native (local labeled builds only)",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release",
+				"ENABLE_TARGET_OPTIMIZATIONS": "ON",
+				"ENABLE_MARCH_NATIVE": "ON"
 			}
 		},
 		{

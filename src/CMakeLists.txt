@@ -52,9 +52,9 @@ elseif(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm")
 		$<INSTALL_INTERFACE:include>
 	)
 
-	# P4-4: PGO instrumentation on the library (GENERATE counts every hot
-	# inlined path; USE applies the merged profile back).
-	add_pgo_flags(${LIBRARY_OUTPUT_NAME})
+	# P4-4b: opt-in optimization flag set (full set only when
+	# ENABLE_TARGET_OPTIMIZATIONS=ON — native-release stays canonical).
+	add_optimizations_target(${LIBRARY_OUTPUT_NAME})
 
 	add_clang_tidy_target(${LIBRARY_OUTPUT_NAME})
 endif()
