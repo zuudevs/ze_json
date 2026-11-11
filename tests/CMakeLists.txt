@@ -42,6 +42,7 @@ target_compile_definitions(ze_json_scanner_test PRIVATE
 add_test(NAME ze_json_scanner_test COMMAND ze_json_scanner_test)
 
 add_export_test_target(ze_json_scanner_test)
+add_code_coverage_target(ze_json_scanner_test)
 
 # Register the number parser tests (TASKS P7-2).
 # @cite 10.1002_spe.2984 (number parsing at a gigabyte per second)
@@ -61,6 +62,7 @@ target_link_libraries(ze_json_number_test PRIVATE
 add_test(NAME ze_json_number_test COMMAND ze_json_number_test)
 
 add_export_test_target(ze_json_number_test)
+add_code_coverage_target(ze_json_number_test)
 
 # ---------------------------------------------------------------------------
 # UTF-8 validator differential + correctness tests (TASKS P7-1).
@@ -85,6 +87,7 @@ target_compile_definitions(ze_json_utf8_test PRIVATE
 add_test(NAME ze_json_utf8_test COMMAND ze_json_utf8_test)
 
 add_export_test_target(ze_json_utf8_test)
+add_code_coverage_target(ze_json_utf8_test)
 
 # ---------------------------------------------------------------------------
 # String token scan + unescape tests (TASKS P7-3).
@@ -110,6 +113,7 @@ target_compile_definitions(ze_json_string_test PRIVATE
 add_test(NAME ze_json_string_test COMMAND ze_json_string_test)
 
 add_export_test_target(ze_json_string_test)
+add_code_coverage_target(ze_json_string_test)
 
 # ---------------------------------------------------------------------------
 # On-demand Value/Document API tests (TASKS P7-4).
@@ -131,6 +135,7 @@ target_link_libraries(ze_json_value_test PRIVATE
 add_test(NAME ze_json_value_test COMMAND ze_json_value_test)
 
 add_export_test_target(ze_json_value_test)
+add_code_coverage_target(ze_json_value_test)
 
 # ---------------------------------------------------------------------------
 # Reference parser verdict-differential + json_checker gate (TASKS P7-6).
@@ -166,3 +171,4 @@ add_test(NAME ze_json_reference_parser_test
 	COMMAND ze_json_reference_parser_test)
 
 add_export_test_target(ze_json_reference_parser_test)
+add_code_coverage_target(ze_json_reference_parser_test)

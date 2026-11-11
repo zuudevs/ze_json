@@ -23,12 +23,20 @@ install(FILES "${CMAKE_SOURCE_DIR}/bindings/js/ze_json.mjs"
 	COMPONENT js
 )
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/bindings/js/ze_json_core.wasm")
-	install(FILES "${CMAKE_SOURCE_DIR}/bindings/js/ze_json_core.wasm"
+# P5-5 provenance fix: the wasm artifact is ze_json.wasm (POST_BUILD copy in
+# src/CMakeLists.txt) — the old ze_json_core.wasm name made this install rule
+# silently skip, packaging a js component without the runtime.
+if(EXISTS "${CMAKE_SOURCE_DIR}/bindings/js/ze_json.wasm")
+	install(FILES "${CMAKE_SOURCE_DIR}/bindings/js/ze_json.wasm"
 		DESTINATION share/ze_json/js
 		COMPONENT js
 	)
 endif()
+
+install(FILES "${CMAKE_SOURCE_DIR}/bindings/js/package.json"
+	DESTINATION share/ze_json/js
+	COMPONENT js
+)
 
 install(FILES "${CMAKE_SOURCE_DIR}/README.md"
 	DESTINATION share/ze_json

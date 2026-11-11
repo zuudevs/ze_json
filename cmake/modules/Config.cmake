@@ -3,6 +3,14 @@ set(BINDING_DIR "${CMAKE_SOURCE_DIR}/bindings")
 
 file(TO_CMAKE_PATH "$ENV{CORPUS_DIR}" CORPUS_DIR)
 file(TO_CMAKE_PATH "$ENV{OUT_DIR}" OUT_DIR)
+# Fallback: a configure without scripts/env/activate.ps1 used to cache an
+# EMPTY OUT_DIR, which later writes exports/coverage to "/" (root of the
+# drive). Default to the workspace out/ tree instead - behavior is
+# unchanged whenever the env script is sourced.
+if(NOT OUT_DIR)
+	set(OUT_DIR "${CMAKE_SOURCE_DIR}/../out")
+	message(STATUS "OUT_DIR env empty - defaulting to ${OUT_DIR}")
+endif()
 file(TO_CMAKE_PATH "$ENV{CACHE_DIR}" CACHE_DIR)
 
 option(ENABLE_AVX512 "Enable feature for AVX512 compability" OFF)
