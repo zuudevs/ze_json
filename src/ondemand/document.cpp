@@ -61,15 +61,48 @@ namespace {
  */
 inline constexpr core::size_t kNoBracket = static_cast<core::size_t>(-1);
 
-//! Index whose byte position is the first one >= `byte_pos`, walking only
-//! FORWARD from `cursor` (each index is visited once per document walk).
+//! Index whose byte position is the first one >= `byte_pos`, searching
+//! FORWARD from `cursor` only (the walk protocol: each index is visited at
+//! most once per document walk, so callers may rely on the previous answer
+//! being the lower bound). The structural index array is sorted ascending,
+//! which allows two regimes with identical results:
+//!   - Step position (the hot walk path): `index_at(cursor) >= byte_pos`
+//!     already — one comparison, same cost as the old linear scan.
+//!   - Re-derivation from a stale/cursor-less frame (`ze_count_elements`
+//!     hands cursor=0, `cabi.cpp`): the old linear scan was O(distance) —
+//!     quadratic in aggregate over per-array re-derivation (TASKS O1-8
+//!     finding). A gallop (exponential probe from cursor, then binary
+//!     search inside the final bracket) bounds it by O(log distance) and
+//!     answers identically on the sorted array.
 [[nodiscard]] core::size_t
 first_index_at_or_after(const Document &doc, core::size_t cursor,
                         core::size_t byte_pos) NOEXCEPT {
-  while (cursor < doc.index_count() && doc.index_at(cursor) < byte_pos) {
-    ++cursor;
+  const core::size_t count = doc.index_count();
+  if (cursor >= count || doc.index_at(cursor) >= byte_pos) {
+    return cursor; // in-contract step position: nothing to skip
   }
-  return cursor;
+  // Gallop: probes cursor+1, +2, +4, ... until one reaches byte_pos (or
+  // the end). `lo` keeps the last probe known to be below byte_pos.
+  core::size_t lo = cursor;
+  core::size_t hi = cursor + 1;
+  while (hi < count && doc.index_at(hi) < byte_pos) {
+    lo = hi;
+    hi = cursor + (hi - cursor) * 2;
+  }
+  if (hi > count) {
+    hi = count;
+  }
+  // Binary search inside (lo, hi]: lo is below the boundary, hi is at or
+  // past it (or count). Terminates with lo + 1 == hi.
+  while (hi - lo > 1) {
+    const core::size_t mid = lo + (hi - lo) / 2;
+    if (doc.index_at(mid) < byte_pos) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+  return hi;
 }
 
 /**
