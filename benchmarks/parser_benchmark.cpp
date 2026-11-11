@@ -15,6 +15,11 @@
 //                                accessors (get_string_span/get_double/
 //                                get_bool/is_null); the full-walk verdict
 //                                path the P7-6 differential gates.
+//   BM_ParseOnDemandWalkOnly   — open + get_root + visit EVERY value but
+//                                consume it via node classification only
+//                                (no scalar promotion); the R5 phase-split
+//                                counterpart of the harness wasm-walk-full
+//                                context (open / walk / materialize).
 // One change per measurement, in-situ comparison only (same machine, preset,
 // corpus); no cross-machine record: AGENTS.md sections 4 & 6.
 //
@@ -238,6 +243,120 @@ void ondemand_open_batch(benchmark::State &state,
                           static_cast<int64_t>(docs->size()));
 }
 
+//! Structural walk WITHOUT scalar promotion — visit every value, consume it
+//! through the node classification only (type() reads the staged match
+//! table; no get_string_span / get_double / get_bool). The native
+//! counterpart of the node harness `wasm-walk-full` context (R5 phase
+//! split: open / walk / full materialization — AGENTS.md measurement
+//! phases). Returns false on framing/grammar rejection; the count
+//! surfaces the visited-value sink.
+//!
+//! @cite 10.1002_spe.3313 on-demand JSON: structural consumption without
+//!       materializing the value tree is the phase this walk isolates.
+bool walk_value_structural(const zuu::ondemand::Value &value, size_t &out_values) {
+  switch (value.type()) {
+  case zuu::ondemand::NodeType::Object: {
+    out_values += 1;
+    const auto begin = value.begin_object();
+    if (!begin) {
+      return false;
+    }
+    auto iter = begin.value();
+    while (!iter.done_) {
+      if (iter.failed_ != zuu::core::JsonErrc::None) {
+        return false;
+      }
+      const auto field = *iter;
+      if (!field) {
+        return false; // key grammar / ':' framing surfaces here
+      }
+      if (!walk_value_structural(field.value().value, out_values)) {
+        return false;
+      }
+      ++iter;
+    }
+    return iter.failed_ == zuu::core::JsonErrc::None;
+  }
+  case zuu::ondemand::NodeType::Array: {
+    out_values += 1;
+    const auto begin = value.begin_array();
+    if (!begin) {
+      return false;
+    }
+    auto iter = begin.value();
+    while (!iter.done_) {
+      if (iter.failed_ != zuu::core::JsonErrc::None) {
+        return false;
+      }
+      const auto element = *iter;
+      if (!element) {
+        return false;
+      }
+      if (!walk_value_structural(element.value(), out_values)) {
+        return false;
+      }
+      ++iter;
+    }
+    return iter.failed_ == zuu::core::JsonErrc::None;
+  }
+  case zuu::ondemand::NodeType::String:
+  case zuu::ondemand::NodeType::Number:
+  case zuu::ondemand::NodeType::BoolTrue:
+  case zuu::ondemand::NodeType::BoolFalse:
+  case zuu::ondemand::NodeType::Null:
+    out_values += 1;
+    return true; // the classification above was the consumption
+  case zuu::ondemand::NodeType::Unknown:
+  default:
+    return false;
+  }
+}
+
+//! Level 2 (R5 phase split): staging PLUS structural walk only — every
+//! value consumed via classification, NO scalar promotion. Against
+//! BM_ParseOpen it isolates the traversal cost; against
+//! BM_ParseOnDemandFullWalk the promotion cost.
+void ondemand_walkonly_batch(benchmark::State &state,
+                             const std::vector<Document> *docs) {
+  if (docs->empty()) {
+    state.SkipWithError("corpus batch empty (check ZE_JSON_BENCH_CORPUS_DIR)");
+    return;
+  }
+  size_t max_document = 0;
+  size_t total_bytes = 0;
+  for (const Document &doc : *docs) {
+    max_document = std::max(max_document, doc.data.size());
+    total_bytes += doc.data.size();
+  }
+  std::vector<size_t> arena(max_document * 3 + 64);
+  zuu::ondemand::Arena backing(arena.data(), arena.size() * sizeof(size_t));
+
+  for (auto _ : state) {
+    size_t values = 0;
+    for (const Document &doc : *docs) {
+      backing.reset();
+      const auto opened = zuu::ondemand::Document::open(
+          backing, doc.data.data(), static_cast<size_t>(doc.data.size()));
+      if (!opened.has_value()) {
+        state.SkipWithError("Document::open rejected a corpus document");
+        return;
+      }
+      const auto root = opened.value().get_root();
+      if (!root.has_value() || !walk_value_structural(root.value(), values)) {
+        state.SkipWithError("structural walk rejected a corpus document");
+        return;
+      }
+    }
+    benchmark::DoNotOptimize(values);
+    benchmark::ClobberMemory();
+  }
+
+  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) *
+                          static_cast<int64_t>(total_bytes));
+  state.SetItemsProcessed(static_cast<int64_t>(state.iterations()) *
+                          static_cast<int64_t>(docs->size()));
+}
+
 //! Level 3: full on-demand walk — staging PLUS visiting every value and
 //! promoting every scalar (the workflow of the correctness gates).
 void ondemand_fullwalk_batch(benchmark::State &state,
@@ -295,6 +414,11 @@ void register_corpus(const char *sub_dir, const char *label) {
   benchmark::RegisterBenchmark(
       (std::string("BM_ParseOpen/") + label).c_str(), ondemand_open_batch,
       docs_ptr)
+      ->Repetitions(5)
+      ->Unit(benchmark::kMicrosecond);
+  benchmark::RegisterBenchmark(
+      (std::string("BM_ParseOnDemandWalkOnly/") + label).c_str(),
+      ondemand_walkonly_batch, docs_ptr)
       ->Repetitions(5)
       ->Unit(benchmark::kMicrosecond);
   benchmark::RegisterBenchmark(
