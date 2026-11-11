@@ -113,6 +113,7 @@ const parseParityCases = [
   '1e-400', '"plain"', '"tab\\tnewline\\n"', '"\\u0000"', '"\\ud83d\\ude00"',
   '[]', '[1,2,3]', '[0.1, [true, null]]', '{}', '{"a":1,"b":[1,{"c":"d"}]}',
   '{"k":"a[b],{c}"}', '{"a\\t":"b\\n\\u0041"}', '"ex\\"c"', '"end\\\\"',
+  '"\\ufeffBOM-kept"', '{"\\ufeffk":"a\\ufeffb"}',
   '[[[[["deep"]]]]]', '[1e400]',
 ];
 for (const text of parseParityCases) {
@@ -143,6 +144,21 @@ check('parse lone surrogate escape passes through verbatim',
 check('parse decode target is UTF-8 of the astral pair',
   Buffer.from(parseDoc('"\\ud83d\\ude00"'), 'utf8')
     .equals(Buffer.from('\xF0\x9F\x98\x80', 'binary')));
+
+// R5-3 (O1-2): the wrapper decodes wasm spans with a TextDecoder configured
+// ignoreBOM:true (do NOT strip U+FEFF) — parity above covers the parser path;
+// this guard pins the replacement-char policy against the V8 Buffer decoder
+// on malformed bytes (unreachable from the C++ decode output, kept as a
+// belt-and-suspenders check for any future direct caller).
+{
+  const dec = new TextDecoder('utf8', { ignoreBOM: true });
+  const malformed = [[0xFF], [0xC0, 0x80], [0xED, 0xA0, 0x80],
+    [0xF4, 0x90, 0x80, 0x80], [0xC2], [0xE2, 0x82]];
+  const ok = malformed.every((b) => dec.decode(new Uint8Array(b))
+    === Buffer.from(b).toString('utf8'));
+  check('utf8 decoder replacement parity vs Buffer on malformed bytes', ok,
+    `cases=${malformed.length}`);
+}
 
 // Own-key semantics: "__proto__" must stay an own key (JSON.parse parity).
 const protoValue = parseDoc('{"__proto__": 1}');

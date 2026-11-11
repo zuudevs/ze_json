@@ -69,6 +69,21 @@ export const STEP_SENTINEL = 0xffffffff;
 /** Parser slot pool size — mirrors `abi::kParserSlotMax` (cabi.hpp). */
 export const PARSER_SLOT_MAX = 64;
 
+/**
+ * Module-level UTF-8 decoder for wasm byte spans (R5-3 / O1-2). One
+ * stateless instance replaces `Buffer.from(bytes).toString('utf8')`,
+ * which copies each span onto the JS heap before V8 decodes it;
+ * `decode(view)` reads the wasm backing store directly (zero copy).
+ * `ignoreBOM: true` means "do NOT strip a leading U+FEFF" — JSON
+ * strings may legitimately start with `\uFEFF` and JSON.parse keeps
+ * it, so the default BOM-stripping behavior would diverge. Inputs are
+ * always valid UTF-8 (the C++ decode validates raw bytes and emits
+ * ASCII escapes / surrogate-policy text), so the replacement-char
+ * path is unreachable; the malformed-byte parity test stays as a
+ * belt-and-suspenders guard for any future caller of this decoder.
+ */
+const kUtf8Decoder = new TextDecoder('utf8', { ignoreBOM: true });
+
 /** Loaded wasm module + wrapped calls. Synchronous on purpose: the harness
  *  and tests are CLI tools, and module instantiation is deterministic. */
 export class ZeJson {
@@ -484,7 +499,7 @@ export class ZeParser {
   /** Full P7-3 decode of the string token at `ts` into a JS string. */
   getString(ts) {
     this.#assertOpen();
-    return Buffer.from(this.#decodeStringBytes(ts)).toString('utf8');
+    return kUtf8Decoder.decode(this.#decodeStringBytes(ts));
   }
 
   /** Exact double at `ts` (V8-locked rounding, -0 preserved). */
@@ -581,7 +596,7 @@ export class ZeParser {
     switch (kind) { // NODE_KINDS index
       case 1: return this.#readObject(ts, cursor);
       case 2: return this.#readArray(ts, cursor);
-      case 3: return Buffer.from(this.#decodeStringBytes(ts)).toString('utf8');
+      case 3: return kUtf8Decoder.decode(this.#decodeStringBytes(ts));
       case 4: return this.#readDouble(ts);
       case 5: return true;
       case 6: return false;
@@ -680,8 +695,8 @@ export class ZeParser {
       if (!field.ok) {
         throw new ZeParserError(`objectField: ${field.error}`, field.code);
       }
-      const key = Buffer.from(
-        this.#decodeStringBytes(frame.ts)).toString('utf8');
+      const key =
+        kUtf8Decoder.decode(this.#decodeStringBytes(frame.ts));
       const value = this.#materialize(field.ts, field.cursor);
       // Plain assignment on the null-prototype target is exactly JSON.parse's
       // DefineOwnProperty semantics: the receiver has no prototype, so
