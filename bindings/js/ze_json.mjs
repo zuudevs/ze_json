@@ -299,15 +299,29 @@ export class ZeJson {
   }
 
   /** V8-parity double read from the 8-byte dst buffer (written LE). */
+  #numView;
+  #numViewPtr;
+  #numViewBuffer;
+
   getDouble(slot, ts, dstPtr) {
     const result = this.#plain(this.#exports.ze_get_number(
       BigInt(slot), BigInt(ts), BigInt(dstPtr), 8n));
     if (!result.ok) {
       return result;
     }
-    const value =
-        new DataView(this.#memory.buffer, dstPtr, 8).getFloat64(0, true);
-    return { ok: true, value };
+    // The DataView is cached per (backing buffer, dstPtr): the wasm module
+    // never grows its memory (cabi.cpp instantiates a fixed 64 MiB memory64
+    // and nothing calls memory.grow), so `memory.buffer` is stable for the
+    // module lifetime — rebuilding a fresh DataView per call allocated an
+    // object per parsed number. The buffer-identity guard re-derives the
+    // view if any future build ever starts growing.
+    const buffer = this.#memory.buffer;
+    if (dstPtr !== this.#numViewPtr || buffer !== this.#numViewBuffer) {
+      this.#numView = new DataView(buffer, dstPtr, 8);
+      this.#numViewPtr = dstPtr;
+      this.#numViewBuffer = buffer;
+    }
+    return { ok: true, value: this.#numView.getFloat64(0, true) };
   }
 
   /** Literal check ("true"/"false"); non-literal ts => InvalidJson. */
