@@ -393,9 +393,10 @@ export class ZeParserError extends Error {
  *
  * parse() materializes the FULL document into a JS value tree with
  * V8 `JSON.parse` verdict-and-shape semantics:
- *   - objects are null-prototype; keys are assigned in SOURCE order with
- *     Object.defineProperty("__proto__" stays an OWN key, duplicates =
- *     last-wins) — JSON.parse's DefineOwnProperty semantics;
+ *   - objects are null-prototype; keys are assigned by plain data-property
+ *     assignment ("__proto__" stays an OWN key, duplicates = last-wins) —
+ *     JSON.parse's DefineOwnProperty semantics via the null-prototype
+ *     receiver (no setter on the chain, see #readObject);
  *   - numbers are the exact P7-2 doubles (bit-identical, -0 preserved);
  *   - strings go through the P7-3 decoder; lone-surrogate escapes are
  *     passed through as their literal 6-byte escape text (the lossless
@@ -680,14 +681,17 @@ export class ZeParser {
       const key = Buffer.from(
         this.#decodeStringBytes(frame.ts)).toString('utf8');
       const value = this.#materialize(field.ts, field.cursor);
-      // defineProperty mirrors JSON.parse: "__proto__" stays an OWN key in
-      // source order; redefinition of a duplicate key = last-wins.
-      Object.defineProperty(obj, key, {
-        value,
-        writable: true,
-        enumerable: true,
-        configurable: true,
-      });
+      // Plain assignment on the null-prototype target is exactly JSON.parse's
+      // DefineOwnProperty semantics: the receiver has no prototype, so
+      // `__proto__` finds no setter on the chain and stays an OWN data key;
+      // duplicate keys overwrite last-wins at their first-occurrence
+      // position; integer-index-like strings follow OrdinaryOwnPropertyKeys
+      // on both engines. Assignment rides V8's fast data-property path,
+      // while Object.defineProperty takes the generic slow path per field
+      // (R5-1 sandwich, dev window 2026-11-11: full-parse median 1.09-1.25x
+      // across all six corpora, see the thesis workspace
+      // reports/R5-1-materialize-assign.md).
+      obj[key] = value;
       const next = this.#binding.objectNext(
         this.#slot, field.ts, field.cursor);
       if (!next.ok) {
