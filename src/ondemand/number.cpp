@@ -765,7 +765,13 @@ double detail::region_exact_neg(const core::uint64_t m, const int k,
 
 double detail::region_div_ref(const core::uint64_t m, const int k,
                               const bool negative) noexcept {
-  return region_div_ref(m, -k, negative);
+  // NB: must be qualified — an unqualified `region_div_ref(m, -k, …)` here
+  // resolves to THIS wrapper (its own declaration is found in `detail`
+  // first and unqualified lookup stops there), recursing infinitely; the
+  // bit-serial reference is the anonymous-namespace internal below. Under
+  // -O2 LLVM happened to fold the tail recursion away, which masked the
+  // bug in Release; under -O0 it is a guaranteed stack overflow.
+  return zuu::ondemand::region_div_ref(m, -k, negative);
 }
 
 } // namespace zuu::ondemand
