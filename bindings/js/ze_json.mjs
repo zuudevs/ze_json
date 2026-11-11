@@ -628,19 +628,24 @@ export class ZeParser {
     if (begin.done) {
       return [];
     }
-    // count_elements shares the framing machinery: presize, then assert the
-    // walked length matches (an internal invariant of the same index walk).
-    const count = this.#binding.countElements(this.#slot, rootTs);
-    if (!count.ok) {
-      throw new ZeParserError(
-        `countElements(array): ${count.error}`, count.code);
-    }
-    const arr = new Array(count.value);
-    let index = 0;
+    // No pre-size pass: count_elements() replays the WHOLE subtree (one
+    // begin_array + one ArrayIter step per child) BEFORE the walk that
+    // materializes it. The materialization walk re-derives every framing
+    // verdict with the same machinery (arrayNext frames each delimiter;
+    // scalar contents validate on access), so dropping the count pass
+    // loses no coverage — only the internal length-mismatch assert.
+    // push() rides V8's amortized PACKED_ELEMENTS growth. Measured (R5-2
+    // sandwich, 2026-11-12): full-parse median cand/base 1.02-1.30x across
+    // the six corpora and 3.9x on synthetic_1mb — the pre-size pass was
+    // QUADRATIC there: ze_count_elements frames its value with cursor=0,
+    // so begin_array re-walks the sorted index array from 0 up to the
+    // array's own position for EVERY array (O(#arrays x #indexes));
+    // containerBegin never pays this because the wrapper hands it the
+    // true continuation cursor. See reports/R5-2-array-count-drop.md.
+    const arr = [];
     let frame = begin;
     while (true) {
-      arr[index] = this.#materialize(frame.ts, frame.cursor);
-      index += 1;
+      arr.push(this.#materialize(frame.ts, frame.cursor));
       const next = this.#binding.arrayNext(
         this.#slot, frame.ts, frame.cursor);
       if (!next.ok) {
@@ -651,9 +656,6 @@ export class ZeParser {
         break;
       }
       frame = next; // { cursor, ts } — exact continuation pair
-    }
-    if (index !== count.value) {
-      throw new ZeParserError('array walk/count mismatch'); // invariant
     }
     return arr;
   }
