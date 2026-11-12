@@ -102,11 +102,13 @@ verifies corpus bytes against the P0-8 manifests at load time.
 ```sh
 cd bindings/js
 npm run smoke          # ABI + scan cases + in-module agreement
-npm run differential   # 71 documents: wasm scanner8 == wasm reference == JS reference
+npm run differential   # corpus + json_checker: wasm scanner8 == wasm reference == JS reference
 ```
 
-Any change to the C-ABI (`src/bindings/cabi.cpp`) must bump `ze_abi_version`
-and update `bindings/js/ze_json.mjs` + tests together. Memory is
+Any change to the C-ABI (`src/abi/cabi.cpp`, contract header
+`include/ze_json/abi/cabi.hpp`) must bump `ze_abi_version` (currently v3:
+scanner surface + on-demand parser slot pool) and update
+`bindings/js/ze_json.mjs` + tests together. Memory is
 module-exported memory64 (64 MiB initial); `dst` entries are 64-bit.
 
 ## 5. Known environment pitfalls
