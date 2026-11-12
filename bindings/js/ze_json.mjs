@@ -14,6 +14,11 @@
  *     (kParserSlotMax slots, see kParserSlotMax): traversal is stateless
  *     per call — the (cursor, token_start) frame pair a step result
  *     returns is fed back as full-width u64 arguments.
+ *   - ND-4 adds the lazy-access layer on the UNCHANGED v3 surface:
+ *     `ZeParser.lazy()`/`ZeLazyValue` + `ZeParser.get/at` (L1) and
+ *     `ZeParser.project(shape)` (L2, selected-subset V8-shape
+ *     materialization). Design contract + decisions D1–D3: workspace
+ *     docs/architecture/lazy-access-api.md; tests: tests/lazy.mjs.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -83,6 +88,10 @@ export const PARSER_SLOT_MAX = 64;
  * belt-and-suspenders guard for any future caller of this decoder.
  */
 const kUtf8Decoder = new TextDecoder('utf8', { ignoreBOM: true });
+
+/** Module-level UTF-8 encoder for key needles — the raw fast-compare path
+ *  of `get()` / `project()` (ND-4). `TextEncoder` is stateless. */
+const kKeyEncoder = new TextEncoder();
 
 /** Loaded wasm module + wrapped calls. Synchronous on purpose: the harness
  *  and tests are CLI tools, and module instantiation is deterministic. */
@@ -440,16 +449,18 @@ export class ZeParser {
   #binding;
   #slot;
   #srcPtr;
+  #srcLen;
   #numPtr;
   #dstPtr;
   #dstCap;
   #rootTs;
   #closed = false;
 
-  constructor(binding, { slot, srcPtr, numPtr, dstPtr, dstCap, rootTs }) {
+  constructor(binding, { slot, srcPtr, srcLen, numPtr, dstPtr, dstCap, rootTs }) {
     this.#binding = binding;
     this.#slot = slot;
     this.#srcPtr = srcPtr;
+    this.#srcLen = srcLen;
     this.#numPtr = numPtr;
     this.#dstPtr = dstPtr;
     this.#dstCap = dstCap;
@@ -478,6 +489,7 @@ export class ZeParser {
     return new ZeParser(binding, {
       slot: open.slot,
       srcPtr,
+      srcLen: bytes.length,
       numPtr: binding.alloc(16), // 8-byte f64 travel buffer (dst contract)
       dstCap: bytes.length + 1, // inner_len <= total_len <= document length
       dstPtr: binding.alloc(bytes.length + 1),
@@ -735,6 +747,426 @@ export class ZeParser {
       frame = next; // next key frame { cursor, ts }
     }
     return obj;
+  }
+
+  // === lazy-access layer (ND-4; decisions D1–D3) ===========================
+  //
+  // L1 access + L2 selected projection on the UNCHANGED v3 surface. Keys
+  // are matched on their DECODED content: an escape-free key IS its raw
+  // bytes (memcmp fast path over the source view); a key containing a
+  // backslash is decoded first (rare path). get() is FIRST-wins (early
+  // exit, D1); project() assigns repeatedly => LAST-wins, exactly the
+  // JSON.parse / #materialize semantics. tests/lazy.mjs locks both.
+
+  /** Live view over the source scratch region (raw key compare, ND-4).
+   *  Use immediately — treat the backing buffer as unstable across grows
+   *  (this module never grows memory, but stay defensive). */
+  sourceView() {
+    this.#assertOpen();
+    if (this.#srcLen === undefined) {
+      throw new ZeParserError(
+        'sourceView: parser was constructed without srcLen');
+    }
+    return this.#binding.readBytes(this.#srcPtr, this.#srcLen);
+  }
+
+  /** @internal bridge for the lazy layer: V8-shape materialization of the
+   *  value at (ts, cursor) — the exact #materialize semantics. */
+  materializeAt(ts, cursor) {
+    this.#assertOpen();
+    return this.#materialize(ts, cursor);
+  }
+
+  /** L1 handle (ZeLazyValue) over the root value. */
+  lazy() {
+    this.#assertOpen();
+    return new ZeLazyValue(this, this.#rootTs, 0);
+  }
+
+  /** L1 (D1): first field of the object at (ts, cursor) whose DECODED key
+   *  equals `key`; undefined when absent. Sequential scan, one raw-byte
+   *  pass per field (equality + escape tracking); only escaped spans pay a
+   *  decode. Early exit => duplicate keys resolve FIRST-wins (documented
+   *  divergence from JSON.parse; last-wins lives in project()/parse()). */
+  get(key, ts, cursor) {
+    this.#assertOpen();
+    if (typeof key !== 'string') {
+      throw new TypeError('get(): key must be a string');
+    }
+    if (this.#binding.valueKind(this.#slot, ts) !== 1) {
+      throw new ZeParserError(`get(): value at ts ${ts} is not an object`);
+    }
+    const begin = this.#binding.containerBegin(this.#slot, ts, cursor);
+    if (!begin.ok) {
+      throw new ZeParserError(`get(): ${begin.error}`, begin.code);
+    }
+    if (begin.done) {
+      return undefined;
+    }
+    const needle = kKeyEncoder.encode(key);
+    const src = this.sourceView();
+    let frame = begin;
+    while (true) {
+      // objectField validates key token + ':' + value launcher for the
+      // field we are about to step over — required to advance either way.
+      const field = this.#binding.objectField(this.#slot, frame.ts, frame.cursor);
+      if (!field.ok) {
+        throw new ZeParserError(`get(): ${field.error}`, field.code);
+      }
+      // Derive the raw key span from the source view: the token starts at
+      // frame.ts (opening quote) and ends at the first unescaped '"' — a
+      // skip-pair walk over escape sequences ("\u0022" never contains a
+      // raw quote byte, so it cannot split the span). objectField already
+      // validated the key token, so the walk terminates in bounds. Raw
+      // length == decoded length ONLY for an escape-free span.
+      const keyStart = frame.ts + 1;
+      let end = keyStart;
+      let escaped = false;
+      while (src[end] !== 0x22) { // '"'
+        if (src[end] === 0x5c) { // '\'
+          escaped = true;
+          end += 2; // escape pair — never splits the span
+        } else {
+          end += 1;
+        }
+      }
+      const keyLen = end - keyStart;
+      let matched;
+      if (!escaped && keyLen === needle.length) {
+        let equal = true;
+        for (let i = 0; i < keyLen; i += 1) {
+          if (src[keyStart + i] !== needle[i]) {
+            equal = false;
+            break;
+          }
+        }
+        matched = equal;
+      } else {
+        // Escaped keys: raw bytes never byte-equal the decoded needle
+        // ("\u0041", "\t") — decode and compare (rare path; SAQ keys are
+        // ASCII plain).
+        matched = this.getString(frame.ts) === key;
+      }
+      if (matched) {
+        return { ts: field.ts, cursor: field.cursor };
+      }
+      const next = this.#binding.objectNext(this.#slot, field.ts, field.cursor);
+      if (!next.ok) {
+        throw new ZeParserError(`get(): ${next.error}`, next.code);
+      }
+      if (next.done) {
+        return undefined;
+      }
+      frame = next;
+    }
+  }
+
+  /** L1: the `index`-th child (0-based) of the array at (ts, cursor);
+   *  undefined out of range. Sequential stepping — bulk access should
+   *  iterate (ZeLazyValue.items()) or project() instead (design §3.2). */
+  at(index, ts, cursor) {
+    this.#assertOpen();
+    if (!Number.isInteger(index)) {
+      throw new TypeError('at(): index must be an integer');
+    }
+    if (this.#binding.valueKind(this.#slot, ts) !== 2) {
+      throw new ZeParserError(`at(): value at ts ${ts} is not an array`);
+    }
+    if (index < 0) {
+      return undefined;
+    }
+    const begin = this.#binding.containerBegin(this.#slot, ts, cursor);
+    if (!begin.ok) {
+      throw new ZeParserError(`at(): ${begin.error}`, begin.code);
+    }
+    if (begin.done) {
+      return undefined;
+    }
+    let frame = begin;
+    for (let step = 0; step < index; step += 1) {
+      const next = this.#binding.arrayNext(this.#slot, frame.ts, frame.cursor);
+      if (!next.ok) {
+        throw new ZeParserError(`at(): ${next.error}`, next.code);
+      }
+      if (next.done) {
+        return undefined;
+      }
+      frame = next;
+    }
+    return { ts: frame.ts, cursor: frame.cursor };
+  }
+
+  /** L2 (ND-4): project the root value through `shape` — a selected-subset
+   *  V8-shape materialization in ONE forward pass; subtrees outside the
+   *  shape are skipped (one step + gallop, never a decode). Shape grammar:
+   *    true                    take the value (scalar decoded; a container
+   *                            is fully materialized via #materialize)
+   *    { $count: true }        container length (index-walk, no children)
+   *    { $array: itemShape }   project every element by itemShape
+   *    { key: shape, ... }     object projection — unlisted fields are
+   *                            skipped, listed-but-absent keys stay ABSENT
+   *                            (never null — `??` fallback parity with
+   *                            JSON.parse), duplicate keys last-wins.
+   *  `$count`/`$array` are reserved; type mismatches fail loud. */
+  project(shape) {
+    this.#assertOpen();
+    return this.#projectValue(this.#rootTs, 0, shape, '$');
+  }
+
+  #projectValue(ts, cursor, shape, path) {
+    if (shape === true) {
+      return this.#materialize(ts, cursor);
+    }
+    if (shape === null || typeof shape !== 'object' || Array.isArray(shape)) {
+      throw new ZeParserError(
+        `project: invalid shape at ${path} (expected true, {$count:true}, `
+        + `{$array:...} or an object)`);
+    }
+    const kind = this.#binding.valueKind(this.#slot, ts);
+    if (shape.$count !== undefined) {
+      if (shape.$count !== true) {
+        throw new ZeParserError(`project: $count must be true at ${path}`);
+      }
+      if (kind !== 1 && kind !== 2) {
+        throw new ZeParserError(
+          `project: $count on non-container at ${path} (kind ${kind})`);
+      }
+      return this.countElements(ts);
+    }
+    if (shape.$array !== undefined) {
+      if (kind !== 2) {
+        throw new ZeParserError(
+          `project: $array on non-array at ${path} (kind ${kind})`);
+      }
+      const begin = this.#binding.containerBegin(this.#slot, ts, cursor);
+      if (!begin.ok) {
+        throw new ZeParserError(`project: ${begin.error}`, begin.code);
+      }
+      const out = [];
+      if (begin.done) {
+        return out;
+      }
+      let frame = begin;
+      let i = 0;
+      while (true) {
+        out.push(this.#projectValue(
+          frame.ts, frame.cursor, shape.$array, `${path}[${i}]`));
+        i += 1;
+        const next = this.#binding.arrayNext(this.#slot, frame.ts, frame.cursor);
+        if (!next.ok) {
+          throw new ZeParserError(`project: ${next.error}`, next.code);
+        }
+        if (next.done) {
+          break;
+        }
+        frame = next;
+      }
+      return out;
+    }
+    if (kind !== 1) {
+      throw new ZeParserError(
+        `project: object shape on non-object at ${path} (kind ${kind})`);
+    }
+    const keys = Object.keys(shape);
+    const needles = new Array(keys.length);
+    for (let s = 0; s < keys.length; s += 1) {
+      needles[s] = kKeyEncoder.encode(keys[s]);
+    }
+    const result = Object.create(null); // JSON.parse owns-no-inherited-keys
+    const begin = this.#binding.containerBegin(this.#slot, ts, cursor);
+    if (!begin.ok) {
+      throw new ZeParserError(`project: ${begin.error}`, begin.code);
+    }
+    if (begin.done) {
+      return result;
+    }
+    const src = this.sourceView();
+    let frame = begin;
+    while (true) {
+      const field = this.#binding.objectField(this.#slot, frame.ts, frame.cursor);
+      if (!field.ok) {
+        throw new ZeParserError(`project: ${field.error}`, field.code);
+      }
+      // Raw key span via the same skip-pair walk as get() — the token ends
+      // at the first unescaped '"'.
+      const keyStart = frame.ts + 1;
+      let end = keyStart;
+      let escaped = false;
+      while (src[end] !== 0x22) { // '"'
+        if (src[end] === 0x5c) { // '\'
+          escaped = true;
+          end += 2;
+        } else {
+          end += 1;
+        }
+      }
+      const keyLen = end - keyStart;
+      let matched = -1;
+      if (!escaped) {
+        for (let s = 0; s < needles.length && matched < 0; s += 1) {
+          const needle = needles[s];
+          if (needle.length !== keyLen) {
+            continue;
+          }
+          let equal = true;
+          for (let i = 0; i < keyLen; i += 1) {
+            if (src[keyStart + i] !== needle[i]) {
+              equal = false;
+              break;
+            }
+          }
+          if (equal) {
+            matched = s;
+          }
+        }
+      }
+      if (matched < 0 && escaped) {
+        // Escaped keys: raw bytes never byte-equal the decoded needles —
+        // decode once and match against the shape keys.
+        const idx = keys.indexOf(this.getString(frame.ts));
+        if (idx >= 0) {
+          matched = idx;
+        }
+      }
+      if (matched >= 0) {
+        // Plain assignment on the null-prototype target == JSON.parse's
+        // DefineOwnProperty semantics (see #readObject): duplicates
+        // last-wins at first-occurrence position, "__proto__" stays own.
+        result[keys[matched]] = this.#projectValue(
+          field.ts, field.cursor, shape[keys[matched]], `${path}.${keys[matched]}`);
+      }
+      const next = this.#binding.objectNext(this.#slot, field.ts, field.cursor);
+      if (!next.ok) {
+        throw new ZeParserError(`project: ${next.error}`, next.code);
+      }
+      if (next.done) {
+        break;
+      }
+      frame = next;
+    }
+    return result;
+  }
+}
+
+/**
+ * ZeLazyValue — L1 handle over one on-demand frame (ts, cursor) of an open
+ * ZeParser (ND-4). Stateless: every call re-enters the ABI with the frame
+ * pair (v3 walk protocol). Nothing decodes or materializes unless a method
+ * demands it — "access only what is needed". Lifetime: the underlying
+ * parser must stay open; using a handle after parser.close() throws at the
+ * access point (never undefined behavior).
+ *
+ * Skipping (D3): never dereference a child you do not need — in items()/
+ * entries() simply ignore the yielded handle and keep iterating; the next
+ * step jumps past the subtree via the structural index (one gallop), and a
+ * malformed skipped subtree can never error (it is never validated).
+ */
+export class ZeLazyValue {
+  #parser;
+  #ts;
+  #cursor;
+
+  constructor(parser, ts, cursor = 0) {
+    if (!(parser instanceof ZeParser)) {
+      throw new TypeError('ZeLazyValue: parser must be a ZeParser');
+    }
+    this.#parser = parser;
+    this.#ts = ts;
+    this.#cursor = cursor;
+  }
+
+  get ts() {
+    return this.#ts;
+  }
+
+  get cursor() {
+    return this.#cursor;
+  }
+
+  /** NODE_KINDS name of the frame ('object' | 'array' | 'string' | ...). */
+  type() {
+    return NODE_KINDS[this.#parser.kind(this.#ts)];
+  }
+
+  /** Index-walk child count (containers); child contents stay unvalidated. */
+  count() {
+    return this.#parser.countElements(this.#ts);
+  }
+
+  /** 0-based array child (stepping); undefined when out of range. */
+  at(index) {
+    const frame = this.#parser.at(index, this.#ts, this.#cursor);
+    return frame === undefined
+      ? undefined
+      : new ZeLazyValue(this.#parser, frame.ts, frame.cursor);
+  }
+
+  /** First object field whose decoded key equals `key` (first-wins, D1);
+   *  undefined when absent. */
+  get(key) {
+    const frame = this.#parser.get(key, this.#ts, this.#cursor);
+    return frame === undefined
+      ? undefined
+      : new ZeLazyValue(this.#parser, frame.ts, frame.cursor);
+  }
+
+  /** Decoded-key iteration over an object (tooling path — every key pays a
+   *  decode; hot paths should use get()/project()). */
+  *entries() {
+    const parser = this.#parser;
+    if (parser.kind(this.#ts) !== 1) {
+      throw new ZeParserError(
+        `entries(): value at ts ${this.#ts} is not an object`);
+    }
+    let frame = parser.containerBegin(this.#ts, this.#cursor);
+    while (frame !== null) {
+      const field = parser.objectField(frame.ts, frame.cursor);
+      yield {
+        key: parser.getString(frame.ts),
+        value: new ZeLazyValue(parser, field.ts, field.cursor),
+      };
+      frame = parser.objectNext(field.ts, field.cursor);
+    }
+  }
+
+  /** Child iteration over an array; skipping = never dereference (D3). */
+  *items() {
+    const parser = this.#parser;
+    if (parser.kind(this.#ts) !== 2) {
+      throw new ZeParserError(
+        `items(): value at ts ${this.#ts} is not an array`);
+    }
+    let frame = parser.containerBegin(this.#ts, this.#cursor);
+    while (frame !== null) {
+      yield new ZeLazyValue(parser, frame.ts, frame.cursor);
+      frame = parser.arrayNext(frame.ts, frame.cursor);
+    }
+  }
+
+  /** Full P7-3 decode of this string frame (V8-locked semantics). */
+  asString() {
+    return this.#parser.getString(this.#ts);
+  }
+
+  /** Exact double at this frame (V8-parity rounding, -0 preserved). */
+  asNumber() {
+    return this.#parser.getDouble(this.#ts);
+  }
+
+  /** Literal read at this frame (true/false). */
+  asBool() {
+    return this.#parser.getBool(this.#ts);
+  }
+
+  /** Literal check at this frame ("null"). */
+  isNull() {
+    return this.#parser.isNull(this.#ts);
+  }
+
+  /** Full V8-shape materialization of THIS subtree (#materialize semantics:
+   *  null-proto, last-wins, double bit-exact). */
+  value() {
+    return this.#parser.materializeAt(this.#ts, this.#cursor);
   }
 }
 
