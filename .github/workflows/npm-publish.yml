@@ -28,53 +28,128 @@ jobs:
       - name: Set Environment Variable
         shell: bash
         run: |
-          # Same env set ci.yml provisions (Config.cmake reads all of them):
-          # TOOLCHAINS_DIR      -> compilers/ninja for toolchain.cmake
-          # CACHE_DIR           -> InstallJsonChecker package cache
-          # PROJECT_ROOT_DIR    -> corpus paths (JSON_CHECKER_CORPUS_DIR); an
-          #                        unset value degrades the path to /corpus
-          #                        (root of the runner filesystem, unwritable)
-          # CORPUS_DIR          -> workspace corpus root (parity)
+          echo "CORPUS_DIR=${{ github.workspace }}/corpus" >> $GITHUB_ENV
           echo "TOOLCHAINS_DIR=${{ github.workspace }}/.toolchains" >> $GITHUB_ENV
           echo "CACHE_DIR=${{ github.workspace }}/.cache" >> $GITHUB_ENV
           echo "PROJECT_ROOT_DIR=${{ github.workspace }}/ze_json" >> $GITHUB_ENV
-          echo "CORPUS_DIR=${{ github.workspace }}/ze_json/corpus" >> $GITHUB_ENV
 
-      # cmake/modules/toolchain.cmake resolves its compilers and ninja from
-      # $TOOLCHAINS_DIR with the SAME layout ci.yml provisions: <dir>/ninja/ninja
-      # and <dir>/llvm/bin/{clang,clang++,lld}. The wasm64 preset does not use
-      # vcpkg (freestanding module, no dependencies).
-      - name: Provision .toolchains layout (ninja)
+      - name: Setup Toolchains Directory
         shell: bash
         run: |
+          mkdir -p "$TOOLCHAINS_DIR/cmake"
           mkdir -p "$TOOLCHAINS_DIR/ninja"
-          curl -Lf -o "$RUNNER_TEMP/ninja.zip" \
-            https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-linux.zip
-          unzip -q "$RUNNER_TEMP/ninja.zip" -d "$TOOLCHAINS_DIR/ninja"
-          chmod +x "$TOOLCHAINS_DIR/ninja/ninja"
+          mkdir -p "$TOOLCHAINS_DIR/vcpkg"
 
-      - name: Install CMake 4.4.5
+      - name: Install CMake
+        shell: bash
         run: |
-          curl -Lf -o "$RUNNER_TEMP/cmake.tgz" \
-            https://github.com/Kitware/CMake/releases/download/v4.4.5/cmake-4.4.5-linux-x86_64.tar.gz
-          tar xf "$RUNNER_TEMP/cmake.tgz" -C "$RUNNER_TEMP"
-          echo "$RUNNER_TEMP/cmake-4.4.5-linux-x86_64/bin" >> $GITHUB_PATH
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            curl -Lf -o "$RUNNER_TEMP/cmake.zip" \
+              https://github.com/Kitware/CMake/releases/download/v4.4.5/cmake-4.4.5-windows-x86_64.zip
+            unzip -q "$RUNNER_TEMP/cmake.zip" -d "$TOOLCHAINS_DIR/cmake"
+            echo "$TOOLCHAINS_DIR/cmake/bin" >> "$GITHUB_PATH"
+          else
+            curl -Lf -o "$RUNNER_TEMP/cmake.tgz" \
+              https://github.com/Kitware/CMake/releases/download/v4.4.5/cmake-4.4.5-linux-x86_64.tar.gz
+            tar xf "$RUNNER_TEMP/cmake.tgz" -C "$TOOLCHAINS_DIR/cmake"
+            echo "$TOOLCHAINS_DIR/cmake/bin" >> "$GITHUB_PATH"
+          fi
 
-      - name: Install LLVM/Clang 23
+      - name: Install Ninja
+        shell: bash
         run: |
-          wget -q https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 23
-          sudo ln -sf /usr/bin/clang-23  /usr/bin/clang
-          sudo ln -sf /usr/bin/clang++-23 /usr/bin/clang++
-          clang --version | grep -q "clang version 23" \
-            || { echo "::error::clang 23 tidak aktif:"; clang --version; exit 1; }
-          # toolchain.cmake looks for $TOOLCHAINS_DIR/llvm/bin/* — symlink the
-          # system LLVM prefix in (same pattern as ci.yml "Setup LLVM Toolchain").
-          LLVM_SOURCE=$(ls -d /usr/lib/llvm-* 2>/dev/null | sort -V | tail -n 1)
-          if [ -z "$LLVM_SOURCE" ]; then LLVM_SOURCE="/usr"; fi
-          ln -sfn "$LLVM_SOURCE" "$TOOLCHAINS_DIR/llvm"
-          "$TOOLCHAINS_DIR/llvm/bin/clang++" --version | head -n 1
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            curl -Lf -o "$RUNNER_TEMP/ninja.zip" \
+              https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-win.zip
+            unzip -q "$RUNNER_TEMP/ninja.zip" -d "$TOOLCHAINS_DIR/ninja"
+            echo "$TOOLCHAINS_DIR/ninja" >> "$GITHUB_PATH"
+          else
+            curl -Lf -o "$RUNNER_TEMP/ninja.zip" \
+              https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-linux.zip
+            unzip -q "$RUNNER_TEMP/ninja.zip" -d "$TOOLCHAINS_DIR/ninja"
+            chmod +x "$TOOLCHAINS_DIR/ninja/ninja"
+            echo "$TOOLCHAINS_DIR/ninja" >> "$GITHUB_PATH"
+          fi
+
+      - name: Setup Vcpkg in Toolchains
+        shell: bash
+        run: |
+          mkdir -p "$TOOLCHAINS_DIR/vcpkg"
+          git clone https://github.com/microsoft/vcpkg.git "$TOOLCHAINS_DIR/vcpkg"
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            cd "$TOOLCHAINS_DIR/vcpkg" && ./bootstrap-vcpkg.bat
+          else
+            cd "$TOOLCHAINS_DIR/vcpkg" && ./bootstrap-vcpkg.sh
+          fi
+          echo "VCPKG_ROOT=$TOOLCHAINS_DIR/vcpkg" >> $GITHUB_ENV
+        
+      - name: Setup LLVM Toolchain
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            mkdir -p "$TOOLCHAINS_DIR"
+            LLVM_SOURCE="C:/Program Files/LLVM"
+            
+            rm -rf "$TOOLCHAINS_DIR/llvm"
+            
+            if [ -d "$LLVM_SOURCE" ]; then
+              echo "[+] Symlinking pre-installed LLVM on Windows runner..."
+              WIN_TARGET="$(cygpath -w "$TOOLCHAINS_DIR/llvm")"
+              WIN_SOURCE="$(cygpath -w "$LLVM_SOURCE")"
+              
+              MSYS_NO_PATHCONV=1 cmd.exe /c mklink /D "$WIN_TARGET" "$WIN_SOURCE"
+            else
+              echo "[-] Pre-installed LLVM not found!"
+              exit 1
+            fi
+          else
+            echo "[+] Symlinking pre-installed LLVM on Linux runner..."
+            LLVM_SOURCE=$(ls -d /usr/lib/llvm-* 2>/dev/null | sort -V | tail -n 1)
+            if [ -z "$LLVM_SOURCE" ]; then
+              LLVM_SOURCE="/usr" 
+            fi
+            echo "Menggunakan source: $LLVM_SOURCE"
+            rm -rf "$TOOLCHAINS_DIR/llvm"
+            ln -s "$LLVM_SOURCE" "$TOOLCHAINS_DIR/llvm"
+          fi
+
+      - name: Setup MSVC Toolchain
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            VSWHERE="C:/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe"
+            
+            if [ -f "$VSWHERE" ]; then
+              MSVC_SOURCE=$("$VSWHERE" -latest -property installationPath | tr -d '\r' | tr '\\' '/')
+            else
+              MSVC_SOURCE="C:/Program Files/Microsoft Visual Studio/2022/Enterprise"
+            fi
+
+            echo "[*] Detected MSVC Path: $MSVC_SOURCE"
+            rm -rf "$TOOLCHAINS_DIR/MSVC"
+            
+            if [ -n "$MSVC_SOURCE" ] && [ -d "$MSVC_SOURCE" ]; then
+              echo "[+] Symlinking pre-installed MSVC Build Tools on Windows runner..."
+              WIN_TARGET="$(cygpath -w "$TOOLCHAINS_DIR/MSVC")"
+              WIN_SOURCE="$(cygpath -w "$MSVC_SOURCE")"
+              MSYS_NO_PATHCONV=1 cmd.exe /c mklink /D "$WIN_TARGET" "$WIN_SOURCE"
+            else
+              echo "[-] MSVC pre-installed path not found!"
+              exit 1
+            fi
+          fi
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with: 
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 'ze_json/scripts/requirements.txt'
+
+      - name: Install Python
+        shell: bash
+        run: |
+           python -m pip install --upgrade pip
+           pip install -r ze_json/scripts/requirements.txt
 
       - name: Configure wasm64 (preset)
         run: cmake --preset wasm64-release

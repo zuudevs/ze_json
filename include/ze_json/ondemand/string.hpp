@@ -32,12 +32,12 @@ struct StringParts {
  * prefix ends at the closing quote.
  *
  * Grammar (RFC 8259): any byte >= 0x20 except '"' and '\' between the
- * quotes; escapes of `" \ / b f n r t` and `\uXXXX` (4 hex digits, both
+ * quotes; escapes of `" \ / b f n r t` and `\\uXXXX` (4 hex digits, both
  * cases). Raw multi-byte sequences are validated with the strict RFC 3629
  * semantics anchored in P7-1 — encoded surrogates (ED A0-BF), overlongs,
  * sequences beyond U+10FFFF and truncations all return InvalidUtf8.
  *
- * Lone surrogate escapes (e.g. "\ud800") are VALID here: V8 `JSON.parse`
+ * Lone surrogate escapes (e.g. "\\ud800") are VALID here: V8 `JSON.parse`
  * accepts them, and pairing is a DECISION of the decoder (see
  * unescape_string), not of the validator.
  *
@@ -59,13 +59,13 @@ scan_string(const char *src, core::size_t len) NOEXCEPT;
  * raw controls < 0x20 rejected, raw DEL legal, lone-surrogate escapes
  * ACCEPTED). Decode policy per point kind:
  *   - simple escapes -> the mapped ASCII byte (\n -> 0x0A, ...);
- *   - \uXXXX -> UTF-8 of the code point; a HIGH surrogate followed
+ *   - \\uXXXX -> UTF-8 of the code point; a HIGH surrogate followed
  *     immediately by a `\uXXXX` escape whose value is a LOW surrogate
  *     (DC00-DFFF) decodes to the astral code point as 4-byte UTF-8;
  *   - lone surrogate escapes: the 6 escape bytes are copied through
  *     VERBATIM (case-preserving) — the value has no valid UTF-8
  *     representation, escaping it is the only lossless encoding;
- *   - escaped \u0000 decodes to the single 0x00 byte (RFC 8259 legal).
+ *   - escaped \\u0000 decodes to the single 0x00 byte (RFC 8259 legal).
  *
  * `src` must span the token as reported by scan_string (both quotes
  * included). Two passes validate first, so NO grammar error ever writes

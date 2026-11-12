@@ -26,3 +26,4 @@ option(ENABLE_IPO "Enable interprocedural optimization (LTO) for wired targets" 
 
 set(JSON_CHECKER_INSTALLED_DIR "${CACHE_DIR}/json_checker")
 set(JSON_CHECKER_CORPUS_DIR "$ENV{PROJECT_ROOT_DIR}/corpus/test/json_checker")
+set(BIBLIOGRAPHY_DIR "$ENV{PROJECT_ROOT_DIR}/assets/bib")

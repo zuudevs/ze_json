@@ -5,7 +5,9 @@ PROJECT_NAME = @PROJECT_NAME@
 PROJECT_NUMBER = @PROJECT_VERSION@
 
 # Header-first library: document the public headers and the thin .cpp layer.
-INPUT = include/ze_json src
+INPUT = @CMAKE_SOURCE_DIR@/include/ze_json \
+		@CMAKE_SOURCE_DIR@/src \
+		@CMAKE_BINARY_DIR@/generated/ze_json
 RECURSIVE = YES
 FILE_PATTERNS = *.hpp *.h *.cpp
 
@@ -15,3 +17,4 @@ QUIET = YES
 WARN_IF_UNDOCUMENTED = NO
 GENERATE_LATEX = NO
 HAVE_DOT = NO
+CITE_BIB_FILES = @BIBLIOGRAPHY_DIR@/cites.bib
