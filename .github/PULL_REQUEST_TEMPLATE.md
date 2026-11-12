@@ -7,7 +7,8 @@
 ## Rationale
 
 <!-- WHAT changed and WHY.
-     Reference the TASKS.md task ID (e.g. P0-2, P4-3).
+     Reference the task ID from the thesis workspace ledger
+     (`docs/project/tasks.md`, e.g. P0-2, P4-3, ND-6).
      If a technique comes from a paper, cite the DOI and keep it in sync with the
      Doxygen @cite comments in the code (corpus: out/rag/<DOI>.chunks.json). -->
 
@@ -36,4 +37,5 @@
 - [ ] Every measurement result carries its `rationale` (purpose + basis_papers), in the
       record AND synchronized with the code comments
 - [ ] Conventional Commits followed
-- [ ] `PLANS.md` / `TASKS.md` updated if a decision changed
+- [ ] Thesis workspace plans/tasks updated if a decision changed
+      (`docs/project/plans.md` / `docs/project/tasks.md`)
