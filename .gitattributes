@@ -1,0 +1,6 @@
+# Measurement corpus: every byte is hashed into MANIFEST.json (provenance for
+# `corpus.sha256` in measurement records — AGENTS.md section 4, thesis
+# workspace). The global core.autocrlf=true would rewrite LF->CRLF on checkout
+# and silently invalidate those hashes, so the whole corpus tree is treated as
+# binary (no conversion).
+corpus/** -text

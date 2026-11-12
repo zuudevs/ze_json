@@ -1,0 +1,204 @@
+{
+  "assistants": [
+    {
+      "id": "7358a08553cf8275fcb3084c",
+      "nama_asisten": "AZKA RAMADHANI",
+      "nama_panjang": "Azka Ramadhani",
+      "panggilan": "Azka",
+      "no_telp": "+62-8144-1231-1156",
+      "ttd": "ttd_7358a08553.png"
+    },
+    {
+      "id": "e52ba3af391c6db0fec2e492",
+      "nama_asisten": "BIMA SETIAWAN",
+      "nama_panjang": "Bima Setiawan",
+      "panggilan": "Bima",
+      "no_telp": "+62-8161-1153-2679",
+      "ttd": null
+    },
+    {
+      "id": "8deac93b62bd90444c5706c7",
+      "nama_asisten": "CAHYA PRATAMA",
+      "nama_panjang": "Cahya Pratama",
+      "panggilan": "Cahya",
+      "no_telp": "+62-8131-2651-1848",
+      "ttd": "ttd_8deac93b62.png"
+    },
+    {
+      "id": "c326af538c7a7c7d03c626de",
+      "nama_asisten": "DAMAR ARDIANSYAH",
+      "nama_panjang": "Damar Ardiansyah",
+      "panggilan": "Damar",
+      "no_telp": "+62-8121-6314-7917",
+      "ttd": null
+    },
+    {
+      "id": "6cdb1eb6fc036e1eab8606bf",
+      "nama_asisten": "EKA YUDHISTIRA",
+      "nama_panjang": "Eka Yudhistira",
+      "panggilan": "Eka",
+      "no_telp": "+62-8175-1468-3149",
+      "ttd": "ttd_6cdb1eb6fc.png"
+    },
+    {
+      "id": "6cb92a4fdaafa16914c6b211",
+      "nama_asisten": "FAJAR NUGRAHA",
+      "nama_panjang": "Fajar Nugraha",
+      "panggilan": "Fajar",
+      "no_telp": "+62-8110-9060-6693",
+      "ttd": null
+    },
+    {
+      "id": "1bf143d2f2fc8187b3238cc5",
+      "nama_asisten": "GILANG PERMANA",
+      "nama_panjang": "Gilang Permana",
+      "panggilan": "Gilang",
+      "no_telp": "+62-8149-3688-1713",
+      "ttd": "ttd_1bf143d2f2.png"
+    },
+    {
+      "id": "4c15c0f05f9d5b170026c324",
+      "nama_asisten": "HANA AULIA",
+      "nama_panjang": "Hana Aulia",
+      "panggilan": "Hana",
+      "no_telp": "+62-8118-8218-6685",
+      "ttd": null
+    },
+    {
+      "id": "c9ffcd016751e6d3ab167668",
+      "nama_asisten": "IFA KUSUMAWATI",
+      "nama_panjang": "Ifa Kusumawati",
+      "panggilan": "Ifa",
+      "no_telp": "+62-8113-6581-2406",
+      "ttd": "ttd_c9ffcd0167.png"
+    },
+    {
+      "id": "1512b98de556d890779a19a8",
+      "nama_asisten": "JATI WIBOWO",
+      "nama_panjang": "Jati Wibowo",
+      "panggilan": "Jati",
+      "no_telp": "+62-8119-5088-2708",
+      "ttd": null
+    },
+    {
+      "id": "5fe6c940c99aec4543703c8a",
+      "nama_asisten": "KIRANA PUSPITA",
+      "nama_panjang": "Kirana Puspita",
+      "panggilan": "Kirana",
+      "no_telp": "+62-8144-1597-5758",
+      "ttd": "ttd_5fe6c940c9.png"
+    },
+    {
+      "id": "6cdd84e3b0ece1b4d0fa8bbb",
+      "nama_asisten": "LAILA SYAFA",
+      "nama_panjang": "Laila Syafa",
+      "panggilan": "Laila",
+      "no_telp": "+62-8178-4423-4333",
+      "ttd": null
+    },
+    {
+      "id": "6cdcd67b0004f8ebe7bba204",
+      "nama_asisten": "MARSYA RAMADHINA",
+      "nama_panjang": "Marsya Ramadhina",
+      "panggilan": "Marsya",
+      "no_telp": "+62-8167-3084-8614",
+      "ttd": "ttd_6cdcd67b00.png"
+    },
+    {
+      "id": "55fd170290cd7fb3e9234f46",
+      "nama_asisten": "NADINE PRASETYA",
+      "nama_panjang": "Nadine Prasetya",
+      "panggilan": "Nadine",
+      "no_telp": "+62-8172-9982-2617",
+      "ttd": null
+    },
+    {
+      "id": "645e500d6eab593633b93bd5",
+      "nama_asisten": "OKA WIBAWA",
+      "nama_panjang": "Oka Wibawa",
+      "panggilan": "Oka",
+      "no_telp": "+62-8142-5708-4202",
+      "ttd": "ttd_645e500d6e.png"
+    },
+    {
+      "id": "f3b7b15ba7278c487d35a9a4",
+      "nama_asisten": "PUTRI LARASATI",
+      "nama_panjang": "Putri Larasati",
+      "panggilan": "Putri",
+      "no_telp": "+62-8143-5532-4086",
+      "ttd": null
+    },
+    {
+      "id": "2f0229c1fc446c79f50f2a57",
+      "nama_asisten": "RIZKY AMELIA",
+      "nama_panjang": "Rizky Amelia",
+      "panggilan": "Rizky",
+      "no_telp": "+62-8145-9309-9294",
+      "ttd": "ttd_2f0229c1fc.png"
+    },
+    {
+      "id": "d7dd90d7c566541003573c62",
+      "nama_asisten": "SALMA FARADISA",
+      "nama_panjang": "Salma Faradisa",
+      "panggilan": "Salma",
+      "no_telp": "+62-8116-2286-2870",
+      "ttd": null
+    },
+    {
+      "id": "b0464110fe9fac4366616b38",
+      "nama_asisten": "TIRTA SEGARA",
+      "nama_panjang": "Tirta Segara",
+      "panggilan": "Tirta",
+      "no_telp": "+62-8167-3563-2750",
+      "ttd": "ttd_b0464110fe.png"
+    },
+    {
+      "id": "fb6588567febb03bc6564514",
+      "nama_asisten": "UMAR SANJAYA",
+      "nama_panjang": "Umar Sanjaya",
+      "panggilan": "Umar",
+      "no_telp": "+62-8172-1785-1608",
+      "ttd": null
+    },
+    {
+      "id": "d342aa0618b55fabafd8511e",
+      "nama_asisten": "VINA OCTAVIA",
+      "nama_panjang": "Vina Octavia",
+      "panggilan": "Vina",
+      "no_telp": "+62-8154-5166-3027",
+      "ttd": "ttd_d342aa0618.png"
+    },
+    {
+      "id": "d352aeb77560a83d736d81b6",
+      "nama_asisten": "WAFA HANIFAH",
+      "nama_panjang": "Wafa Hanifah",
+      "panggilan": "Wafa",
+      "no_telp": "+62-8184-1305-9171",
+      "ttd": null
+    },
+    {
+      "id": "13e218c67f178b34b6e5bb5a",
+      "nama_asisten": "YOGA PRASETYO",
+      "nama_panjang": "Yoga Prasetyo",
+      "panggilan": "Yoga",
+      "no_telp": "+62-8156-0176-6498",
+      "ttd": "ttd_13e218c67f.png"
+    },
+    {
+      "id": "e1ecf7c98f2a1069cf886503",
+      "nama_asisten": "ZAKI MUBAROK",
+      "nama_panjang": "Zaki Mubarok",
+      "panggilan": "Zaki",
+      "no_telp": "+62-8162-0201-6367",
+      "ttd": null
+    },
+    {
+      "id": "83db5f86a55e670562e26f2c",
+      "nama_asisten": "BANI SAFFAN",
+      "nama_panjang": "Bani Saffan",
+      "panggilan": "Bani",
+      "no_telp": "+62-8131-2091-6807",
+      "ttd": "ttd_83db5f86a5.png"
+    }
+  ]
+}
