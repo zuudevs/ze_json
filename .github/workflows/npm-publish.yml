@@ -28,11 +28,17 @@ jobs:
       - name: Set Environment Variable
         shell: bash
         run: |
+          # Same env set ci.yml provisions (Config.cmake reads all of them):
+          # TOOLCHAINS_DIR      -> compilers/ninja for toolchain.cmake
+          # CACHE_DIR           -> InstallJsonChecker package cache
+          # PROJECT_ROOT_DIR    -> corpus paths (JSON_CHECKER_CORPUS_DIR); an
+          #                        unset value degrades the path to /corpus
+          #                        (root of the runner filesystem, unwritable)
+          # CORPUS_DIR          -> workspace corpus root (parity)
           echo "TOOLCHAINS_DIR=${{ github.workspace }}/.toolchains" >> $GITHUB_ENV
-          # PRE_BUILD runs InstallJsonChecker.py whose package dir is
-          # $CACHE_DIR/json_checker — an unset CACHE_DIR would degrade the
-          # path to /json_checker (root, unwritable). Same default as ci.yml.
           echo "CACHE_DIR=${{ github.workspace }}/.cache" >> $GITHUB_ENV
+          echo "PROJECT_ROOT_DIR=${{ github.workspace }}/ze_json" >> $GITHUB_ENV
+          echo "CORPUS_DIR=${{ github.workspace }}/ze_json/corpus" >> $GITHUB_ENV
 
       # cmake/modules/toolchain.cmake resolves its compilers and ninja from
       # $TOOLCHAINS_DIR with the SAME layout ci.yml provisions: <dir>/ninja/ninja
