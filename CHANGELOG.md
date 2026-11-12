@@ -43,6 +43,38 @@ committed corpora. The `[0.1.1]` tag exists but its publish run failed
 (missing `ToolChain.cmake` on the Linux runner); `0.1.2` supersedes it
 as the first published release.
 
+### Publish verification
+
+First successful publish to **GitHub Packages**:
+`@zuudevs/ze-json@0.1.2`, verified by `workflow_dispatch` run
+[43182598841](https://github.com/zuudevs/ze_json/actions/runs/43182598841)
+(main HEAD `eebe953` — all 14 steps green, publish step exit 0). The
+tag `v0.1.2` itself points at `9ed51a5`, whose publish run failed on
+infrastructure only; the package content is identical, so no new tag
+was cut for the fixes. Blocker chain that led here:
+
+1. `v0.1.1` (run 43179466435): configure failed — preset referenced a
+   non-existent `ToolChain.cmake` (case bug, NTFS-masked).
+2. `v0.1.2` (run 43181252021): configure fixed; build failed —
+   `CACHE_DIR` unset degraded the json_checker package dir to
+   `/json_checker`.
+3. Dispatch (run 43181733067): build fixed; PRE_BUILD failed —
+   `PROJECT_ROOT_DIR` unset degraded the corpus path to `/corpus`.
+4. Dispatch (run 43182269477): full library side green (configure,
+   build, verify, smoke); publish failed `ENEEDAUTH` — the workflow
+   referenced `secrets.NPM_PACKAGE_TOKEN`, the repository secret is
+   `NPM_PUBLISH_TOKEN`.
+5. Dispatch (run 43182598841): **green end-to-end.**
+
+Registry lineage note: the package name was previously published to the
+**public npmjs.org** registry by the same owner (versions `0.1.0`–
+`0.1.6`, 2026-10-22 → 2026-10-26, predating this changelog and the
+current workspace/git history). The current target registry is
+**GitHub Packages** (`publishConfig.registry` in `bindings/js/package.json`);
+the two registries are independent namespaces — today's `0.1.2` on
+GitHub Packages is the first release of the current as-built lineage
+there.
+
 ## [0.1.1] - 2026-11-12
 
 Documentation-only release; parser, scanner and C-ABI behavior are unchanged.
