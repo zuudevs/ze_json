@@ -18,7 +18,8 @@
   ],
   "scripts": {
     "smoke": "node tests/main.mjs",
-    "differential": "node tests/differential.mjs"
+    "differential": "node tests/differential.mjs",
+    "lazy": "node tests/lazy.mjs"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
