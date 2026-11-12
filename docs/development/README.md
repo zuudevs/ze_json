@@ -111,7 +111,19 @@ scanner surface + on-demand parser slot pool) and update
 `bindings/js/ze_json.mjs` + tests together. Memory is
 module-exported memory64 (64 MiB initial); `dst` entries are 64-bit.
 
-## 5. Known environment pitfalls
+## 5. Workspace tooling — wasm64 build for deployment
+
+The thesis workspace root provides `scripts/build-wasm.ps1`: a
+deterministic optimized wasm64 build wrapper that forces the
+`wasm64-release` preset, builds, then **verifies** the artifact before it
+is copied anywhere (build type straight from `CMakeCache.txt`, required
+ABI exports present, `v128` instructions in the disassembly, and a
+`sha256` sidecar `bindings/js/ze_json.wasm.sha256` for provenance) and
+runs the binding gates (differential + smoke) against the fresh build.
+The server-side deployment procedure that consumes this script is the
+thesis workspace runbook `docs/development/saq-server-runbook.md`.
+
+## 6. Known environment pitfalls
 
 | Symptom | Cause | Fix |
 |---|---|---|
@@ -122,12 +134,15 @@ module-exported memory64 (64 MiB initial); `dst` entries are 64-bit.
 | filenames differ from expectation | this workspace uses `<run_id>_<corpus>_record.json` (underscore) | glob with `*_record.json`, never `.record.json` |
 | git warns "LF will be replaced by CRLF" | `core.autocrlf=true` | harmless for text; corpus bytes are protected by `corpus/** -text` |
 
-## 6. Git workflow
+## 7. Git workflow
 
 Branch → PR → merge (no direct pushes to `main`); Conventional Commits with
 project scopes (`scanner`, `bench`, `binding-js`, `harness`, ...); PRs use
 `.github/PULL_REQUEST_TEMPLATE.md` with the Measurement Evidence section
-filled for anything performance-affecting. See `AGENTS.md` §8.
+filled for anything performance-affecting. See `AGENTS.md` §8 (workspace
+root).
 
-TODO(P6+): CI parity notes (`ci.yml`) and wasm64 build troubleshooting once
-the npm package publishing flow is exercised end-to-end.
+Release flow: the npm package version and the CMake project version move
+together (see `../CHANGELOG.md`); a `v*` tag on a `main` commit triggers
+`.github/workflows/npm-publish.yml` (wasm64 build → smoke test → publish
+to GitHub Packages).
