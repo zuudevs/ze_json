@@ -63,8 +63,11 @@ files by hand — regenerate and review the new manifests.
 Reference workflow: `.github/workflows/ci.yml` (ubuntu + windows,
 `native-debug`/`native-release`, env `CORPUS_DIR`/`TOOLCHAINS_DIR`/
 `CACHE_DIR`/`PROJECT_ROOT_DIR`). The publish workflow
-(`npm-publish.yml`) builds `wasm64-release` and runs the binding smoke test
-before `npm publish` to GitHub Packages.
+(`npm-publish.yml`) runs on `v*` tag pushes (and `workflow_dispatch`):
+it installs CMake 4.4.5 + Ninja + LLVM/Clang 23 on the runner, builds
+`wasm64-release`, runs the binding smoke test
+(`bindings/js/tests/main.mjs`), and publishes `@zuudevs/ze-json` to
+GitHub Packages (`npm.pkg.github.com`, scope `@zuudevs`).
 
-TODO(P6+): pin CI runner software versions in a table once the workflows are
-exercised end-to-end on a tag push.
+Release history and the version-sync rule (npm package + CMake project
+version move together) live in [`../../CHANGELOG.md`](../../CHANGELOG.md).

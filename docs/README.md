@@ -6,18 +6,28 @@ comparatively against the V8 baseline used by the SAQ server.
 
 | Section | Contents |
 |---|---|
-| [`architecture/`](architecture/README.md) | Components, layers, scanner contract, data flow (Mermaid) |
+| [`architecture/`](architecture/README.md) | Per-topic modules: layers, scanner contract and variants, on-demand parser, JS lazy access, wasm ABI, measurement architecture (Mermaid) |
 | [`development/`](development/README.md) | Build, test, measurement workflow from a contributor's perspective (Mermaid) |
-| [`requirement/`](requirement/README.md) | Toolchain versions, environment variables, corpus requirements |
+| [`requirements/`](requirements/README.md) | Toolchain versions, environment variables, corpus requirements, CI parity |
+| [`adr/`](adr/README.md) | Architecture decision records |
+
+Entry points outside this tree:
+
+- [`../README.md`](../README.md) — repository landing page
+- [`../CHANGELOG.md`](../CHANGELOG.md) — version history (npm package and
+  CMake project version move together)
+- [`../bindings/js/README.md`](../bindings/js/README.md) — npm package API
+  reference (`@zuudevs/ze-json`)
 
 Documentation is written in English; all diagrams use embedded Mermaid
-syntax (no binary images). Prose was finalized in phase P6 (TASKS.md) and
-re-aligned with the as-built on-demand parser / ABI v3 in the Stage 2 doc
-correction (2026-11-12); the remaining TODO(P6+) markers in `development/`
-and `requirement/` track CI/npm-publish parity notes only.
+syntax (no binary images). Prose was finalized in phase P6 of the thesis
+workspace, re-aligned with the as-built on-demand parser / ABI v3 in the
+Stage 2 correction (2026-11-12), and restructured into per-topic modules
+at the 2026-11-12 documentation architecture overhaul (v0.1.1).
 
-Related, outside this tree:
+Related, in the thesis workspace (one level above this repository):
 
-- `AGENTS.md` (workspace root) — session rules, measurement conventions
+- `AGENTS.md` — session rules, measurement conventions
 - `schemas/measurement.schema.json` — measurement record schema v1
 - `corpus/benchmarks/README.md` — benchmark corpora and manifests
+- `docs/project/tasks.md` — thesis task ledger
