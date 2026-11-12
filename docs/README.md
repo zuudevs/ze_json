@@ -11,8 +11,10 @@ comparatively against the V8 baseline used by the SAQ server.
 | [`requirement/`](requirement/README.md) | Toolchain versions, environment variables, corpus requirements |
 
 Documentation is written in English; all diagrams use embedded Mermaid
-syntax (no binary images). Prose here is finalized in phase P6 (TASKS.md);
-until then sections carry skeletons with explicit TODO markers.
+syntax (no binary images). Prose was finalized in phase P6 (TASKS.md) and
+re-aligned with the as-built on-demand parser / ABI v3 in the Stage 2 doc
+correction (2026-11-12); the remaining TODO(P6+) markers in `development/`
+and `requirement/` track CI/npm-publish parity notes only.
 
 Related, outside this tree:
 
