@@ -1,0 +1,59 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "corpus_manifest",
+  "corpus_name": "saq_payload_v1",
+  "purpose": "SAQ store-shaped workloads (anonymized; pretty indent-2 like JsonRepository)",
+  "generation": {
+    "script": "scripts/corpus/make_corpus.py",
+    "seed": 20261108,
+    "notes": "deterministic, timestamp-free; regenerating unchanged sources is byte-identical"
+  },
+  "encoding": "utf-8",
+  "document_count": 6,
+  "total_bytes": 88381,
+  "max_document_bytes": 39209,
+  "documents": [
+    {
+      "file": "config_asisten.json",
+      "bytes": 5614,
+      "sha256": "8f3d896b141d1172e04b1e8b5ecefbe12895d17fb2963625ce6fbc69f04c0c1e",
+      "source": "generated_anonymized",
+      "role": "wrapped {'assistants': [...]}"
+    },
+    {
+      "file": "config_global.json",
+      "bytes": 360,
+      "sha256": "af079aef392c53f07fa9cb268d06410e77bcadb2ff95da3ed4aa5713bc218a0c",
+      "source": "generated_anonymized",
+      "role": "object root (repo rootKey null)"
+    },
+    {
+      "file": "courses.json",
+      "bytes": 3993,
+      "sha256": "684a5fe266690291139f88a9fd8fe9af0fa37fcd180f2af0de6aa9ec6928134c",
+      "source": "generated_anonymized",
+      "role": "wrapped {'courses': [...]}"
+    },
+    {
+      "file": "lecturers.json",
+      "bytes": 3582,
+      "sha256": "a58b7f45dcbf8daa44a2bc16b19a3bcf40d29bf00c6e1a9d15eaf1bafff735e6",
+      "source": "generated_anonymized",
+      "role": "wrapped {'lecturers': [...]}"
+    },
+    {
+      "file": "reports.json",
+      "bytes": 35623,
+      "sha256": "f52c5e4c0a0a07e3fd641c54ca9b5045d3ee55b71b3269d00366809b052705da",
+      "source": "generated_anonymized",
+      "role": "array root (repo rootKey null)"
+    },
+    {
+      "file": "schedules.json",
+      "bytes": 39209,
+      "sha256": "14c953d6097e53b7c46803cc343b511090106481d4f5412225c7f038d214628e",
+      "source": "generated_anonymized",
+      "role": "wrapped {'schedules': [...]}"
+    }
+  ]
+}

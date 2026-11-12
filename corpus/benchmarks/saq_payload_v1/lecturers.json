@@ -1,0 +1,124 @@
+{
+  "lecturers": [
+    {
+      "id": "20b51e11f8e4369754d39c7f",
+      "name": "Ananta Wijaya",
+      "title": "Dr., S.T., M.T.",
+      "email": "ananta.wijaya@example.ac.id",
+      "phone": "+62-8178-4936-6960",
+      "department": "Teknik Informatika"
+    },
+    {
+      "id": "5e74cedb772a1180873112ff",
+      "name": "Bani Soegiarto",
+      "title": "Prof. Dr.-Ing.",
+      "email": "bani.soegiarto@example.ac.id",
+      "phone": "+62-8123-3959-7106",
+      "department": "Teknologi Informasi"
+    },
+    {
+      "id": "61be530b75d445aa1c8ffe90",
+      "name": "Cendra Hapsari",
+      "title": "S.Kom., M.Kom.",
+      "email": "cendra.hapsari@example.ac.id",
+      "phone": "+62-8122-1600-4404",
+      "department": "Sistem Informasi"
+    },
+    {
+      "id": "954410ff00f5c341e503f22f",
+      "name": "Dewisri Nakula",
+      "title": "S.T., M.Sc.",
+      "email": "dewisri.nakula@example.ac.id",
+      "phone": "+62-8181-2956-6842",
+      "department": "Sains Data"
+    },
+    {
+      "id": "36926d9c8bbf64783e94cf14",
+      "name": "Endah Wilujeng",
+      "title": "Dr. Sc.",
+      "email": "endah.wilujeng@example.ac.id",
+      "phone": "+62-8146-0705-5580",
+      "department": "Teknik Informatika"
+    },
+    {
+      "id": "ad4270283f2f6ab0fcd4dfc0",
+      "name": "Fandi Alfarizi",
+      "title": "S.T.",
+      "email": "fandi.alfarizi@example.ac.id",
+      "phone": "+62-8181-6494-6002",
+      "department": "Teknologi Informasi"
+    },
+    {
+      "id": "d7370dd2d3492d107a488b29",
+      "name": "Ganjar Simpatupang",
+      "title": "Ph.D.",
+      "email": "ganjar.simpatupang@example.ac.id",
+      "phone": "+62-8152-9723-1525",
+      "department": "Sistem Informasi"
+    },
+    {
+      "id": "7707104951d50c7bf2af270c",
+      "name": "Harja Wicaksono",
+      "title": "Ir., M.Sc.",
+      "email": "harja.wicaksono@example.ac.id",
+      "phone": "+62-8142-4548-6011",
+      "department": "Sains Data"
+    },
+    {
+      "id": "94b51d1211b6da615c2a4609",
+      "name": "Ismi Lutfiana",
+      "title": "S.Kom.",
+      "email": "ismi.lutfiana@example.ac.id",
+      "phone": "+62-8174-6744-3952",
+      "department": "Teknik Informatika"
+    },
+    {
+      "id": "44fbc6c3177d9f17308f1795",
+      "name": "Joffry Basukin",
+      "title": "Dr.rer.nat.",
+      "email": "joffry.basukin@example.ac.id",
+      "phone": "+62-8136-9901-3007",
+      "department": "Teknologi Informasi"
+    },
+    {
+      "id": "b7bc6571533b1b3b760c1e2f",
+      "name": "Kinanti Pawestri",
+      "title": "S.T., M.T.",
+      "email": "kinanti.pawestri@example.ac.id",
+      "phone": "+62-8151-1991-8464",
+      "department": "Sistem Informasi"
+    },
+    {
+      "id": "4afe57999461cc9c76c7873a",
+      "name": "Lukmanul Hakim",
+      "title": "M.Kom.",
+      "email": "lukmanul.hakim@example.ac.id",
+      "phone": "+62-8179-1158-9864",
+      "department": "Sains Data"
+    },
+    {
+      "id": "8ae42c2f3472ea7e0778fa1f",
+      "name": "Meilani Roslia",
+      "title": "Ph.D.",
+      "email": "meilani.roslia@example.ac.id",
+      "phone": "+62-8137-1639-6315",
+      "department": "Teknik Informatika"
+    },
+    {
+      "id": "a60887eda822ec80ca8ba8ec",
+      "name": "Nuryadi Sentosa",
+      "title": "S.T., M.Sc.",
+      "email": "nuryadi.sentosa@example.ac.id",
+      "phone": "+62-8171-4713-2896",
+      "department": "Teknologi Informasi"
+    },
+    {
+      "id": "14556b51b62c92d63906837a",
+      "name": "Oky Supriyadi",
+      "title": "S.Kom., M.MT.",
+      "email": "oky.supriyadi@example.ac.id",
+      "phone": "+62-8152-7296-5032",
+      "department": "Sistem Informasi"
+    }
+  ]
+}

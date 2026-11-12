@@ -1,0 +1,192 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "corpus_manifest",
+  "corpus_name": "checker_batch",
+  "purpose": "many small valid documents (whole-document batch parse stress)",
+  "generation": {
+    "script": "scripts/corpus/make_corpus.py",
+    "seed": 20261108,
+    "notes": "deterministic, timestamp-free; regenerating unchanged sources is byte-identical"
+  },
+  "encoding": "utf-8",
+  "document_count": 25,
+  "total_bytes": 5573,
+  "max_document_bytes": 1441,
+  "documents": [
+    {
+      "file": "pass1.json",
+      "bytes": 1441,
+      "sha256": "a46f670e9676dd3d5a22ccbd44be74391cd57867f0a20ee9c5bba2c1e9742239",
+      "source": "copied:corpus/test/json_checker/pass1.json",
+      "role": "json.org pass case"
+    },
+    {
+      "file": "pass2.json",
+      "bytes": 52,
+      "sha256": "7f9deff2652df58a02ca676ff9494de3d93f18db64c7f20f9596dffb8c92f187",
+      "source": "copied:corpus/test/json_checker/pass2.json",
+      "role": "json.org pass case"
+    },
+    {
+      "file": "pass3.json",
+      "bytes": 148,
+      "sha256": "45aaef317f170e5490aa4a18cc301f6d5e03ee617980dec1b15403abf6c537f4",
+      "source": "copied:corpus/test/json_checker/pass3.json",
+      "role": "json.org pass case"
+    },
+    {
+      "file": "valid_00.json",
+      "bytes": 138,
+      "sha256": "a750fdcf051ed61c4438efd98f37d21610f83d8f234759762bbf0dd7cddddd94",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    },
+    {
+      "file": "valid_01.json",
+      "bytes": 281,
+      "sha256": "76db24be7ff05f86cb298e76ae6c120068aff5e12d3662e599d0b6fd5d003ab5",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    },
+    {
+      "file": "valid_02.json",
+      "bytes": 71,
+      "sha256": "2b246135a8d92dbb3f2c77e7ac5d2ce2ddfb465324cc60418da4a86206de97d5",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    },
+    {
+      "file": "valid_03.json",
+      "bytes": 102,
+      "sha256": "817b50682275d3c3d88461b2f2f8065d65e6223c0a100e0e0f79fd098b5c076e",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    },
+    {
+      "file": "valid_04.json",
+      "bytes": 106,
+      "sha256": "6b017c0f845f48d568accb3d2851448045b8d18034dd3e65eccc0a4b6cad0fee",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    },
+    {
+      "file": "valid_05.json",
+      "bytes": 62,
+      "sha256": "a63f3d90473d5a113f3ee0058b583d7bcbfb6a0a0c6c9814b7c16649fb7a5e79",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    },
+    {
+      "file": "valid_06.json",
+      "bytes": 740,
+      "sha256": "ecb9858ac8826a3baffcb2ff0761f5a1c447a9bf47623bd2d3a1ba19d36cdbbd",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    },
+    {
+      "file": "valid_07.json",
+      "bytes": 92,
+      "sha256": "274bb8d8490e0850f019605646b26534a57d5414198e5c8d80eb78120b2a8ff3",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    },
+    {
+      "file": "valid_08.json",
+      "bytes": 138,
+      "sha256": "5c7a7f3228dfd706e4d3b600be191614cc3e828e7224535ef8dab1a4b8e69384",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    },
+    {
+      "file": "valid_09.json",
+      "bytes": 278,
+      "sha256": "4261a8f0613957f559902fd76bb4d5bd536745b56db4092a589d3a5b938eca23",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    },
+    {
+      "file": "valid_10.json",
+      "bytes": 71,
+      "sha256": "2b246135a8d92dbb3f2c77e7ac5d2ce2ddfb465324cc60418da4a86206de97d5",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    },
+    {
+      "file": "valid_11.json",
+      "bytes": 102,
+      "sha256": "817b50682275d3c3d88461b2f2f8065d65e6223c0a100e0e0f79fd098b5c076e",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    },
+    {
+      "file": "valid_12.json",
+      "bytes": 106,
+      "sha256": "6b017c0f845f48d568accb3d2851448045b8d18034dd3e65eccc0a4b6cad0fee",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    },
+    {
+      "file": "valid_13.json",
+      "bytes": 62,
+      "sha256": "a63f3d90473d5a113f3ee0058b583d7bcbfb6a0a0c6c9814b7c16649fb7a5e79",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    },
+    {
+      "file": "valid_14.json",
+      "bytes": 740,
+      "sha256": "ecb9858ac8826a3baffcb2ff0761f5a1c447a9bf47623bd2d3a1ba19d36cdbbd",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    },
+    {
+      "file": "valid_15.json",
+      "bytes": 92,
+      "sha256": "274bb8d8490e0850f019605646b26534a57d5414198e5c8d80eb78120b2a8ff3",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    },
+    {
+      "file": "valid_16.json",
+      "bytes": 139,
+      "sha256": "cf73f7457b0a6f47728a73289e7cbbe73a6e1d6bc85f68e2db870ce0915c2348",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    },
+    {
+      "file": "valid_17.json",
+      "bytes": 271,
+      "sha256": "fe5ba1c1e534feed5de5ff94c1dbeae2ab38a72b224021d175c37e08ecb653bc",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    },
+    {
+      "file": "valid_18.json",
+      "bytes": 71,
+      "sha256": "2b246135a8d92dbb3f2c77e7ac5d2ce2ddfb465324cc60418da4a86206de97d5",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    },
+    {
+      "file": "valid_19.json",
+      "bytes": 102,
+      "sha256": "817b50682275d3c3d88461b2f2f8065d65e6223c0a100e0e0f79fd098b5c076e",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    },
+    {
+      "file": "valid_20.json",
+      "bytes": 106,
+      "sha256": "6b017c0f845f48d568accb3d2851448045b8d18034dd3e65eccc0a4b6cad0fee",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    },
+    {
+      "file": "valid_21.json",
+      "bytes": 62,
+      "sha256": "a63f3d90473d5a113f3ee0058b583d7bcbfb6a0a0c6c9814b7c16649fb7a5e79",
+      "source": "generated",
+      "role": "valid edge-shaped document"
+    }
+  ]
+}

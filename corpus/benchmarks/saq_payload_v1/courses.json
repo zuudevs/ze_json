@@ -1,0 +1,130 @@
+{
+  "courses": [
+    {
+      "id": "16066a60cf25eeae15ec2988",
+      "code": "IF4011",
+      "name": "Pemrograman Lanjut",
+      "credits": 3,
+      "description": "Mata kuliah Pemrograman Lanjut pada program studi Teknik Informatika.",
+      "department": "Teknik Informatika",
+      "semester": 1
+    },
+    {
+      "id": "ca5ff656b0cd9370a2f42e0c",
+      "code": "IF4012",
+      "name": "Basis Data",
+      "credits": 3,
+      "description": "Mata kuliah Basis Data pada program studi Teknologi Informasi.",
+      "department": "Teknologi Informasi",
+      "semester": 2
+    },
+    {
+      "id": "0d0856f45bafd488a327a098",
+      "code": "IF4013",
+      "name": "Jaringan Komputer",
+      "credits": 3,
+      "description": "Mata kuliah Jaringan Komputer pada program studi Sistem Informasi.",
+      "department": "Sistem Informasi",
+      "semester": 3
+    },
+    {
+      "id": "e8b82c8b7f1844fd464b46ff",
+      "code": "IF4014",
+      "name": "Sistem Operasi",
+      "credits": 4,
+      "description": "Mata kuliah Sistem Operasi pada program studi Sains Data.",
+      "department": "Sains Data",
+      "semester": 4
+    },
+    {
+      "id": "ebe92ffd268d5687d142c17c",
+      "code": "IF4201",
+      "name": "Rekayasa Perangkat Lunak",
+      "credits": 3,
+      "description": "Mata kuliah Rekayasa Perangkat Lunak pada program studi Teknik Informatika.",
+      "department": "Teknik Informatika",
+      "semester": 5
+    },
+    {
+      "id": "f6a2e4c0410ad386026a8439",
+      "code": "IF4202",
+      "name": "Keamanan Aplikasi",
+      "credits": 3,
+      "description": "Mata kuliah Keamanan Aplikasi pada program studi Teknologi Informasi.",
+      "department": "Teknologi Informasi",
+      "semester": 6
+    },
+    {
+      "id": "d7ce07d464eb81b685f20b5b",
+      "code": "IF4203",
+      "name": "Pemrograman Website",
+      "credits": 3,
+      "description": "Mata kuliah Pemrograman Website pada program studi Sistem Informasi.",
+      "department": "Sistem Informasi",
+      "semester": 7
+    },
+    {
+      "id": "c9619bfb403221bc1a764c20",
+      "code": "IF4204",
+      "name": "Analisis Algoritme",
+      "credits": 3,
+      "description": "Mata kuliah Analisis Algoritme pada program studi Sains Data.",
+      "department": "Sains Data",
+      "semester": 8
+    },
+    {
+      "id": "365898e3a3ad160c66c26e0f",
+      "code": "IF4301",
+      "name": "Komputasi Awan",
+      "credits": 3,
+      "description": "Mata kuliah Komputasi Awan pada program studi Teknik Informatika.",
+      "department": "Teknik Informatika",
+      "semester": 1
+    },
+    {
+      "id": "01149088f5141a930accdc72",
+      "code": "IF4302",
+      "name": "Perencanaan Bisnis Digital",
+      "credits": 2,
+      "description": "Mata kuliah Perencanaan Bisnis Digital pada program studi Teknologi Informasi.",
+      "department": "Teknologi Informasi",
+      "semester": 2
+    },
+    {
+      "id": "b93f50a7bd5101fe835786df",
+      "code": "TS4311",
+      "name": "Pemrosesan Data",
+      "credits": 4,
+      "description": "Mata kuliah Pemrosesan Data pada program studi Sistem Informasi.",
+      "department": "Sistem Informasi",
+      "semester": 3
+    },
+    {
+      "id": "cd8858475e45d2848cc8973a",
+      "code": "TS4312",
+      "name": "Metodologi Penelitian",
+      "credits": 2,
+      "description": "Mata kuliah Metodologi Penelitian pada program studi Sains Data.",
+      "department": "Sains Data",
+      "semester": 4
+    },
+    {
+      "id": "27494ea7ec608dba18a70432",
+      "code": "BD4021",
+      "name": "Kecerdasan Buatan",
+      "credits": 3,
+      "description": "Mata kuliah Kecerdasan Buatan pada program studi Teknik Informatika.",
+      "department": "Teknik Informatika",
+      "semester": 5
+    },
+    {
+      "id": "7e21061b4f2c278ed736a183",
+      "code": "BD4022",
+      "name": "Data Mining",
+      "credits": 3,
+      "description": "Mata kuliah Data Mining pada program studi Teknologi Informasi.",
+      "department": "Teknologi Informasi",
+      "semester": 6
+    }
+  ]
+}

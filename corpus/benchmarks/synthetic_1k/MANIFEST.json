@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "corpus_manifest",
+  "corpus_name": "synthetic_1k",
+  "purpose": "size sensitivity baseline (~1 KiB single document, body-parse shaped)",
+  "generation": {
+    "script": "scripts/corpus/make_corpus.py",
+    "seed": 20261108,
+    "notes": "deterministic, timestamp-free; regenerating unchanged sources is byte-identical"
+  },
+  "encoding": "utf-8",
+  "document_count": 1,
+  "total_bytes": 1024,
+  "max_document_bytes": 1024,
+  "documents": [
+    {
+      "file": "doc_01.json",
+      "bytes": 1024,
+      "sha256": "6e4e2f250578d2b35acd7c5cd584c97dc920dbac9507526e43c1db7d911fd765",
+      "source": "generated",
+      "role": "single-document size ladder"
+    }
+  ]
+}

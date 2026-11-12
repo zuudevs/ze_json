@@ -1,0 +1,19 @@
+{
+  "semester": {
+    "year": 2026,
+    "term": "Ganjil"
+  },
+  "kurikulum": "2019",
+  "jam_kerja": {
+    "masuk": "08:00",
+    "keluar": "17:00"
+  },
+  "batas_input_laporan": {
+    "hari": "Sabtu",
+    "jam": "23:59"
+  },
+  "notifikasi_wa_on": true,
+  "cetak_kop_surat": "Universitas Teknologi Contoh",
+  "ukuran_font_laporan": 12,
+  "reset_mingguan": false
+}

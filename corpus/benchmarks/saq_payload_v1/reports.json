@@ -1,0 +1,1062 @@
+[
+  {
+    "id": "23563bf79e7d4c894a4724bf",
+    "schedule_id": "3a824b32a90f0c16beb6f314",
+    "date": "2026-01-01",
+    "formattedDate": "Sabtu, 1 Januari 2026",
+    "materi": "Parsing yang hemat memori",
+    "deskripsiKegiatan": "Aktivitas parsing yang hemat memori bersama 2 asisten pada kelas A-1 sesi 1.",
+    "keterangan": "Jadwal terganti bulan depan.",
+    "attending_assistant_ids": [
+      "7358a08553cf8275fcb3084c",
+      "e52ba3af391c6db0fec2e492"
+    ],
+    "status": "Selesai",
+    "imagePath": "laporan_images/report_7d64313d0c.png",
+    "imageFilename": "report_7d64313d0c.png"
+  },
+  {
+    "id": "2eaed5bf5f114d466c957441",
+    "schedule_id": "04c03eca6dcf4fbf3b1abea7",
+    "date": "2025-02-02",
+    "formattedDate": "Ahad, 2 Februari 2025",
+    "materi": "Perancangan antarmuka layar",
+    "deskripsiKegiatan": "Aktivitas perancangan antarmuka layar bersama 3 asisten pada kelas A-2 sesi 2.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "c326af538c7a7c7d03c626de",
+      "6cdb1eb6fc036e1eab8606bf",
+      "6cb92a4fdaafa16914c6b211"
+    ],
+    "status": "Menunggu",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "773b202edecf63010216f3b4",
+    "schedule_id": "b6bc97fceb7070f8a9269ba5",
+    "date": "2026-03-03",
+    "formattedDate": "Senin, 3 Maret 2026",
+    "materi": "Membaca dan memvalidasi data",
+    "deskripsiKegiatan": "Aktivitas membaca dan memvalidasi data bersama 4 asisten pada kelas B-1 sesi 3.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "1bf143d2f2fc8187b3238cc5",
+      "4c15c0f05f9d5b170026c324",
+      "c9ffcd016751e6d3ab167668",
+      "1512b98de556d890779a19a8"
+    ],
+    "status": "Pembatalan",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "fe66f172186a22a9e07b2f67",
+    "schedule_id": "63f6d26912dd14676802014a",
+    "date": "2025-04-04",
+    "formattedDate": "Selasa, 4 April 2025",
+    "materi": "Orientasi obyek dan encapsulasi",
+    "deskripsiKegiatan": "Aktivitas orientasi obyek dan encapsulasi bersama 5 asisten pada kelas B-2 sesi 4.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "1512b98de556d890779a19a8",
+      "5fe6c940c99aec4543703c8a",
+      "6cdd84e3b0ece1b4d0fa8bbb",
+      "6cdcd67b0004f8ebe7bba204",
+      "55fd170290cd7fb3e9234f46"
+    ],
+    "status": "Draf",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "f9bd18955f6d31d436bc30c1",
+    "schedule_id": "9cc57dbde4caf26a05d516ee",
+    "date": "2026-05-05",
+    "formattedDate": "Rabu, 5 Mei 2026",
+    "materi": "Format pertukaran data",
+    "deskripsiKegiatan": "Aktivitas format pertukaran data bersama 6 asisten pada kelas C-1 sesi 1.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "6cdcd67b0004f8ebe7bba204",
+      "55fd170290cd7fb3e9234f46",
+      "645e500d6eab593633b93bd5",
+      "f3b7b15ba7278c487d35a9a4",
+      "2f0229c1fc446c79f50f2a57",
+      "d7dd90d7c566541003573c62"
+    ],
+    "status": "Selesai",
+    "imagePath": "laporan_images/report_7e3cf6de34.png",
+    "imageFilename": "report_7e3cf6de34.png"
+  },
+  {
+    "id": "51877e4a294d2956d6861eb9",
+    "schedule_id": "5a6616753d05872f060583c3",
+    "date": "2025-01-06",
+    "formattedDate": "Kamis, 6 Januari 2025",
+    "materi": "Struktur data konversi",
+    "deskripsiKegiatan": "Aktivitas struktur data konversi bersama 2 asisten pada kelas A-1 sesi 2.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "f3b7b15ba7278c487d35a9a4",
+      "2f0229c1fc446c79f50f2a57"
+    ],
+    "status": "Menunggu",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "d78a925ff27c0181a6cc4dc0",
+    "schedule_id": "3482e937f5c87ec053966d9f",
+    "date": "2026-02-07",
+    "formattedDate": "Jumat, 7 Februari 2026",
+    "materi": "Git dan kolaborasi repositori",
+    "deskripsiKegiatan": "Aktivitas git dan kolaborasi repositori bersama 3 asisten pada kelas A-2 sesi 3.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "b0464110fe9fac4366616b38",
+      "fb6588567febb03bc6564514",
+      "d342aa0618b55fabafd8511e"
+    ],
+    "status": "Pembatalan",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "cd8484634d70b56cee39ee03",
+    "schedule_id": "344a776974545e8a535cab45",
+    "date": "2025-03-08",
+    "formattedDate": "Sabtu, 8 Maret 2025",
+    "materi": "Pemodelan basis data relasional",
+    "deskripsiKegiatan": "Aktivitas pemodelan basis data relasional bersama 4 asisten pada kelas B-1 sesi 4.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "d352aeb77560a83d736d81b6",
+      "13e218c67f178b34b6e5bb5a",
+      "e1ecf7c98f2a1069cf886503",
+      "83db5f86a55e670562e26f2c"
+    ],
+    "status": "Draf",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "37b0bf026665a0166c7ab365",
+    "schedule_id": "fda1378bce98d89cba6be08b",
+    "date": "2026-04-09",
+    "formattedDate": "Ahad, 9 April 2026",
+    "materi": "Uji coba integrasi berkelanjutan",
+    "deskripsiKegiatan": "Aktivitas uji coba integrasi berkelanjutan bersama 5 asisten pada kelas B-2 sesi 1.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "83db5f86a55e670562e26f2c"
+    ],
+    "status": "Selesai",
+    "imagePath": "laporan_images/report_5edd8d8429.png",
+    "imageFilename": "report_5edd8d8429.png"
+  },
+  {
+    "id": "6b5095709e1afd4b9435f19c",
+    "schedule_id": "6a61dcc53c61703aed8bd80c",
+    "date": "2025-05-10",
+    "formattedDate": "Senin, 10 Mei 2025",
+    "materi": "Instrumentasi pengukuran",
+    "deskripsiKegiatan": "Aktivitas instrumentasi pengukuran bersama 6 asisten pada kelas C-1 sesi 2.",
+    "keterangan": "Jadwal terganti bulan depan.",
+    "attending_assistant_ids": [
+      "8deac93b62bd90444c5706c7",
+      "c326af538c7a7c7d03c626de",
+      "6cdb1eb6fc036e1eab8606bf",
+      "6cb92a4fdaafa16914c6b211",
+      "1bf143d2f2fc8187b3238cc5",
+      "4c15c0f05f9d5b170026c324"
+    ],
+    "status": "Menunggu",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "c67ad722b358491fdc538e03",
+    "schedule_id": "a82e95ca0c2244233391c826",
+    "date": "2026-01-11",
+    "formattedDate": "Selasa, 11 Januari 2026",
+    "materi": "Parsing yang hemat memori",
+    "deskripsiKegiatan": "Aktivitas parsing yang hemat memori bersama 2 asisten pada kelas A-1 sesi 3.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "6cb92a4fdaafa16914c6b211",
+      "1bf143d2f2fc8187b3238cc5"
+    ],
+    "status": "Pembatalan",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "3009e56b1639dffff89fa6f2",
+    "schedule_id": "9e6e33c9194a7d05a03e070e",
+    "date": "2025-02-12",
+    "formattedDate": "Rabu, 12 Februari 2025",
+    "materi": "Perancangan antarmuka layar",
+    "deskripsiKegiatan": "Aktivitas perancangan antarmuka layar bersama 3 asisten pada kelas A-2 sesi 4.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "c9ffcd016751e6d3ab167668",
+      "1512b98de556d890779a19a8",
+      "5fe6c940c99aec4543703c8a"
+    ],
+    "status": "Draf",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "d875c4249172317228b05ded",
+    "schedule_id": "45a6da19ddd31c13ba14ca33",
+    "date": "2026-03-13",
+    "formattedDate": "Kamis, 13 Maret 2026",
+    "materi": "Membaca dan memvalidasi data",
+    "deskripsiKegiatan": "Aktivitas membaca dan memvalidasi data bersama 4 asisten pada kelas B-1 sesi 1.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "6cdd84e3b0ece1b4d0fa8bbb",
+      "6cdcd67b0004f8ebe7bba204",
+      "55fd170290cd7fb3e9234f46",
+      "645e500d6eab593633b93bd5"
+    ],
+    "status": "Selesai",
+    "imagePath": "laporan_images/report_40d5843cb2.png",
+    "imageFilename": "report_40d5843cb2.png"
+  },
+  {
+    "id": "4c01f1a3220e6477744313d2",
+    "schedule_id": "fb1f3714112dd58209651408",
+    "date": "2025-04-14",
+    "formattedDate": "Jumat, 14 April 2025",
+    "materi": "Orientasi obyek dan encapsulasi",
+    "deskripsiKegiatan": "Aktivitas orientasi obyek dan encapsulasi bersama 5 asisten pada kelas B-2 sesi 2.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "645e500d6eab593633b93bd5",
+      "f3b7b15ba7278c487d35a9a4",
+      "2f0229c1fc446c79f50f2a57",
+      "d7dd90d7c566541003573c62",
+      "b0464110fe9fac4366616b38"
+    ],
+    "status": "Menunggu",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "a21f95f95b4a77005104214f",
+    "schedule_id": "fc299775a00852199bad27d1",
+    "date": "2026-05-15",
+    "formattedDate": "Sabtu, 15 Mei 2026",
+    "materi": "Format pertukaran data",
+    "deskripsiKegiatan": "Aktivitas format pertukaran data bersama 6 asisten pada kelas C-1 sesi 3.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "d7dd90d7c566541003573c62",
+      "b0464110fe9fac4366616b38",
+      "fb6588567febb03bc6564514",
+      "d342aa0618b55fabafd8511e",
+      "d352aeb77560a83d736d81b6",
+      "13e218c67f178b34b6e5bb5a"
+    ],
+    "status": "Pembatalan",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "2da472d6c42aa7937a605b4c",
+    "schedule_id": "5872c9963ccbb0acd87c2a24",
+    "date": "2025-01-16",
+    "formattedDate": "Ahad, 16 Januari 2025",
+    "materi": "Struktur data konversi",
+    "deskripsiKegiatan": "Aktivitas struktur data konversi bersama 2 asisten pada kelas A-1 sesi 4.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "d342aa0618b55fabafd8511e",
+      "d352aeb77560a83d736d81b6"
+    ],
+    "status": "Draf",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "5519bd4a30220c99dd74b830",
+    "schedule_id": "e6d58617a8529ef1516126b7",
+    "date": "2026-02-17",
+    "formattedDate": "Senin, 17 Februari 2026",
+    "materi": "Git dan kolaborasi repositori",
+    "deskripsiKegiatan": "Aktivitas git dan kolaborasi repositori bersama 3 asisten pada kelas A-2 sesi 1.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "e1ecf7c98f2a1069cf886503",
+      "83db5f86a55e670562e26f2c"
+    ],
+    "status": "Selesai",
+    "imagePath": "laporan_images/report_8d63327723.png",
+    "imageFilename": "report_8d63327723.png"
+  },
+  {
+    "id": "14734cf0b21ee1acf4dfe8bc",
+    "schedule_id": "12c5a30fab4240c51e1b7d38",
+    "date": "2025-03-18",
+    "formattedDate": "Selasa, 18 Maret 2025",
+    "materi": "Pemodelan basis data relasional",
+    "deskripsiKegiatan": "Aktivitas pemodelan basis data relasional bersama 4 asisten pada kelas B-1 sesi 2.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "e52ba3af391c6db0fec2e492",
+      "8deac93b62bd90444c5706c7",
+      "c326af538c7a7c7d03c626de",
+      "6cdb1eb6fc036e1eab8606bf"
+    ],
+    "status": "Menunggu",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "fe4ce6d4251040260eb0fe92",
+    "schedule_id": "59d7259560ba7e6b8786fec9",
+    "date": "2026-04-19",
+    "formattedDate": "Rabu, 19 April 2026",
+    "materi": "Uji coba integrasi berkelanjutan",
+    "deskripsiKegiatan": "Aktivitas uji coba integrasi berkelanjutan bersama 5 asisten pada kelas B-2 sesi 3.",
+    "keterangan": "Jadwal terganti bulan depan.",
+    "attending_assistant_ids": [
+      "6cdb1eb6fc036e1eab8606bf",
+      "6cb92a4fdaafa16914c6b211",
+      "1bf143d2f2fc8187b3238cc5",
+      "4c15c0f05f9d5b170026c324",
+      "c9ffcd016751e6d3ab167668"
+    ],
+    "status": "Pembatalan",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "afd06a2fed02d3809cca23fd",
+    "schedule_id": "8be2dd0104d53bea7f6e6344",
+    "date": "2025-05-20",
+    "formattedDate": "Kamis, 20 Mei 2025",
+    "materi": "Instrumentasi pengukuran",
+    "deskripsiKegiatan": "Aktivitas instrumentasi pengukuran bersama 6 asisten pada kelas C-1 sesi 4.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "4c15c0f05f9d5b170026c324",
+      "c9ffcd016751e6d3ab167668",
+      "1512b98de556d890779a19a8",
+      "5fe6c940c99aec4543703c8a",
+      "6cdd84e3b0ece1b4d0fa8bbb",
+      "6cdcd67b0004f8ebe7bba204"
+    ],
+    "status": "Draf",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "d22c6d9b3ebead9541f0abdd",
+    "schedule_id": "f31827d8d2e5552f49c365f4",
+    "date": "2026-01-21",
+    "formattedDate": "Jumat, 21 Januari 2026",
+    "materi": "Parsing yang hemat memori",
+    "deskripsiKegiatan": "Aktivitas parsing yang hemat memori bersama 2 asisten pada kelas A-1 sesi 1.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "5fe6c940c99aec4543703c8a",
+      "6cdd84e3b0ece1b4d0fa8bbb"
+    ],
+    "status": "Selesai",
+    "imagePath": "laporan_images/report_63d593ce0f.png",
+    "imageFilename": "report_63d593ce0f.png"
+  },
+  {
+    "id": "8c5fe4dbdf64615d4da76948",
+    "schedule_id": "88669272faff71d305f12489",
+    "date": "2025-02-22",
+    "formattedDate": "Sabtu, 22 Februari 2025",
+    "materi": "Perancangan antarmuka layar",
+    "deskripsiKegiatan": "Aktivitas perancangan antarmuka layar bersama 3 asisten pada kelas A-2 sesi 2.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "55fd170290cd7fb3e9234f46",
+      "645e500d6eab593633b93bd5",
+      "f3b7b15ba7278c487d35a9a4"
+    ],
+    "status": "Menunggu",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "9d9c1f28e462b511f4449831",
+    "schedule_id": "78eda1f8e542a27442048e84",
+    "date": "2026-03-23",
+    "formattedDate": "Ahad, 23 Maret 2026",
+    "materi": "Membaca dan memvalidasi data",
+    "deskripsiKegiatan": "Aktivitas membaca dan memvalidasi data bersama 4 asisten pada kelas B-1 sesi 3.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "2f0229c1fc446c79f50f2a57",
+      "d7dd90d7c566541003573c62",
+      "b0464110fe9fac4366616b38",
+      "fb6588567febb03bc6564514"
+    ],
+    "status": "Pembatalan",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "83489acaa7dfa4e726c1f61b",
+    "schedule_id": "0f54c3941893213a2782b6ac",
+    "date": "2025-04-24",
+    "formattedDate": "Senin, 24 April 2025",
+    "materi": "Orientasi obyek dan encapsulasi",
+    "deskripsiKegiatan": "Aktivitas orientasi obyek dan encapsulasi bersama 5 asisten pada kelas B-2 sesi 4.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "fb6588567febb03bc6564514",
+      "d342aa0618b55fabafd8511e",
+      "d352aeb77560a83d736d81b6",
+      "13e218c67f178b34b6e5bb5a",
+      "e1ecf7c98f2a1069cf886503"
+    ],
+    "status": "Draf",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "6490fafbbb88d0957313d1c4",
+    "schedule_id": "59ada41e07e6078b85e5da4b",
+    "date": "2026-05-25",
+    "formattedDate": "Selasa, 25 Mei 2026",
+    "materi": "Format pertukaran data",
+    "deskripsiKegiatan": "Aktivitas format pertukaran data bersama 6 asisten pada kelas C-1 sesi 1.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "13e218c67f178b34b6e5bb5a",
+      "e1ecf7c98f2a1069cf886503",
+      "83db5f86a55e670562e26f2c"
+    ],
+    "status": "Selesai",
+    "imagePath": "laporan_images/report_b11bcca19f.png",
+    "imageFilename": "report_b11bcca19f.png"
+  },
+  {
+    "id": "7ddc15dead149c63c201148e",
+    "schedule_id": "b9e097939adb79c06605a87f",
+    "date": "2025-01-26",
+    "formattedDate": "Rabu, 26 Januari 2025",
+    "materi": "Struktur data konversi",
+    "deskripsiKegiatan": "Aktivitas struktur data konversi bersama 2 asisten pada kelas A-1 sesi 2.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "7358a08553cf8275fcb3084c",
+      "e52ba3af391c6db0fec2e492"
+    ],
+    "status": "Menunggu",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "06aaf07de89aaa0ecaaa0d95",
+    "schedule_id": "b7c67906b5730fbd7160cb8a",
+    "date": "2026-02-27",
+    "formattedDate": "Kamis, 27 Februari 2026",
+    "materi": "Git dan kolaborasi repositori",
+    "deskripsiKegiatan": "Aktivitas git dan kolaborasi repositori bersama 3 asisten pada kelas A-2 sesi 3.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "c326af538c7a7c7d03c626de",
+      "6cdb1eb6fc036e1eab8606bf",
+      "6cb92a4fdaafa16914c6b211"
+    ],
+    "status": "Pembatalan",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "2f2a08ad80eb56b37314ad4f",
+    "schedule_id": "1b7cc065de1c2c1d878ab847",
+    "date": "2025-03-01",
+    "formattedDate": "Sabtu, 1 Maret 2025",
+    "materi": "Pemodelan basis data relasional",
+    "deskripsiKegiatan": "Aktivitas pemodelan basis data relasional bersama 4 asisten pada kelas B-1 sesi 4.",
+    "keterangan": "Jadwal terganti bulan depan.",
+    "attending_assistant_ids": [
+      "1bf143d2f2fc8187b3238cc5",
+      "4c15c0f05f9d5b170026c324",
+      "c9ffcd016751e6d3ab167668",
+      "1512b98de556d890779a19a8"
+    ],
+    "status": "Draf",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "0b97842ddd562793d6b45d16",
+    "schedule_id": "af18716584c9598ec515d8ba",
+    "date": "2026-04-02",
+    "formattedDate": "Ahad, 2 April 2026",
+    "materi": "Uji coba integrasi berkelanjutan",
+    "deskripsiKegiatan": "Aktivitas uji coba integrasi berkelanjutan bersama 5 asisten pada kelas B-2 sesi 1.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "1512b98de556d890779a19a8",
+      "5fe6c940c99aec4543703c8a",
+      "6cdd84e3b0ece1b4d0fa8bbb",
+      "6cdcd67b0004f8ebe7bba204",
+      "55fd170290cd7fb3e9234f46"
+    ],
+    "status": "Selesai",
+    "imagePath": "laporan_images/report_002f698c3f.png",
+    "imageFilename": "report_002f698c3f.png"
+  },
+  {
+    "id": "120037bcf5cfc7153298025a",
+    "schedule_id": "0d174dcb4cb485e4cb03d22b",
+    "date": "2025-05-03",
+    "formattedDate": "Senin, 3 Mei 2025",
+    "materi": "Instrumentasi pengukuran",
+    "deskripsiKegiatan": "Aktivitas instrumentasi pengukuran bersama 6 asisten pada kelas C-1 sesi 2.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "6cdcd67b0004f8ebe7bba204",
+      "55fd170290cd7fb3e9234f46",
+      "645e500d6eab593633b93bd5",
+      "f3b7b15ba7278c487d35a9a4",
+      "2f0229c1fc446c79f50f2a57",
+      "d7dd90d7c566541003573c62"
+    ],
+    "status": "Menunggu",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "67274df60cbb14841df02f19",
+    "schedule_id": "0c01b7f72e752ac774351f53",
+    "date": "2026-01-04",
+    "formattedDate": "Selasa, 4 Januari 2026",
+    "materi": "Parsing yang hemat memori",
+    "deskripsiKegiatan": "Aktivitas parsing yang hemat memori bersama 2 asisten pada kelas A-1 sesi 3.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "f3b7b15ba7278c487d35a9a4",
+      "2f0229c1fc446c79f50f2a57"
+    ],
+    "status": "Pembatalan",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "6eac675c1162f5b42138f375",
+    "schedule_id": "92e7ac284c49e56b5de442c3",
+    "date": "2025-02-05",
+    "formattedDate": "Rabu, 5 Februari 2025",
+    "materi": "Perancangan antarmuka layar",
+    "deskripsiKegiatan": "Aktivitas perancangan antarmuka layar bersama 3 asisten pada kelas A-2 sesi 4.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "b0464110fe9fac4366616b38",
+      "fb6588567febb03bc6564514",
+      "d342aa0618b55fabafd8511e"
+    ],
+    "status": "Draf",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "ccc4737b4c362f0b01a6d476",
+    "schedule_id": "b410b00b73fd66fd9c378ace",
+    "date": "2026-03-06",
+    "formattedDate": "Kamis, 6 Maret 2026",
+    "materi": "Membaca dan memvalidasi data",
+    "deskripsiKegiatan": "Aktivitas membaca dan memvalidasi data bersama 4 asisten pada kelas B-1 sesi 1.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "d352aeb77560a83d736d81b6",
+      "13e218c67f178b34b6e5bb5a",
+      "e1ecf7c98f2a1069cf886503",
+      "83db5f86a55e670562e26f2c"
+    ],
+    "status": "Selesai",
+    "imagePath": "laporan_images/report_31c5642bb3.png",
+    "imageFilename": "report_31c5642bb3.png"
+  },
+  {
+    "id": "7b5b0b34ade55f07c91e4172",
+    "schedule_id": "2d1e807146f80d42e32c7968",
+    "date": "2025-04-07",
+    "formattedDate": "Jumat, 7 April 2025",
+    "materi": "Orientasi obyek dan encapsulasi",
+    "deskripsiKegiatan": "Aktivitas orientasi obyek dan encapsulasi bersama 5 asisten pada kelas B-2 sesi 2.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "83db5f86a55e670562e26f2c"
+    ],
+    "status": "Menunggu",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "ab9bf04f5c0e5cff6a3aa978",
+    "schedule_id": "b4e7fcbcb1686fb20c28ca4f",
+    "date": "2026-05-08",
+    "formattedDate": "Sabtu, 8 Mei 2026",
+    "materi": "Format pertukaran data",
+    "deskripsiKegiatan": "Aktivitas format pertukaran data bersama 6 asisten pada kelas C-1 sesi 3.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "8deac93b62bd90444c5706c7",
+      "c326af538c7a7c7d03c626de",
+      "6cdb1eb6fc036e1eab8606bf",
+      "6cb92a4fdaafa16914c6b211",
+      "1bf143d2f2fc8187b3238cc5",
+      "4c15c0f05f9d5b170026c324"
+    ],
+    "status": "Pembatalan",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "a7f898f36d19499a9a0a6dbd",
+    "schedule_id": "5da2b73095d88da33f07ee3c",
+    "date": "2025-01-09",
+    "formattedDate": "Ahad, 9 Januari 2025",
+    "materi": "Struktur data konversi",
+    "deskripsiKegiatan": "Aktivitas struktur data konversi bersama 2 asisten pada kelas A-1 sesi 4.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "6cb92a4fdaafa16914c6b211",
+      "1bf143d2f2fc8187b3238cc5"
+    ],
+    "status": "Draf",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "4077b4e39deff20dde458624",
+    "schedule_id": "a6484759717960d9ae2d99fd",
+    "date": "2026-02-10",
+    "formattedDate": "Senin, 10 Februari 2026",
+    "materi": "Git dan kolaborasi repositori",
+    "deskripsiKegiatan": "Aktivitas git dan kolaborasi repositori bersama 3 asisten pada kelas A-2 sesi 1.",
+    "keterangan": "Jadwal terganti bulan depan.",
+    "attending_assistant_ids": [
+      "c9ffcd016751e6d3ab167668",
+      "1512b98de556d890779a19a8",
+      "5fe6c940c99aec4543703c8a"
+    ],
+    "status": "Selesai",
+    "imagePath": "laporan_images/report_d2348138c3.png",
+    "imageFilename": "report_d2348138c3.png"
+  },
+  {
+    "id": "fd8d0e5f4464e385e0e38604",
+    "schedule_id": "d94fc2885a74bc91d947260d",
+    "date": "2025-03-11",
+    "formattedDate": "Selasa, 11 Maret 2025",
+    "materi": "Pemodelan basis data relasional",
+    "deskripsiKegiatan": "Aktivitas pemodelan basis data relasional bersama 4 asisten pada kelas B-1 sesi 2.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "6cdd84e3b0ece1b4d0fa8bbb",
+      "6cdcd67b0004f8ebe7bba204",
+      "55fd170290cd7fb3e9234f46",
+      "645e500d6eab593633b93bd5"
+    ],
+    "status": "Menunggu",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "9b28725434e98c25806557a9",
+    "schedule_id": "6ebfa7bd1a067d43ee3e7304",
+    "date": "2026-04-12",
+    "formattedDate": "Rabu, 12 April 2026",
+    "materi": "Uji coba integrasi berkelanjutan",
+    "deskripsiKegiatan": "Aktivitas uji coba integrasi berkelanjutan bersama 5 asisten pada kelas B-2 sesi 3.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "645e500d6eab593633b93bd5",
+      "f3b7b15ba7278c487d35a9a4",
+      "2f0229c1fc446c79f50f2a57",
+      "d7dd90d7c566541003573c62",
+      "b0464110fe9fac4366616b38"
+    ],
+    "status": "Pembatalan",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "7007eca4f49f5a654c08af2f",
+    "schedule_id": "00281c22a6f6bf68b65cdd92",
+    "date": "2025-05-13",
+    "formattedDate": "Kamis, 13 Mei 2025",
+    "materi": "Instrumentasi pengukuran",
+    "deskripsiKegiatan": "Aktivitas instrumentasi pengukuran bersama 6 asisten pada kelas C-1 sesi 4.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "d7dd90d7c566541003573c62",
+      "b0464110fe9fac4366616b38",
+      "fb6588567febb03bc6564514",
+      "d342aa0618b55fabafd8511e",
+      "d352aeb77560a83d736d81b6",
+      "13e218c67f178b34b6e5bb5a"
+    ],
+    "status": "Draf",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "09afeeda5546d61cdea9f681",
+    "schedule_id": "5b9a7c2aa974c387583bfe08",
+    "date": "2026-01-14",
+    "formattedDate": "Jumat, 14 Januari 2026",
+    "materi": "Parsing yang hemat memori",
+    "deskripsiKegiatan": "Aktivitas parsing yang hemat memori bersama 2 asisten pada kelas A-1 sesi 1.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "d342aa0618b55fabafd8511e",
+      "d352aeb77560a83d736d81b6"
+    ],
+    "status": "Selesai",
+    "imagePath": "laporan_images/report_d98d26c1c9.png",
+    "imageFilename": "report_d98d26c1c9.png"
+  },
+  {
+    "id": "af425123895139e008a9f1b8",
+    "schedule_id": "cf44c22c363033f0c258945f",
+    "date": "2025-02-15",
+    "formattedDate": "Sabtu, 15 Februari 2025",
+    "materi": "Perancangan antarmuka layar",
+    "deskripsiKegiatan": "Aktivitas perancangan antarmuka layar bersama 3 asisten pada kelas A-2 sesi 2.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "e1ecf7c98f2a1069cf886503",
+      "83db5f86a55e670562e26f2c"
+    ],
+    "status": "Menunggu",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "bac0cf15beb2f9d4aac1e15b",
+    "schedule_id": "771650bd8288f4a175898e4f",
+    "date": "2026-03-16",
+    "formattedDate": "Ahad, 16 Maret 2026",
+    "materi": "Membaca dan memvalidasi data",
+    "deskripsiKegiatan": "Aktivitas membaca dan memvalidasi data bersama 4 asisten pada kelas B-1 sesi 3.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "e52ba3af391c6db0fec2e492",
+      "8deac93b62bd90444c5706c7",
+      "c326af538c7a7c7d03c626de",
+      "6cdb1eb6fc036e1eab8606bf"
+    ],
+    "status": "Pembatalan",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "49e3ab245d91f82dce0ca62e",
+    "schedule_id": "966446ae62ff1793a777e322",
+    "date": "2025-04-17",
+    "formattedDate": "Senin, 17 April 2025",
+    "materi": "Orientasi obyek dan encapsulasi",
+    "deskripsiKegiatan": "Aktivitas orientasi obyek dan encapsulasi bersama 5 asisten pada kelas B-2 sesi 4.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "6cdb1eb6fc036e1eab8606bf",
+      "6cb92a4fdaafa16914c6b211",
+      "1bf143d2f2fc8187b3238cc5",
+      "4c15c0f05f9d5b170026c324",
+      "c9ffcd016751e6d3ab167668"
+    ],
+    "status": "Draf",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "5f8a7a1ed7544367a5f7a23e",
+    "schedule_id": "f88c5922a416ed9bc3a82a76",
+    "date": "2026-05-18",
+    "formattedDate": "Selasa, 18 Mei 2026",
+    "materi": "Format pertukaran data",
+    "deskripsiKegiatan": "Aktivitas format pertukaran data bersama 6 asisten pada kelas C-1 sesi 1.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "4c15c0f05f9d5b170026c324",
+      "c9ffcd016751e6d3ab167668",
+      "1512b98de556d890779a19a8",
+      "5fe6c940c99aec4543703c8a",
+      "6cdd84e3b0ece1b4d0fa8bbb",
+      "6cdcd67b0004f8ebe7bba204"
+    ],
+    "status": "Selesai",
+    "imagePath": "laporan_images/report_342648a55e.png",
+    "imageFilename": "report_342648a55e.png"
+  },
+  {
+    "id": "bdd347ffba17c3b17515ad28",
+    "schedule_id": "287f5eb25e1ed27fb71d42cd",
+    "date": "2025-01-19",
+    "formattedDate": "Rabu, 19 Januari 2025",
+    "materi": "Struktur data konversi",
+    "deskripsiKegiatan": "Aktivitas struktur data konversi bersama 2 asisten pada kelas A-1 sesi 2.",
+    "keterangan": "Jadwal terganti bulan depan.",
+    "attending_assistant_ids": [
+      "5fe6c940c99aec4543703c8a",
+      "6cdd84e3b0ece1b4d0fa8bbb"
+    ],
+    "status": "Menunggu",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "15544043696e48f1d8a484f5",
+    "schedule_id": "0c9adb5a687b30ad2036c7a7",
+    "date": "2026-02-20",
+    "formattedDate": "Kamis, 20 Februari 2026",
+    "materi": "Git dan kolaborasi repositori",
+    "deskripsiKegiatan": "Aktivitas git dan kolaborasi repositori bersama 3 asisten pada kelas A-2 sesi 3.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "55fd170290cd7fb3e9234f46",
+      "645e500d6eab593633b93bd5",
+      "f3b7b15ba7278c487d35a9a4"
+    ],
+    "status": "Pembatalan",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "6cd502e65b08d09a3d12a686",
+    "schedule_id": "2ff7b11e95ae28cbf1520627",
+    "date": "2025-03-21",
+    "formattedDate": "Jumat, 21 Maret 2025",
+    "materi": "Pemodelan basis data relasional",
+    "deskripsiKegiatan": "Aktivitas pemodelan basis data relasional bersama 4 asisten pada kelas B-1 sesi 4.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "2f0229c1fc446c79f50f2a57",
+      "d7dd90d7c566541003573c62",
+      "b0464110fe9fac4366616b38",
+      "fb6588567febb03bc6564514"
+    ],
+    "status": "Draf",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "7f1c6dda343f77bb6b85b3e1",
+    "schedule_id": "1b190fbc13b71dec1869ba05",
+    "date": "2026-04-22",
+    "formattedDate": "Sabtu, 22 April 2026",
+    "materi": "Uji coba integrasi berkelanjutan",
+    "deskripsiKegiatan": "Aktivitas uji coba integrasi berkelanjutan bersama 5 asisten pada kelas B-2 sesi 1.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "fb6588567febb03bc6564514",
+      "d342aa0618b55fabafd8511e",
+      "d352aeb77560a83d736d81b6",
+      "13e218c67f178b34b6e5bb5a",
+      "e1ecf7c98f2a1069cf886503"
+    ],
+    "status": "Selesai",
+    "imagePath": "laporan_images/report_e59d60c7df.png",
+    "imageFilename": "report_e59d60c7df.png"
+  },
+  {
+    "id": "795f62f567cabf330dcfb28f",
+    "schedule_id": "1680770b3e7c3d5dc02876eb",
+    "date": "2025-05-23",
+    "formattedDate": "Ahad, 23 Mei 2025",
+    "materi": "Instrumentasi pengukuran",
+    "deskripsiKegiatan": "Aktivitas instrumentasi pengukuran bersama 6 asisten pada kelas C-1 sesi 2.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "13e218c67f178b34b6e5bb5a",
+      "e1ecf7c98f2a1069cf886503",
+      "83db5f86a55e670562e26f2c"
+    ],
+    "status": "Menunggu",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "396df138f7240bca4b94e3b4",
+    "schedule_id": "ad50435cda418918fdee1b0a",
+    "date": "2026-01-24",
+    "formattedDate": "Senin, 24 Januari 2026",
+    "materi": "Parsing yang hemat memori",
+    "deskripsiKegiatan": "Aktivitas parsing yang hemat memori bersama 2 asisten pada kelas A-1 sesi 3.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "7358a08553cf8275fcb3084c",
+      "e52ba3af391c6db0fec2e492"
+    ],
+    "status": "Pembatalan",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "db055e366ce60ea804bc3a3f",
+    "schedule_id": "f50c815e7950dead0eea7de9",
+    "date": "2025-02-25",
+    "formattedDate": "Selasa, 25 Februari 2025",
+    "materi": "Perancangan antarmuka layar",
+    "deskripsiKegiatan": "Aktivitas perancangan antarmuka layar bersama 3 asisten pada kelas A-2 sesi 4.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "c326af538c7a7c7d03c626de",
+      "6cdb1eb6fc036e1eab8606bf",
+      "6cb92a4fdaafa16914c6b211"
+    ],
+    "status": "Draf",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "f05a604f58b28d078db21dd5",
+    "schedule_id": "141b59d3c387e7cd1fbfffdc",
+    "date": "2026-03-26",
+    "formattedDate": "Rabu, 26 Maret 2026",
+    "materi": "Membaca dan memvalidasi data",
+    "deskripsiKegiatan": "Aktivitas membaca dan memvalidasi data bersama 4 asisten pada kelas B-1 sesi 1.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "1bf143d2f2fc8187b3238cc5",
+      "4c15c0f05f9d5b170026c324",
+      "c9ffcd016751e6d3ab167668",
+      "1512b98de556d890779a19a8"
+    ],
+    "status": "Selesai",
+    "imagePath": "laporan_images/report_f36882a411.png",
+    "imageFilename": "report_f36882a411.png"
+  },
+  {
+    "id": "875a8b4cc9ae877b63fa6562",
+    "schedule_id": "df138201bbe7acc13fd433d8",
+    "date": "2025-04-27",
+    "formattedDate": "Kamis, 27 April 2025",
+    "materi": "Orientasi obyek dan encapsulasi",
+    "deskripsiKegiatan": "Aktivitas orientasi obyek dan encapsulasi bersama 5 asisten pada kelas B-2 sesi 2.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "1512b98de556d890779a19a8",
+      "5fe6c940c99aec4543703c8a",
+      "6cdd84e3b0ece1b4d0fa8bbb",
+      "6cdcd67b0004f8ebe7bba204",
+      "55fd170290cd7fb3e9234f46"
+    ],
+    "status": "Menunggu",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "9260e6adce3847a2f17999e6",
+    "schedule_id": "837229f96ea1daea86bc0ab4",
+    "date": "2026-05-01",
+    "formattedDate": "Sabtu, 1 Mei 2026",
+    "materi": "Format pertukaran data",
+    "deskripsiKegiatan": "Aktivitas format pertukaran data bersama 6 asisten pada kelas C-1 sesi 3.",
+    "keterangan": "Jadwal terganti bulan depan.",
+    "attending_assistant_ids": [
+      "6cdcd67b0004f8ebe7bba204",
+      "55fd170290cd7fb3e9234f46",
+      "645e500d6eab593633b93bd5",
+      "f3b7b15ba7278c487d35a9a4",
+      "2f0229c1fc446c79f50f2a57",
+      "d7dd90d7c566541003573c62"
+    ],
+    "status": "Pembatalan",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "eb707f762a1b4c87cb30b788",
+    "schedule_id": "0090ee5860b8a1af1262b652",
+    "date": "2025-01-02",
+    "formattedDate": "Ahad, 2 Januari 2025",
+    "materi": "Struktur data konversi",
+    "deskripsiKegiatan": "Aktivitas struktur data konversi bersama 2 asisten pada kelas A-1 sesi 4.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "f3b7b15ba7278c487d35a9a4",
+      "2f0229c1fc446c79f50f2a57"
+    ],
+    "status": "Draf",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "8e7b8efcf5af47646ee55c18",
+    "schedule_id": "f991c88e22b74eb3ee697c4e",
+    "date": "2026-02-03",
+    "formattedDate": "Senin, 3 Februari 2026",
+    "materi": "Git dan kolaborasi repositori",
+    "deskripsiKegiatan": "Aktivitas git dan kolaborasi repositori bersama 3 asisten pada kelas A-2 sesi 1.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "b0464110fe9fac4366616b38",
+      "fb6588567febb03bc6564514",
+      "d342aa0618b55fabafd8511e"
+    ],
+    "status": "Selesai",
+    "imagePath": "laporan_images/report_6316901af7.png",
+    "imageFilename": "report_6316901af7.png"
+  },
+  {
+    "id": "5efddb935168d8ea59a88228",
+    "schedule_id": "9038627d1e024302683b6dd3",
+    "date": "2025-03-04",
+    "formattedDate": "Selasa, 4 Maret 2025",
+    "materi": "Pemodelan basis data relasional",
+    "deskripsiKegiatan": "Aktivitas pemodelan basis data relasional bersama 4 asisten pada kelas B-1 sesi 2.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "d352aeb77560a83d736d81b6",
+      "13e218c67f178b34b6e5bb5a",
+      "e1ecf7c98f2a1069cf886503",
+      "83db5f86a55e670562e26f2c"
+    ],
+    "status": "Menunggu",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "e1e3342faee69d1ec63b954d",
+    "schedule_id": "da82a90441795744a8ca399a",
+    "date": "2026-04-05",
+    "formattedDate": "Rabu, 5 April 2026",
+    "materi": "Uji coba integrasi berkelanjutan",
+    "deskripsiKegiatan": "Aktivitas uji coba integrasi berkelanjutan bersama 5 asisten pada kelas B-2 sesi 3.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "83db5f86a55e670562e26f2c"
+    ],
+    "status": "Pembatalan",
+    "imagePath": null,
+    "imageFilename": null
+  },
+  {
+    "id": "3cc43d627fa80e77fdfaaecf",
+    "schedule_id": "d6255eb86329dfaacdcc01ac",
+    "date": "2025-05-06",
+    "formattedDate": "Kamis, 6 Mei 2025",
+    "materi": "Instrumentasi pengukuran",
+    "deskripsiKegiatan": "Aktivitas instrumentasi pengukuran bersama 6 asisten pada kelas C-1 sesi 4.",
+    "keterangan": "",
+    "attending_assistant_ids": [
+      "8deac93b62bd90444c5706c7",
+      "c326af538c7a7c7d03c626de",
+      "6cdb1eb6fc036e1eab8606bf",
+      "6cb92a4fdaafa16914c6b211",
+      "1bf143d2f2fc8187b3238cc5",
+      "4c15c0f05f9d5b170026c324"
+    ],
+    "status": "Draf",
+    "imagePath": null,
+    "imageFilename": null
+  }
+]
