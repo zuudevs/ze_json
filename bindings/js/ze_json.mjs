@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_WASM = path.join(HERE, 'ze_json.wasm');
 
-export const ABI_VERSION = 3;
+export const ABI_VERSION = 4;
 
 /** Index order matches zuu::core::JsonErrc (core/error.hpp). */
 export const JSON_ERRORS = [
@@ -141,6 +141,13 @@ export class ZeJson {
   #exports;
   #memory;
   #scanFns = new Map();
+  // O1-7: v4 thin step family (additive) — present in every ABI v4 wasm
+  // build; soft-detected so a stale v3 artifact keeps working through the
+  // v3 packed path (the version check above already fails loud on a
+  // binding/artifact version mismatch).
+  #thinStep = false;
+  #stepOutPtr = null; // caller-owned 8-byte out pair (token_start, cursor)
+  #stepOutBig = 0n; // pre-boxed ONCE per heap generation (O1-7)
 
   constructor(exports) {
     this.#exports = exports;
@@ -150,6 +157,7 @@ export class ZeJson {
         this.#scanFns.set(mode, exports[exportName]);
       }
     }
+    this.#thinStep = typeof exports.ze_container_begin4 === 'function';
   }
 
   static load(wasmPath = DEFAULT_WASM) {
@@ -205,6 +213,38 @@ export class ZeJson {
   /** Rewind the bump allocator (call between corpora, after documents expire). */
   resetHeap() {
     this.#exports.ze_reset_heap();
+    this.#stepOutPtr = null; // the carve was rewound — re-alloc lazily
+  }
+
+  /**
+   * O1-7: 8-byte thin-step out pair, carved lazily once per heap
+   * generation (resetHeap invalidates it — the bump heap owns everything).
+   * Only the BigInt boxing of its pointer happens once per generation;
+   * every thin step call passes the pre-boxed value.
+   */
+  #ensureStepOut() {
+    if (this.#stepOutPtr === null) {
+      this.#stepOutPtr = this.alloc(8);
+      this.#stepOutBig = BigInt(this.#stepOutPtr);
+    }
+  }
+
+  /** Decode the thin out pair (per-call view: grows detach the buffer). */
+  #readStepOut() {
+    const v = new Uint32Array(this.#memory.buffer, this.#stepOutPtr, 2);
+    return { ok: true, ts: v[0], cursor: v[1] };
+  }
+
+  /** Thin step status -> frame result (0 ok, 1 done, < 0 = -JsonErrc). */
+  #thinResult(st) {
+    if (st === 0) {
+      return this.#readStepOut();
+    }
+    if (st === 1) {
+      return kFrameDone;
+    }
+    const code = -st;
+    return { ok: false, error: JSON_ERRORS[code] ?? `code ${code}`, code };
   }
 
   writeBytes(ptr, bytes) {
@@ -342,26 +382,54 @@ export class ZeJson {
     return Number(this.#exports.ze_value_kind(BigInt(slot), BigInt(ts)));
   }
 
+  /**
+   * O1-7 thin guard: i32 halves bound ts/cursor to sub-2-GiB (stated v4
+   * limitation) — anything at or above falls back to the v3 packed path.
+   */
+  #thinArgs(ts, cursor) {
+    return this.#thinStep && ts < 0x80000000 && cursor < 0x80000000;
+  }
+
   /** First child frame of the container at (ts, cursor). */
   containerBegin(slot, ts, cursor) {
+    if (this.#thinArgs(ts, cursor)) {
+      this.#ensureStepOut();
+      return this.#thinResult(this.#exports.ze_container_begin4(
+        slot, ts, cursor, this.#stepOutBig));
+    }
     return this.#frame(this.#exports.ze_container_begin(
       BigInt(slot), BigInt(ts), BigInt(cursor)));
   }
 
   /** ArrayIter++ replay from the current child frame. */
   arrayNext(slot, childTs, childCursor) {
+    if (this.#thinArgs(childTs, childCursor)) {
+      this.#ensureStepOut();
+      return this.#thinResult(this.#exports.ze_array_next4(
+        slot, childTs, childCursor, this.#stepOutBig));
+    }
     return this.#frame(this.#exports.ze_array_next(
       BigInt(slot), BigInt(childTs), BigInt(childCursor)));
   }
 
   /** Next object KEY frame from the current field's value frame. */
   objectNext(slot, valueTs, valueCursor) {
+    if (this.#thinArgs(valueTs, valueCursor)) {
+      this.#ensureStepOut();
+      return this.#thinResult(this.#exports.ze_object_next4(
+        slot, valueTs, valueCursor, this.#stepOutBig));
+    }
     return this.#frame(this.#exports.ze_object_next(
       BigInt(slot), BigInt(valueTs), BigInt(valueCursor)));
   }
 
   /** ObjectIter* replay: validate key/':'/launcher, return the VALUE frame. */
   objectField(slot, keyTs, keyCursor) {
+    if (this.#thinArgs(keyTs, keyCursor)) {
+      this.#ensureStepOut();
+      return this.#thinResult(this.#exports.ze_object_field4(
+        slot, keyTs, keyCursor, this.#stepOutBig));
+    }
     return this.#frame(this.#exports.ze_object_field(
       BigInt(slot), BigInt(keyTs), BigInt(keyCursor)));
   }
