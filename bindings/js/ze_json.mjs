@@ -101,6 +101,18 @@ const kNodeKindByByte = new Uint8Array(256);
   kNodeKindByByte[0x6e] = 7; // 'n' -> null
 }
 
+/**
+ * O1-5: hoisted constants for the packed u64 frame decoder (`#frame` /
+ * `#plain` in ZeJson). Previously `#frame` allocated `BigInt(STEP_SENTINEL)`
+ * on EVERY call just to compare the hi half — now the sentinel is compared
+ * as a plain number, and the stateless `done` verdict is a frozen
+ * singleton (callers only read `.ok`/`.done`; frozen so any accidental
+ * mutation fails loud under ESM strict mode). The kFrameDone singleton is
+ * shared deliberately — a done frame carries no per-call state.
+ */
+const kStepSentinelU32 = STEP_SENTINEL; // 0xffffffff as a plain number
+const kFrameDone = Object.freeze({ ok: true, done: true });
+
 /** Parser slot pool size — mirrors `abi::kParserSlotMax` (cabi.hpp). */
 export const PARSER_SLOT_MAX = 64;
 
@@ -250,26 +262,50 @@ export class ZeJson {
   //   hi !== 0 && lo === 0    -> error, code = hi (scalar + step families)
   //   else                    -> step frame { cursor: hi, ts: lo }
   #frame(rawRet) {
-    // wasm i64 returns arrive as SIGNED BigInt (Emscripten-free raw ABI);
-    // normalize to unsigned before decoding (packed msb sentinel then
-    // reads back as hi = 0xffffffff, not -1).
-    const ret = BigInt.asUintN(64, rawRet);
-    const hi = ret >> 32n;
-    const lo = ret & 0xffffffffn;
-    if (hi === BigInt(STEP_SENTINEL)) {
-      return { ok: true, done: true };
+    // wasm i64 returns arrive as SIGNED BigInt (Emscripten-free raw ABI).
+    // O1-5 fast path: packed values below 2^53 convert to Number EXACTLY,
+    // so hi/lo decode with plain float arithmetic — zero BigInt shifts,
+    // zero BigInt allocations. Cursors/ts of sub-2-GiB documents stay far
+    // below the sentinel (~2^64), which is therefore unreachable here and
+    // only checked on the slow path. The sentinel hi compare is a plain
+    // number compare (hoisted const, no BigInt(STEP_SENTINEL) per call).
+    if (rawRet >= 0n && rawRet < 0x20000000000000n) { // < 2^53: exact
+      const n = Number(rawRet);
+      const hi = Math.floor(n / 4294967296); // exact for n < 2^53
+      const lo = n % 4294967296; // exact: integers, both < 2^53
+      if (hi !== 0 && lo === 0) {
+        return {
+          ok: false,
+          error: JSON_ERRORS[hi] ?? `code ${hi}`,
+          code: hi,
+        };
+      }
+      return { ok: true, ts: lo, cursor: hi };
     }
-    if (hi !== 0n && lo === 0n) {
+    // Slow path (hi >= 2^21 or negative raw): normalize to unsigned first
+    // (packed msb sentinel then reads back as hi = 0xffffffff, not -1).
+    const ret = BigInt.asUintN(64, rawRet);
+    const hi = Number(ret >> 32n);
+    if (hi === kStepSentinelU32) {
+      return kFrameDone;
+    }
+    const lo = Number(ret & 0xffffffffn);
+    if (hi !== 0 && lo === 0) {
       return {
         ok: false,
-        error: JSON_ERRORS[Number(hi)] ?? `code ${Number(hi)}`,
-        code: Number(hi),
+        error: JSON_ERRORS[hi] ?? `code ${hi}`,
+        code: hi,
       };
     }
-    return { ok: true, ts: Number(lo), cursor: Number(hi) };
+    return { ok: true, ts: lo, cursor: hi };
   }
 
   #plain(rawRet) {
+    // O1-5 fast path: a plain-family result with hi === 0 is a value in
+    // [0, 2^32) — decode straight to Number, no BigInt arithmetic.
+    if (rawRet >= 0n && rawRet < 0x100000000n) {
+      return { ok: true, value: Number(rawRet) };
+    }
     const ret = BigInt.asUintN(64, rawRet);
     const hi = Number(ret >> 32n);
     if (hi !== 0) {
