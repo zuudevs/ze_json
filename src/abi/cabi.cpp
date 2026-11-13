@@ -471,6 +471,134 @@ core::uint64_t ze_parser_close(core::uint64_t slot) {
   return 0;
 }
 
+// ---------------------------------------------------------------------------
+// v4 thin step family (O1-7 — ADDITIVE; contract:
+// include/ze_json/abi/cabi.hpp). The SAME core operators as the v3 step
+// exports; the packed u64 return is replaced by a caller-owned u32 out
+// pair (token_start, cursor — the exact v3 halves) plus an i32 status, so
+// the JS side pays zero BigInt boxing per call (scalar args travel as i32
+// numbers; only the out pointer is u64 and pre-boxed once by the binding).
+// Status: 0 = ok, 1 = done, < 0 = error (-JsonErrc); `out` untouched on
+// done/error. Sub-2-GiB ts/cursor bound comes with the i32 halves (stated
+// v4 limitation; v3 remains the sub-4-GiB general path).
+// ---------------------------------------------------------------------------
+
+core::int32_t thin_status_ok(core::uint64_t out, core::size_t token_start,
+                             core::size_t cursor) {
+  auto *dst =
+      reinterpret_cast<core::uint32_t *>(static_cast<core::uintptr_t>(out));
+  dst[0] = static_cast<core::uint32_t>(token_start);
+  dst[1] = static_cast<core::uint32_t>(cursor);
+  return 0;
+}
+
+constexpr core::int32_t thin_status_done() noexcept { return 1; }
+
+constexpr core::int32_t thin_status_error(core::JsonErrc error) noexcept {
+  return -static_cast<core::int32_t>(error);
+}
+
+EXPORT_NAME(ze_container_begin4)
+core::int32_t ze_container_begin4(core::uint32_t slot,
+                                  core::uint32_t container_ts,
+                                  core::uint32_t container_cursor,
+                                  core::uint64_t out) {
+  const ondemand::Document *doc = slot_document(slot);
+  if (doc == nullptr) {
+    return thin_status_error(core::JsonErrc::InvalidJson);
+  }
+  const ondemand::Value container =
+      frame_value(doc, container_ts, container_cursor);
+  const core::uint8_t kind = doc->classify(container.token_start_);
+  if (kind == static_cast<core::uint8_t>(ondemand::NodeType::Array)) {
+    const auto begin = container.begin_array();
+    if (!begin) {
+      return thin_status_error(begin.error());
+    }
+    if (begin.value().done_) {
+      return thin_status_done(); // `[]`: framed empty, nothing to deref
+    }
+    return thin_status_ok(out, begin.value().token_start_,
+                          begin.value().index_cursor_);
+  }
+  if (kind == static_cast<core::uint8_t>(ondemand::NodeType::Object)) {
+    const auto begin = container.begin_object();
+    if (!begin) {
+      return thin_status_error(begin.error());
+    }
+    if (begin.value().done_) {
+      return thin_status_done(); // `{}`: framed empty
+    }
+    return thin_status_ok(out, begin.value().key_start_,
+                          begin.value().index_cursor_); // next key frame
+  }
+  return thin_status_error(core::JsonErrc::InvalidJson); // not a container
+}
+
+EXPORT_NAME(ze_array_next4)
+core::int32_t ze_array_next4(core::uint32_t slot, core::uint32_t child_ts,
+                             core::uint32_t child_cursor, core::uint64_t out) {
+  const ondemand::Document *doc = slot_document(slot);
+  if (doc == nullptr) {
+    return thin_status_error(core::JsonErrc::InvalidJson);
+  }
+  ondemand::ArrayIter iter;
+  iter.document_ = doc;
+  iter.token_start_ = static_cast<core::size_t>(child_ts);
+  iter.index_cursor_ = static_cast<core::size_t>(child_cursor);
+  ++iter; // the real ArrayIter operator++ — framing + delimiter logic
+  if (iter.failed_ != core::JsonErrc::None) {
+    return thin_status_error(iter.failed_);
+  }
+  if (iter.done_) {
+    return thin_status_done();
+  }
+  return thin_status_ok(out, iter.token_start_, iter.index_cursor_);
+}
+
+EXPORT_NAME(ze_object_next4)
+core::int32_t ze_object_next4(core::uint32_t slot, core::uint32_t value_ts,
+                              core::uint32_t value_cursor, core::uint64_t out) {
+  const ondemand::Document *doc = slot_document(slot);
+  if (doc == nullptr) {
+    return thin_status_error(core::JsonErrc::InvalidJson);
+  }
+  ondemand::ObjectIter iter;
+  iter.document_ = doc;
+  iter.value_start_ = static_cast<core::size_t>(value_ts);
+  iter.index_cursor_ = static_cast<core::size_t>(value_cursor);
+  ++iter; // the real ObjectIter operator++ — value framing + ',' / '}'
+  if (iter.failed_ != core::JsonErrc::None) {
+    return thin_status_error(iter.failed_);
+  }
+  if (iter.done_) {
+    return thin_status_done();
+  }
+  return thin_status_ok(out, iter.key_start_,
+                        iter.index_cursor_); // next key frame
+}
+
+EXPORT_NAME(ze_object_field4)
+core::int32_t ze_object_field4(core::uint32_t slot, core::uint32_t key_ts,
+                               core::uint32_t key_cursor, core::uint64_t out) {
+  const ondemand::Document *doc = slot_document(slot);
+  if (doc == nullptr) {
+    return thin_status_error(core::JsonErrc::InvalidJson);
+  }
+  ondemand::ObjectIter iter;
+  iter.document_ = doc;
+  iter.key_start_ = static_cast<core::size_t>(key_ts);
+  iter.index_cursor_ = static_cast<core::size_t>(key_cursor);
+  // The real ObjectIter operator*: scans the key token, frames the ':' and
+  // the value's launcher (identical to the v3 replay contract).
+  const auto field = *iter;
+  if (field.has_error()) {
+    return thin_status_error(field.error());
+  }
+  const ondemand::Value &value = field.value().value;
+  return thin_status_ok(out, value.token_start_, value.index_cursor_);
+}
+
 
 } // extern "C"
 

@@ -122,8 +122,38 @@ namespace zuu::abi {
  *                       by the source size);
  *   plain (kind/is_null/close)   the value itself;
  *   error (everything)  (JsonErrc code << 32) — matching v2.
+ *
+ * v4 export table (v3 + thin step family, O1-7 — ADDITIVE: every v3
+ * export keeps its exact signature and packing; nothing is removed or
+ * re-packed). The thin family removes the per-call BigInt boxing on the
+ * JS side: scalar arguments pass as i32 JS numbers (no `BigInt(...)` per
+ * call), the step result travels through a caller-owned 8-byte out pair
+ * instead of a packed u64 return, and the status is a plain i32. The out
+ * POINTER is the only u64 argument and is pre-boxed ONCE by the binding.
+ * @cite 10.1145_3744916.3764533 — per-call marshalling overhead dominates
+ *       wasm-in-Node integrations at KB-scale payloads (ND-8/ND-9: the
+ *       count path's remaining cost sits at the call boundary shape).
+ *
+ *   ze_container_begin4 (u32 slot, u32 container_ts, u32 container_cursor,
+ *                        u64 out) -> i32
+ *   ze_array_next4      (u32 slot, u32 child_ts, u32 child_cursor,
+ *                        u64 out) -> i32
+ *   ze_object_next4     (u32 slot, u32 value_ts, u32 value_cursor,
+ *                        u64 out) -> i32
+ *   ze_object_field4    (u32 slot, u32 key_ts, u32 key_cursor,
+ *                        u64 out) -> i32
+ *   Status: 0 = ok (out[0] = token_start, out[1] = cursor, two
+ *                       little-endian u32 — the exact halves v3 packs as
+ *                       (cursor << 32) | token_start);
+ *           1 = done (step family exhaustion; `out` untouched);
+ *           < 0 = error (-JsonErrc code; `out` untouched).
+ *   `out` semantics: 8 bytes, 4-byte alignment, caller-owned scratch
+ *                       (the binding re-carves it after each heap rewind).
+ *   Stated limitation: i32 halves bound ts/cursor to sub-2-GiB documents
+ *                       (SAQ workload is KB-scale; the v3 surface remains
+ *                       the sub-4-GiB general path).
  */
-inline constexpr core::uint64_t kAbiVersion = 3;
+inline constexpr core::uint64_t kAbiVersion = 4;
 
 inline constexpr core::uint32_t kErrorShift = 32;
 
