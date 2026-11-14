@@ -27,7 +27,21 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_WASM = path.join(HERE, 'ze_json.wasm');
 
-export const ABI_VERSION = 4;
+/**
+ * Version registry (single source of truth: CMake). bindings/js/package.json
+ * is REGENERATED from cmake/templates/package.json.in at configure time:
+ *   version    = ZE_JSON_JS_VERSION      (independent js semver)
+ *   coreVersion= ZE_JSON_CORE_VERSION_NUMBER (ABI value = ze_abi_version())
+ *   coreSemver = project VERSION (core semver)
+ * ABI_VERSION therefore always follows the core version — a wasm built from
+ * a different registry generation fails loud in ZeJson.load().
+ */
+const PKG = JSON.parse(
+    fs.readFileSync(path.join(HERE, 'package.json'), 'utf8'));
+export const JS_VERSION = PKG.version;
+export const CORE_VERSION_NUMBER = PKG.coreVersion;
+export const CORE_VERSION_SEMVER = PKG.coreSemver;
+export const ABI_VERSION = CORE_VERSION_NUMBER;
 
 /** Index order matches zuu::core::JsonErrc (core/error.hpp). */
 export const JSON_ERRORS = [

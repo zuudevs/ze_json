@@ -59,4 +59,4 @@ slot pool of 64 (`kParserSlotMax`)**:
   `close()` per document, `resetHeap()` between batches.
 - The contract is frozen by the `@cite`-annotated header; any change
   bumps `kAbiVersion` and updates the binding + tests together
-  (see [`../development/README.md`](../development/README.md)).
+  (see [`development/README.md`](../development/README.md)).

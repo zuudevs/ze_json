@@ -70,4 +70,4 @@ it installs CMake 4.4.5 + Ninja + LLVM/Clang 23 on the runner, builds
 GitHub Packages (`npm.pkg.github.com`, scope `@zuudevs`).
 
 Release history and the version-sync rule (npm package + CMake project
-version move together) live in [`../../CHANGELOG.md`](../../CHANGELOG.md).
+version move together) live in [`changelog.md`](../../docs/development/changelog.md).

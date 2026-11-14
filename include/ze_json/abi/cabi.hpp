@@ -2,6 +2,7 @@
 
 #include <ze_json/core/error.hpp>
 #include <ze_json/core/integral.hpp>
+#include <ze_json/core/version.hpp>
 
 namespace zuu::abi {
 
@@ -153,7 +154,7 @@ namespace zuu::abi {
  *                       (SAQ workload is KB-scale; the v3 surface remains
  *                       the sub-4-GiB general path).
  */
-inline constexpr core::uint64_t kAbiVersion = 4;
+inline constexpr core::uint64_t kAbiVersion = ZE_JSON_VERSION;
 
 inline constexpr core::uint32_t kErrorShift = 32;
 

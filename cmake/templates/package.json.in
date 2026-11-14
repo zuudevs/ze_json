@@ -1,0 +1,40 @@
+{
+  "name": "@zuudevs/ze-json",
+  "version": "@ZE_JSON_JS_VERSION@",
+  "coreVersion": @ZE_JSON_CORE_VERSION_NUMBER@,
+  "coreSemver": "@CMAKE_PROJECT_VERSION@",
+  "description": "ze_json - on-demand JSON parser wasm binding (raw wasm64, C ABI)",
+  "license": "MIT",
+  "author": "Rafi Indra Pramudhito Zuhayr",
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    ".": "./ze_json.mjs"
+  },
+  "files": [
+    "ze_json.mjs",
+    "ze_json.wasm",
+    "tests/",
+    "benchmarks/"
+  ],
+  "scripts": {
+    "smoke": "node tests/main.mjs",
+    "differential": "node tests/differential.mjs",
+    "lazy": "node tests/lazy.mjs"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zuudevs/ze_json.git"
+  },
+  "keywords": [
+    "json",
+    "parser",
+    "wasm",
+    "memory64",
+    "ondemand"
+  ]
+}

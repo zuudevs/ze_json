@@ -97,7 +97,7 @@ Details:
   test and measurement workflow
 - [`docs/architecture/measurement-architecture.md`](docs/architecture/measurement-architecture.md) —
   record pipeline and the node harness
-- [CHANGELOG.md](CHANGELOG.md) — version history
+- [docs/development/changelog.md](docs/development/changelog.md) — version history
 
 ## Documentation
 

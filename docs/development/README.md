@@ -143,6 +143,6 @@ filled for anything performance-affecting. See `AGENTS.md` §8 (workspace
 root).
 
 Release flow: the npm package version and the CMake project version move
-together (see `../CHANGELOG.md`); a `v*` tag on a `main` commit triggers
+together (see `docs/development/changelog.md`); a `v*` tag on a `main` commit triggers
 `.github/workflows/npm-publish.yml` (wasm64 build → smoke test → publish
 to GitHub Packages).
