@@ -30,7 +30,8 @@
 			"cacheVariables": {
 				"CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/modules/Toolchains.cmake",
 				"CMAKE_SYSTEM_NAME": "Generic",
-				"CMAKE_TRY_COMPILE_TARGET_TYPE": "STATIC_LIBRARY"
+				"CMAKE_TRY_COMPILE_TARGET_TYPE": "STATIC_LIBRARY",
+				"ZUU_WASM_TOOLCHAIN": "ON"
 			}
 		},
 		{
