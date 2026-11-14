@@ -6,10 +6,18 @@ namespace zuu::ondemand {
 /**
  * @brief Table-driven 8-bit structural scanner (scalar fast path).
  *
- * Replaces per-byte character comparisons with one codegen table load
- * (core::kJsonCharClass bitmask: 1=whitespace, 2=structural, 4=quote,
- * 8=escape) plus two masked tests. Byte-identical to reference_scan()
- * by contract; the differential test is the gate.
+ * Outside strings, per-byte character comparisons are replaced with one
+ * codegen table load (core::kJsonCharClass bitmask: 1=whitespace,
+ * 2=structural, 4=quote, 8=escape) plus two masked tests. Inside a
+ * string, the interior loop is TABLE-FREE: two predictable compares
+ * ('\\' then '"') per byte — the interior is the byte majority of every
+ * payload, so dropping the per-byte table load is the O2-1 win (ND-13:
+ * the structural scan is 82-92% of s2-open). `kJsonCharClass` sets the
+ * escape bit for 0x5C ONLY and the quote bit for 0x22 ONLY, so the
+ * direct compares are exactly the old masked tests (differential gate).
+ *
+ * Byte-identical to reference_scan() by contract; the differential test
+ * is the gate.
  *
  * @cite 10.14778_3115404.3115416 Mison: structural indexes are produced in
  *       a cheap pre-scan pass (classifying bytes via a lookup table) so the
@@ -36,35 +44,39 @@ scanner8(const char *const RESTRICT src, core::size_t src_size,
   }
 
   core::size_t out = 0;
-  bool in_string = false;
-
-  for (core::size_t i = 0; i < src_size; ++i) {
+  core::size_t i = 0;
+  while (i < src_size) {
     const core::uint8_t cls =
         core::kJsonCharClass[static_cast<core::uint8_t>(src[i])];
-
-    if (in_string) {
-      if (cls & 0x08_u8) { // escape byte: the next byte is literal
-        if (++i >= src_size) {
-          return core::JsonErrc::InvalidJson; // dangling escape
+    if (cls & 0x04_u8) { // opening quote: scan the interior table-free
+      ++i;
+      for (;;) {
+        if (i >= src_size) {
+          return core::JsonErrc::InvalidJson; // string never closed
         }
-      } else if (cls & 0x04_u8) { // closing quote
-        in_string = false;
+        const char b = src[i];
+        if (b == '\\') { // escape byte: the next byte is literal
+          if (++i >= src_size) {
+            return core::JsonErrc::InvalidJson; // dangling escape
+          }
+          ++i;
+          continue;
+        }
+        if (b == '"') { // closing quote
+          ++i;
+          break;
+        }
+        ++i;
       }
       continue;
     }
-
-    if (cls & 0x04_u8) { // opening quote
-      in_string = true;
-    } else if (cls & 0x02_u8) { // structural character
+    if (cls & 0x02_u8) { // structural character
       if (out == dst_size) {
         return core::JsonErrc::InsufficientBuffer;
       }
       dst[out++] = i;
     }
-  }
-
-  if (in_string) {
-    return core::JsonErrc::InvalidJson; // string never closed
+    ++i;
   }
   return out;
 }

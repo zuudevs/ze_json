@@ -10,6 +10,21 @@ endif()
 
 file(TO_CMAKE_PATH "$ENV{TOOLCHAINS_DIR}" TOOLCHAINS_DIR_CMAKE)
 
+# Cross-compile declarations live HERE, not only in the preset
+# cacheVariables: the toolchain file re-runs on every configure, while
+# preset cache variables are lost when CMake re-runs system detection
+# (compiler-info invalidation) — that silently downgraded a wasm64
+# configure to a host build (guard broke, GTest REQUIRED error,
+# 2026-11-15). The per-preset cacheVariable still selects 32/64.
+if(ZUU_WASM_TOOLCHAIN)
+    if(NOT CMAKE_SYSTEM_NAME)
+        set(CMAKE_SYSTEM_NAME Generic)
+    endif()
+    if(NOT CMAKE_SYSTEM_PROCESSOR)
+        set(CMAKE_SYSTEM_PROCESSOR wasm64)
+    endif()
+endif()
+
 if(CMAKE_HOST_WIN32)
     set(ZUU_EXT ".exe")
 else()

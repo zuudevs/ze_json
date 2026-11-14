@@ -59,6 +59,41 @@ existing export keeps its signature and packing.
   `ze_parser_open` as the production bound reported beside them — no
   force-subtraction of sub-stage numbers (ND-13, continuation of ND-9).
 
+## [0.3.1] - 2026-11-15
+
+The O2-1 scanner fast path (phase-D direction set by ND-13: the
+structural scan is 82-92% of `s2-open`), plus a cross-compile build
+fix. No ABI change — pure performance, core PATCH.
+
+### Changed
+
+- `src/ondemand/scalar.cpp` (`scanner8`): the in-string interior of the
+  scan loop is now TABLE-FREE — two predictable compares (`\\` then `"`)
+  per byte instead of one `kJsonCharClass` load plus two masked tests.
+  The interior is the byte majority of every payload, and the escape
+  bit is set for 0x5C ONLY and the quote bit for 0x22 ONLY, so the
+  compares are exactly the old masked tests. Error semantics unchanged
+  (dangling escape, never-closed string, error precedence, dst contents
+  on InsufficientBuffer); `reference_scan()` remains the untouched
+  oracle. @cite 10.14778_3115404.3115416 (Mison staging), decomposition
+  basis: ND-13 (`reports/nd13-open-decomposition.md`).
+- Core version `0.3.0` → `0.3.1` (`CMakeLists.txt`, `vcpkg.json`);
+  `ze_abi_version()` = `2026000301`. JS registry stays `0.3.0` (the
+  binding surface is untouched).
+
+### Fixed
+
+- `cmake/modules/Toolchains.cmake` + `CMakePresets.json`: the wasm
+  cross-compile declaration (`CMAKE_SYSTEM_NAME=Generic`,
+  `CMAKE_SYSTEM_PROCESSOR=wasm64/32`) now lives IN the toolchain file,
+  anchored by the new `ZUU_WASM_TOOLCHAIN` preset variable. Preset
+  cache variables alone are lost when CMake re-runs system detection
+  (compiler-info invalidation): a wasm64 configure silently downgraded
+  to a host build, the `NOT wasm` guard on the Testing/Benchmark
+  includes flipped, and `find_package(GTest CONFIG REQUIRED)` failed a
+  perfectly valid wasm64 configure (Windows; Linux runners were saved
+  by a system gtest).
+
 ## [0.2.0] - 2026-11-14
 
 Version-registry restructure: the core library and the JS binding now carry
