@@ -599,6 +599,44 @@ core::int32_t ze_object_field4(core::uint32_t slot, core::uint32_t key_ts,
   return thin_status_ok(out, value.token_start_, value.index_cursor_);
 }
 
+// ---------------------------------------------------------------------------
+// v5 match-pass decomposition export (ND-13 — ADDITIVE; contract:
+// include/ze_json/abi/cabi.hpp). The pairing pass Document::open runs in
+// place, exposed standalone so a foreign harness can time the match
+// sub-stage of ze_parser_open (s2-open) from its own clock — wasm64 is
+// freestanding and carries no clock. The fused open stays the measured
+// production bound; the standalone call adds one visible call boundary
+// (the harness reports the s5 boundary floor beside it).
+// ---------------------------------------------------------------------------
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+EXPORT_NAME(ze_match_pass)
+core::uint64_t ze_match_pass(core::uint64_t src, core::uint64_t src_size,
+                             core::uint64_t indexes,
+                             core::uint64_t index_count,
+                             core::uint64_t dst_match,
+                             core::uint64_t dst_stack,
+                             core::uint64_t dst_cap) {
+  if (index_count == 0) {
+    return 0; // nothing to pair: plain ok, zero closers
+  }
+  if (dst_cap < index_count * sizeof(core::size_t)) {
+    return abi::pack_error(core::JsonErrc::InsufficientBuffer);
+  }
+  const auto paired = ondemand::match_pass(
+      reinterpret_cast<const char *>(static_cast<core::uintptr_t>(src)),
+      static_cast<core::size_t>(src_size),
+      reinterpret_cast<const core::size_t *>(
+          static_cast<core::uintptr_t>(indexes)),
+      static_cast<core::size_t>(index_count),
+      reinterpret_cast<core::size_t *>(static_cast<core::uintptr_t>(dst_match)),
+      reinterpret_cast<core::size_t *>(static_cast<core::uintptr_t>(dst_stack)));
+  if (!paired) {
+    return abi::pack_error(paired.error());
+  }
+  return static_cast<core::uint64_t>(paired.value());
+}
+
 
 } // extern "C"
 

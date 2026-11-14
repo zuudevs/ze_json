@@ -261,43 +261,70 @@ Document::open(ondemand::Arena &arena, const char *src,
       return scan.error(); // EmptyJson/InvalidJson/InsufficientBuffer as-is
     }
     const core::size_t n = scan.value();
-    // LIFO pairing over the flat index stream (Mison-style staging): an
-    // opener pushes its index; a closer pairs with the TOP only when the
-    // TYPE matches — the crossed-closer case (`[ { ] }`) marks BOTH ends
-    // kNoBracket and keeps walking. Marking (not erroring) keeps open
-    // structural-knowledge-ONLY; every consumer sees kNoBracket as its
-    // framing violation.
-    core::size_t sp = 0;
-    for (core::size_t j = 0; j < n; ++j) {
-      const char b = src[indexes[j]];
-      if (b == '[' || b == '{') {
-        match[j] = kNoBracket;
-        stack[sp++] = j;
-        continue;
-      }
-      if (b != ']' && b != '}') {
-        match[j] = kNoBracket; // ',' / ':' are delimiters, not brackets
-        continue;
-      }
-      if (sp == 0) {
-        match[j] = kNoBracket; // closer without opener
-        continue;
-      }
-      const core::size_t opener = stack[--sp];
-      const char open_char = src[indexes[opener]];
-      if ((open_char == '[' && b != ']') || (open_char == '{' && b != '}')) {
-        match[opener] = kNoBracket; // crossed brackets: both ends unmatched
-        match[j] = kNoBracket;
-        continue;
-      }
-      match[opener] = j;
-      match[j] = j;
+    const auto paired = match_pass(src, src_size, indexes, n, match, stack);
+    if (!paired) {
+      // Unreachable for scanner-produced indexes (every entry is a byte
+      // position < src_size); the guard exists for the foreign-facing
+      // ze_match_pass export and is mirrored here for the shared code.
+      return paired.error();
     }
     doc.indexes_ = indexes;
     doc.match_ = match;
     doc.index_count_ = n;
   }
   return doc;
+}
+
+core::Result<core::size_t, core::JsonErrc>
+match_pass(const char *src, core::size_t src_size,
+           const core::size_t *indexes, core::size_t index_count,
+           core::size_t *match, core::size_t *stack) NOEXCEPT {
+  if (index_count != 0 &&
+      (indexes == nullptr || match == nullptr || stack == nullptr)) {
+    return core::JsonErrc::InvalidJson;
+  }
+  // LIFO pairing over the flat index stream (Mison-style staging): an
+  // opener pushes its index; a closer pairs with the TOP only when the
+  // TYPE matches — the crossed-closer case (`[ { ] }`) marks BOTH ends
+  // kNoBracket and keeps walking. Marking (not erroring) keeps the pass
+  // structural-knowledge-ONLY; every consumer sees kNoBracket as its
+  // framing violation. Document::open runs this pass in place; the
+  // ze_match_pass export replays it standalone (ND-13 decomposition).
+  core::size_t paired = 0;
+  core::size_t sp = 0;
+  for (core::size_t j = 0; j < index_count; ++j) {
+    const core::size_t idx = indexes[j];
+    if (idx >= src_size) {
+      // Scanner-contract violation guard: never fires on scanner output
+      // (byte positions are < src_size); protects the foreign export.
+      return core::JsonErrc::InvalidJson;
+    }
+    const char b = src[idx];
+    if (b == '[' || b == '{') {
+      match[j] = kNoBracket;
+      stack[sp++] = j;
+      continue;
+    }
+    if (b != ']' && b != '}') {
+      match[j] = kNoBracket; // ',' / ':' are delimiters, not brackets
+      continue;
+    }
+    if (sp == 0) {
+      match[j] = kNoBracket; // closer without opener
+      continue;
+    }
+    const core::size_t opener = stack[--sp];
+    const char open_char = src[indexes[opener]];
+    if ((open_char == '[' && b != ']') || (open_char == '{' && b != '}')) {
+      match[opener] = kNoBracket; // crossed brackets: both ends unmatched
+      match[j] = kNoBracket;
+      continue;
+    }
+    match[opener] = j;
+    match[j] = j;
+    paired += 1;
+  }
+  return paired;
 }
 
 core::uint8_t Document::classify(core::size_t byte_pos) const NOEXCEPT {

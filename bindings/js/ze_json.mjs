@@ -381,6 +381,22 @@ export class ZeJson {
     return open.ok ? { ok: true, slot: open.value } : open;
   }
 
+  /**
+   * ND-13 decomposition export: the standalone bracket-pairing pass of
+   * Document::open (ze_match_pass). Writes the match table into matchPtr;
+   * stackPtr is LIFO scratch (both caller-owned, capBytes each, >=
+   * indexCount entries). Returns {ok, paired} with the paired-closer
+   * count, or the packed error — the match sub-stage of s2-open, timed
+   * standalone from the JS clock (wasm64 carries no in-module clock).
+   */
+  matchPass(srcPtr, byteLength, indexPtr, indexCount, matchPtr, stackPtr,
+            capBytes) {
+    return this.#plain(this.#exports.ze_match_pass(
+        BigInt(srcPtr), BigInt(byteLength), BigInt(indexPtr),
+        BigInt(indexCount), BigInt(matchPtr), BigInt(stackPtr),
+        BigInt(capBytes)));
+  }
+
   /** Root token start (re-derive cursor = 0 contract). */
   parserRoot(slot) {
     const root = this.#plain(this.#exports.ze_parser_root(BigInt(slot)));

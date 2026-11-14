@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The npm package `@zuudevs/ze-json` (`bindings/js/package.json`) and the CMake
 project version (`CMakeLists.txt`) are versioned together.
 
+## [0.3.0] - 2026-11-14
+
+The s2-open decomposition probe (ND-13): the bracket-pairing pass of
+`Document::open` becomes a shared, standalone-callable stage, exposed
+through the C-ABI so a foreign harness can time the match sub-stage of
+`ze_parser_open` from its own clock. Additive on top of v4 — every
+existing export keeps its signature and packing.
+
+### Added
+
+- `ondemand::match_pass` (`include/ze_json/ondemand/document.hpp`,
+  `src/ondemand/document.cpp`): the LIFO bracket-pairing pass extracted
+  from `Document::open` — one source of truth, run in place by `open`
+  and callable standalone. An opener pushes its index; a closer pairs
+  with the TOP only on type match; crossed closers mark BOTH ends
+  `kNoBracket` and the walk continues (marking, not erroring, keeps the
+  pass structural-knowledge-only). Returns the paired-closer count.
+  A scanner-contract guard (`indexes[j] >= src_size` → `InvalidJson`)
+  never fires on scanner output and protects the foreign-facing export.
+  @cite 10.14778_3115404.3115416 (Mison — staging the pairing pass over
+  the flat structural index stream).
+- ABI v5 export `ze_match_pass(src, src_size, indexes, index_count,
+  dst_match, dst_stack, dst_cap)` (`abi/cabi.hpp`, `src/abi/cabi.cpp`):
+  plain ok = paired-closer count; error = `JsonErrc << 32`;
+  `index_count == 0` → plain 0; both dst buffers are caller scratch of
+  `dst_cap` bytes each and must hold ≥ `index_count` entries.
+- `bindings/js/ze_json.mjs`: `ZeJson.matchPass(...)` wrapper (same
+  `#plain` packing as the scanner surface).
+- `tests/reference_parser_test.cpp`:
+  `ReferenceParser.MatchPassParityWithOpen` — the standalone
+  scan + `match_pass` decomposition must reproduce the exact match
+  table `Document::open` builds (index-for-index, paired-closer count
+  included) over adversarial fixtures AND the whole json_checker corpus.
+
+### Changed
+
+- Core version `0.2.0` → `0.3.0` (`CMakeLists.txt`, `vcpkg.json`);
+  `ze_abi_version()` = `2026000300` (packed core number). JS registry
+  `0.2.0` → `0.3.0` (`ModuleRegistry.cmake`): the `matchPass` wrapper
+  is an additive API surface (SemVer: minor bumps in the 0.x regime).
+- `scripts/build-wasm.ps1`: the required-exports gate grows to 26
+  symbols (v5) — a v4-era artifact (25) now fails the gate by design.
+
+### Rationale
+
+- wasm64 is freestanding (`-nostdlib`): no clock exists inside the
+  module, so sub-stage timers in-module are impossible. The decomposition
+  instead measures equivalent standalone calls (`ze_alloc` / `ze_scanner8`
+  / `ze_match_pass`) from the harness's JS clock, and keeps the fused
+  `ze_parser_open` as the production bound reported beside them — no
+  force-subtraction of sub-stage numbers (ND-13, continuation of ND-9).
+
 ## [0.2.0] - 2026-11-14
 
 Version-registry restructure: the core library and the JS binding now carry

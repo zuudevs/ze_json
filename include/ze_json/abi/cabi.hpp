@@ -153,6 +153,31 @@ namespace zuu::abi {
  *   Stated limitation: i32 halves bound ts/cursor to sub-2-GiB documents
  *                       (SAQ workload is KB-scale; the v3 surface remains
  *                       the sub-4-GiB general path).
+ * v5 export table (v4 + match-pass decomposition export, ND-13 — ADDITIVE:
+ * every v4 export keeps its exact signature and packing; nothing is
+ * removed or re-packed).
+ *
+ *   ze_match_pass (src, src_size, indexes, index_count, dst_match,
+ *                  dst_stack, dst_cap) -> u64
+ *                       The LIFO bracket-pairing pass of Document::open
+ *                       (ondemand::match_pass) exposed standalone: an
+ *                       opener pushes its index, a closer pairs the TOP
+ *                       on type match, crossed closers mark both ends
+ *                       kNoBracket. ok => paired-closer count (plain,
+ *                       high 32 bits zero); index_count == 0 => plain 0;
+ *                       error => (JsonErrc << 32). Both dst buffers are
+ *                       caller scratch of dst_cap bytes EACH and must
+ *                       hold >= index_count entries (8 bytes/entry on
+ *                       wasm64); every indexes[j] must be < src_size
+ *                       (InvalidJson otherwise). Purpose: the s2-open
+ *                       decomposition probe — wasm64 is freestanding (no
+ *                       clock in-module), so the harness times the
+ *                       carve/scan/match sub-stages via equivalent
+ *                       standalone calls (ze_alloc / ze_scanner8 /
+ *                       ze_match_pass) from its own clock and reports
+ *                       the fused ze_parser_open bound beside them.
+ *                       @cite 10.14778_3115404.3115416 Mison — staging
+ *                       the pairing pass over the flat index stream.
  */
 inline constexpr core::uint64_t kAbiVersion = ZE_JSON_VERSION;
 
