@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 The npm package `@zuudevs/ze-json` (`bindings/js/package.json`) and the CMake
 project version (`CMakeLists.txt`) are versioned together.
 
+## [0.2.0] - 2026-11-14
+
+Version-registry restructure: the core library and the JS binding now carry
+two independent semver registries, and the C-ABI version number follows the
+core registry automatically.
+
+### Added
+
+- `cmake/modules/ModuleRegistry.cmake`: `ZE_JSON_CORE_VERSION_NUMBER`
+  (packed `<year><major><minor><patch>` number) and `ZE_JSON_JS_VERSION`
+  (independent `bindings/js` semver) — the two version registries.
+- `bindings/js/package.json` is now GENERATED at configure time from
+  `cmake/templates/package.json.in`; it carries `version` (js semver) plus
+  `coreVersion` (packed core number = `ze_abi_version()`) and `coreSemver`.
+- `ze_json.mjs`: `JS_VERSION`, `CORE_VERSION_NUMBER`, `CORE_VERSION_SEMVER`
+  exports; `ABI_VERSION` now derives from the generated `package.json`
+  instead of a hardcoded constant — a wasm built from a different registry
+  generation fails loud in `ZeJson.load()`.
+- Generated header `ze_json/core/version.hpp` (`ZE_JSON_VERSION` plus
+  MAJOR/MINOR/PATCH macros); `abi/cabi.hpp` derives `kAbiVersion` from it.
+
+### Changed
+
+- Core version `0.1.2` → `0.2.0` (`CMakeLists.txt`, `vcpkg.json`): the
+  `ze_abi_version()` value changes from `4` to `2026000200` because its
+  source moved to the core registry — the call contract stays append-only
+  compatible, only the number source changed (SemVer: minor bump in the
+  0.x regime).
+- `ValidateVersion.py`: now checks BOTH registries (vcpkg.json == core
+  semver, bindings package.json == `ZE_JSON_JS_VERSION`) and no longer
+  short-circuits on the first check.
+
 ## [0.1.2] - 2026-11-12
 
 Release-infrastructure fix; library code and documentation content of
