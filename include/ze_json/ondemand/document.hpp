@@ -106,4 +106,37 @@ private:
   const core::size_t *match_;
 };
 
+/**
+ * @brief The LIFO bracket-pairing pass over a structural index stream.
+ *
+ * ND-13 decomposition: `Document::open` runs this pass in place (single
+ * source of truth), and the C-ABI surface exposes it (`ze_match_pass`)
+ * so a foreign harness can time the match sub-stage of `s2-open`
+ * standalone. wasm64 is freestanding (no clock inside the module), so
+ * sub-stage timing happens from the caller's clock over equivalent
+ * standalone calls; the fused `ze_parser_open` stays the production
+ * bound reported beside them.
+ *
+ * Semantics (open's inlined history, verbatim): an opener pushes its
+ * index; a closer pairs with the TOP only when the TYPE matches — the
+ * crossed-closer case (`[ { ] }`) marks BOTH ends `kNoBracket` and keeps
+ * walking. Marking (not erroring) keeps the pass structural-knowledge-
+ * ONLY; every consumer sees `kNoBracket` as its framing violation.
+ *
+ * Bounds: every `indexes[j]` must be `< src_size` (the scanner contract;
+ * the guard also makes the foreign-facing export safe against garbage
+ * indexes — it never fires on scanner output). `match` receives one
+ * entry per index; `stack` is LIFO scratch holding at most
+ * `index_count` openers; both caller-owned.
+ *
+ * @return paired-closer count (a closer pairs when the normal path runs;
+ *         crossed-closer and opener-less closers stay `kNoBracket`).
+ * @cite 10.14778_3115404.3115416 Mison — staging the pairing pass over
+ *       the flat structural index stream.
+ */
+[[nodiscard]] core::Result<core::size_t, core::JsonErrc>
+match_pass(const char *src, core::size_t src_size,
+           const core::size_t *indexes, core::size_t index_count,
+           core::size_t *match, core::size_t *stack) NOEXCEPT;
+
 } // namespace zuu::ondemand

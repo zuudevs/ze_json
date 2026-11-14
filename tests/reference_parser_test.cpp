@@ -33,6 +33,7 @@
 #include <ze_json/core/integral.hpp>
 #include <ze_json/ondemand/document.hpp>
 #include <ze_json/ondemand/reference_parser.hpp>
+#include <ze_json/ondemand/scanner.hpp>
 #include <ze_json/ondemand/value.hpp>
 #include <ze_json/utils/move.hpp>
 
@@ -527,6 +528,90 @@ TEST(ReferenceParser, ScalarRootsAccepted) {
   };
   for (std::size_t i = 0; i < cases.size(); ++i) {
     compare_verdicts(cases[i], i);
+  }
+}
+
+// ND-13: the standalone bracket-pairing pass (ondemand::match_pass —
+// exposed as the ze_match_pass v5 export) must reproduce EXACTLY the
+// table Document::open builds in place, index-for-index, over the
+// adversarial fixtures and the whole corpus. The fused open stays the
+// production reference; the standalone pass is its decomposition witness
+// (the harness times the s2c-match sub-stage via ze_match_pass).
+// @cite 10.14778_3115404.3115416 (Mison — the pairing pass over the flat
+//       structural index stream).
+
+//! Fused open vs standalone scan+match_pass: every match-table entry and
+//! the paired-closer count must agree. Scan-level rejects (no structural
+//! stream to pair) are skipped — open and match_pass fail identically.
+void compare_match_tables(const std::string &data, const std::string &label) {
+  namespace co = zuu::core;
+  namespace od = zuu::ondemand;
+  // Fused reference: Document::open (the production path).
+  std::vector<co::size_t> fused_arena(data.size() * 3 / sizeof(co::size_t) *
+                                          sizeof(co::size_t) +
+                                      64);
+  od::Arena fused_backing(fused_arena.data(),
+                          fused_arena.size() * sizeof(co::size_t));
+  auto opened = od::Document::open(fused_backing, data.data(),
+                                   static_cast<co::size_t>(data.size()));
+  if (!opened) {
+    return;
+  }
+  auto document = zuu::utils::move(opened.value());
+
+  // Standalone decomposition: scan + match_pass into separate buffers.
+  const co::size_t n_doc = document.index_count();
+  std::vector<co::size_t> idx(n_doc + 1, 0);
+  std::vector<co::size_t> match(n_doc + 1, 0);
+  std::vector<co::size_t> stack(n_doc + 1, 0);
+  const auto scan = od::structural_scan(
+      data.data(), static_cast<co::size_t>(data.size()), idx.data(),
+      idx.size());
+  ASSERT_TRUE(scan.has_value()) << label;
+  const co::size_t n = scan.value();
+  ASSERT_EQ(n, n_doc) << label; // open consumed the same index stream
+  const auto paired = od::match_pass(
+      data.data(), static_cast<co::size_t>(data.size()), idx.data(), n,
+      match.data(), stack.data());
+  ASSERT_TRUE(paired.has_value()) << label;
+
+  co::size_t closers = 0;
+  for (co::size_t j = 0; j < n; ++j) {
+    ASSERT_EQ(match[j], document.index_close(j))
+        << label << " index j=" << j;
+    if (match[j] == j) {
+      closers += 1; // a paired closer pairs with itself (match[j] == j)
+    }
+  }
+  EXPECT_EQ(closers, paired.value()) << label;
+}
+
+TEST(ReferenceParser, MatchPassParityWithOpen) {
+  const std::vector<const char *> fixtures = {
+      "[]",
+      "{}",
+      "[1,2,3]",
+      "{\"a\":1}",
+      "[{\"a\":[1,{\"b\":2}]}]",
+      "[ { ] }",      // crossed closers: both ends kNoBracket
+      "[}]",          // closer without opener
+      "[{\"a\":1},]", // trailing delimiter entry in the stream
+      "{\"a\"}",
+      "[{\"b\":{\"c\":[1,2,{\"d\":3}]}}]",
+      "  [ 1 , { \"x\" : [ ] } ]  ",
+  };
+  for (std::size_t i = 0; i < fixtures.size(); ++i) {
+    compare_match_tables(fixtures[i], fixtures[i]);
+  }
+
+  // Whole json_checker corpus (pass AND most fail documents open fine at
+  // the structural layer; only scan-level rejects are skipped).
+  const std::filesystem::path dir(ZE_JSON_CORPUS_DIR);
+  if (std::filesystem::exists(dir)) {
+    for (const auto &entry : std::filesystem::directory_iterator(dir)) {
+      compare_match_tables(read_file(entry.path()),
+                           entry.path().filename().string());
+    }
   }
 }
 
