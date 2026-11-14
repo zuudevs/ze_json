@@ -12,6 +12,12 @@ configure_file(
     @ONLY
 )
 
+configure_file(
+    ${CMAKE_SOURCE_DIR}/cmake/templates/package.json.in
+    ${CMAKE_SOURCE_DIR}/bindings/js/package.json
+    @ONLY
+)
+
 add_custom_target(generate_ze_json_headers
     COMMAND ${Python_EXECUTABLE} "${CMAKE_SOURCE_DIR}/scripts/GenerateLookups.py" "${CMAKE_BINARY_DIR}/generated/ze_json/core/lookups.hpp"
     COMMENT "Generating required headers and validating version..."

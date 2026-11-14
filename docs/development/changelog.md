@@ -15,14 +15,14 @@ Release-infrastructure fix; library code and documentation content of
 ### Fixed
 
 - `CMakePresets.json`: the wasm presets referenced
-  `cmake/modules/ToolChain.cmake`, a file name that does not exist in the
-  repository (the tracked module is `toolchain.cmake`). Windows resolves
+  `cmake/modules/Toolchains.cmake`, a file name that does not exist in the
+  repository (the tracked module is `Toolchains.cmake`). Windows resolves
   the reference case-insensitively (NTFS), Linux does not — the
   `wasm64-*` / `wasm32-*` presets could never configure on a fresh
   Linux checkout (first exercised by the `v0.1.1` publish run).
 - `npm-publish.yml`: the runner now provisions the same `.toolchains`
   layout `ci.yml` uses (`$TOOLCHAINS_DIR/ninja/ninja`, llvm symlink) and
-  exports `TOOLCHAINS_DIR`, since `toolchain.cmake` resolves its
+  exports `TOOLCHAINS_DIR`, since `Toolchains.cmake` resolves its
   compilers and ninja from there. Also verifies the artifact and prints
   its sha256 before the smoke test.
 
@@ -40,7 +40,7 @@ Release-infrastructure fix; library code and documentation content of
 Per the repository versioning rule, any change to `ze_json` moves the
 PATCH version; this release carries CI/build-system fixes plus the
 committed corpora. The `[0.1.1]` tag exists but its publish run failed
-(missing `ToolChain.cmake` on the Linux runner); `0.1.2` supersedes it
+(missing `Toolchains.cmake` on the Linux runner); `0.1.2` supersedes it
 as the first published release.
 
 ### Publish verification
@@ -54,7 +54,7 @@ infrastructure only; the package content is identical, so no new tag
 was cut for the fixes. Blocker chain that led here:
 
 1. `v0.1.1` (run 43179466435): configure failed — preset referenced a
-   non-existent `ToolChain.cmake` (case bug, NTFS-masked).
+   non-existent `Toolchains.cmake` (case bug, NTFS-masked).
 2. `v0.1.2` (run 43181252021): configure fixed; build failed —
    `CACHE_DIR` unset degraded the json_checker package dir to
    `/json_checker`.
@@ -106,7 +106,7 @@ npm package and CMake project version in lockstep. The npm publish workflow
 (`.github/workflows/npm-publish.yml`) triggers on `v*` tags; the `v0.1.1` tag
 is created on this release's merge commit. **Publish outcome:** the run
 triggered by `v0.1.1` failed at the configure step (the preset referenced a
-non-existent `ToolChain.cmake` on the Linux runner — fixed in `0.1.2`);
+non-existent `Toolchains.cmake` on the Linux runner — fixed in `0.1.2`);
 version `0.1.1` was therefore never published to the registry.
 
 ## [0.1.0]

@@ -29,7 +29,7 @@ jobs:
         shell: bash
         run: |
           # Same env set ci.yml provisions (Config.cmake reads all of them):
-          # TOOLCHAINS_DIR      -> compilers/ninja for toolchain.cmake
+          # TOOLCHAINS_DIR      -> compilers/ninja for Toolchains.cmake
           # CACHE_DIR           -> InstallJsonChecker package cache
           # PROJECT_ROOT_DIR    -> corpus paths (JSON_CHECKER_CORPUS_DIR); an
           #                        unset value degrades the path to /corpus
@@ -40,7 +40,7 @@ jobs:
           echo "PROJECT_ROOT_DIR=${{ github.workspace }}/ze_json" >> $GITHUB_ENV
           echo "CORPUS_DIR=${{ github.workspace }}/ze_json/corpus" >> $GITHUB_ENV
 
-      # cmake/modules/toolchain.cmake resolves its compilers and ninja from
+      # cmake/modules/Toolchains.cmake resolves its compilers and ninja from
       # $TOOLCHAINS_DIR with the SAME layout ci.yml provisions: <dir>/ninja/ninja
       # and <dir>/llvm/bin/{clang,clang++,lld}. The wasm64 preset does not use
       # vcpkg (freestanding module, no dependencies).
@@ -69,7 +69,7 @@ jobs:
           sudo ln -sf /usr/bin/clang++-23 /usr/bin/clang++
           clang --version | grep -q "clang version 23" \
             || { echo "::error::clang 23 tidak aktif:"; clang --version; exit 1; }
-          # toolchain.cmake looks for $TOOLCHAINS_DIR/llvm/bin/* — symlink the
+          # Toolchains.cmake looks for $TOOLCHAINS_DIR/llvm/bin/* — symlink the
           # system LLVM prefix in (same pattern as ci.yml "Setup LLVM Toolchain").
           LLVM_SOURCE=$(ls -d /usr/lib/llvm-* 2>/dev/null | sort -V | tail -n 1)
           if [ -z "$LLVM_SOURCE" ]; then LLVM_SOURCE="/usr"; fi

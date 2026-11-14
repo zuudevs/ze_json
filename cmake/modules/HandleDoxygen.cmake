@@ -13,7 +13,7 @@ function(add_doxygen_target TARGET_NAME)
 		return()
 	endif()
 
-	set(DOXYFILE_IN "${CMAKE_SOURCE_DIR}/cmake/Doxyfile.in")
+	set(DOXYFILE_IN "${CMAKE_SOURCE_DIR}/cmake/templates/Doxyfile.in")
 	set(DOXYFILE_OUT "${CMAKE_BINARY_DIR}/Doxyfile")
 	set(DOXYGEN_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/docs/doxygen")
 

@@ -13,10 +13,10 @@ comparatively against the V8 baseline used by the SAQ server.
 
 Entry points outside this tree:
 
-- [`../README.md`](../README.md) — repository landing page
-- [`../CHANGELOG.md`](../CHANGELOG.md) — version history (npm package and
+- [`README.md`](../README.md) — repository landing page
+- [`changelog.md`](../docs/development/changelog.md) — version history (npm package and
   CMake project version move together)
-- [`../bindings/js/README.md`](../bindings/js/README.md) — npm package API
+- [`js/README.md`](../bindings/js/README.md) — npm package API
   reference (`@zuudevs/ze-json`)
 
 Documentation is written in English; all diagrams use embedded Mermaid

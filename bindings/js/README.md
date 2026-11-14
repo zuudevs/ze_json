@@ -26,7 +26,7 @@ a JS-only lazy-access layer built on top of the unchanged parser surface.
   below).
 
 Design doc: `docs/architecture/` (repository). Changelog:
-[`../CHANGELOG.md`](../CHANGELOG.md).
+[`changelog.md`](../docs/development/changelog.md).
 
 ## 2. Requirements
 
@@ -391,7 +391,7 @@ within one run (same machine, preset, git hash, corpus).
   together, and is recorded in the repository ADRs
   (`docs/adr/0003-abi-v3-slot-pool.md` documents the v3 decision).
 - Releases: npm package version and CMake project version move together
-  (see [`../../CHANGELOG.md`](../../CHANGELOG.md)); a `v*` tag triggers the
+  (see [`docs/development/changelog.md`](../../docs/development/changelog.md)); a `v*` tag triggers the
   publish workflow to GitHub Packages.
 
 ## License

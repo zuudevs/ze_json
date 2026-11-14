@@ -6,7 +6,7 @@ project(
 )
 
 include("cmake/modules/Config.cmake")
-include("cmake/modules/Variable.cmake")
+include("cmake/modules/ModuleRegistry.cmake")
 include("cmake/modules/HandleGit.cmake")
 include("cmake/modules/MeasurementRegistry.cmake")
 include("cmake/modules/Optimization.cmake")
@@ -31,14 +31,12 @@ add_subdirectory("src")
 add_subdirectory("tests")
 add_subdirectory("benchmarks")
 
-# PR A: ancillary-module wiring. API docs target (host needs doxygen on
-# PATH; skipped with a warning otherwise) — `ninja ze_json_api_docs`.
 add_doxygen_target(ze_json_api_docs)
 
 message("")
 message("Project Name           : ${PROJECT_NAME}")
 message("Project Version        : ${PROJECT_VERSION}")
-message("Project Version Number : ${ZE_JSON_VERSION_NUMBER}")
+message("Project Version Number : ${ZE_JSON_CORE_VERSION_NUMBER}")
 message("Build Type             : ${CMAKE_BUILD_TYPE}")
 message("C++ Standard           : ${CMAKE_CXX_STANDARD}")
 message("C++ Compiler           : ${CMAKE_CXX_COMPILER}")
