@@ -59,6 +59,29 @@ existing export keeps its signature and packing.
   `ze_parser_open` as the production bound reported beside them — no
   force-subtraction of sub-stage numbers (ND-13, continuation of ND-9).
 
+## [0.3.2] - 2026-11-15
+
+The O2-2 SWAR interior skip (conditional follow-up to O2-1, GO-limited
+by the ND-14 interior histogram). No ABI change — core PATCH.
+
+### Changed
+
+- `src/ondemand/scalar.cpp` (`scanner8`): the in-string interior now
+  runs in 8-byte SWAR blocks — one unaligned load, two broadcast-XOR
+  byte-equality masks (`"` / `\` via the carry-free `utils::swar_eq`)
+  and an 8-byte skip per clean block; the first matching lane resumes
+  the scalar residue so an escape pair straddling a block boundary is
+  consumed exactly (a paired quote's backslash is always EARLIER in the
+  block, so the first match is the backslash). Decision basis (ND-14
+  histogram, `scripts/corpus/interior_histogram.py`): the acceptance
+  corpus `saq_payload_v1` has byte-weighted median interior 24 B with
+  91.0% of interior bytes in runs >= 8 B; synthetic corpora (6 B, 34%)
+  are NOT expected to win — accepted only if the acceptance corpus wins
+  without synthetic regression. @cite 10.1002_spe.2984 (the SWAR idiom
+  `utils/swar.hpp` implements; P4-2 fixed the per-byte mask form).
+- Core version `0.3.1` → `0.3.2` (`CMakeLists.txt`, `vcpkg.json`);
+  `ze_abi_version()` = `2026000302`. JS registry stays `0.3.0`.
+
 ## [0.3.1] - 2026-11-15
 
 The O2-1 scanner fast path (phase-D direction set by ND-13: the

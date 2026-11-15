@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.40)
 project(
 	ze_json
-	VERSION 0.3.1
+	VERSION 0.3.2
 	LANGUAGES CXX C
 )
 
